@@ -16,6 +16,15 @@ CL-TRON-MCP provides a comprehensive debugging and introspection toolkit for SBC
 - **Tracer**: Function tracing with conditional support
 - **Thread Management**: List, inspect, and get backtraces for threads
 - **Monitor**: Health checks, memory statistics, and system information
+- **Logging**: log4cl integration for package-level logging
+- **Cross-Reference**: Find function callers, callees, and symbol references
+- **Approval Whitelist**: Automate with pattern-based approval bypass
+
+### Statistics
+
+- **43 tools** across 11 categories
+- Rove test suite with 8 tests
+- Full MCP protocol support (stdio, HTTP, WebSocket)
 
 ### Requirements
 
@@ -453,6 +462,90 @@ Operations that can modify running code require user approval:
 - `:trace-function` - Function tracing
 
 Configure approval timeouts and behavior through the security module.
+
+### Approval Whitelist
+
+Operations can bypass approval for AI agent automation using the whitelist:
+
+```json
+{
+  "tool": "whitelist_add",
+  "arguments": {
+    "operation": "eval",
+    "pattern": "test-*"
+  }
+}
+```
+
+Whitelist management tools:
+- `whitelist_add` - Add pattern to whitelist
+- `whitelist_remove` - Remove pattern from whitelist
+- `whitelist_clear` - Clear whitelist
+- `whitelist_enable` - Enable/disable whitelist
+- `whitelist_status` - Check whitelist status
+
+## Logging Tools
+
+**log_configure** - Configure logging level for a package
+
+```json
+{
+  "tool": "log_configure",
+  "arguments": {
+    "level": "debug",
+    "package": "my-package"
+  }
+}
+```
+
+**log_info**, **log_debug**, **log_warn**, **log_error** - Log messages
+
+```json
+{
+  "tool": "log_info",
+  "arguments": {
+    "message": "Function started",
+    "package": "my-package"
+  }
+}
+```
+
+## Cross-Reference Tools
+
+**who_calls** - Find functions that call a symbol
+
+```json
+{
+  "tool": "who_calls",
+  "arguments": {
+    "symbolName": "MY-FUNCTION"
+  }
+}
+```
+
+**list_callees** - List functions called by a symbol
+
+```json
+{
+  "tool": "list_callees",
+  "arguments": {
+    "symbolName": "MY-FUNCTION"
+  }
+}
+```
+
+**who_references** - Find references to a symbol
+**who_binds** - Find bindings of a symbol
+**who_sets** - Find setq/makunbound of a symbol
+**who_specializes** - Find methods that specialize on a symbol
+**who_macroexpands** - Find macro expansions
+
+## Tutorial
+
+See `tutorial/` directory for step-by-step debugging tutorials:
+- `tutorial/README.md` - Tutorial guide
+- `tutorial/debugging-tutorial.lisp` - Lisp code examples
+- `tutorial/tutorial.json` - JSON format scenarios
 
 ## Troubleshooting
 
