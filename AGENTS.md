@@ -14,13 +14,13 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
 **Tool Categories:**
 | Category | Purpose | Key Tools |
 |----------|---------|-----------|
-| Inspector | Object introspection | `inspect_object` |
-| Debugger | Debugging operations | `debugger_frames`, `debugger_restarts` |
+| Inspector | Object introspection | `inspect_object`, `inspect_class`, `inspect_function` |
+| Debugger | Debugging operations | `debugger_frames`, `debugger_restarts`, `breakpoint_set` |
 | REPL | Code evaluation | `repl_eval` |
 | Hot Reload | Live code modification | `code_compile_string`, `reload_system` |
 | Profiler | Performance analysis | `profile_start`, `profile_stop` |
 | Tracer | Function tracing | `trace_function`, `trace_list` |
-| Threads | Thread management | `thread_list` |
+| Threads | Thread management | `thread_list`, `thread_inspect`, `thread_backtrace` |
 | Monitor | Production monitoring | `health_check`, `runtime_stats` |
 
 ## Cross-References
@@ -161,10 +161,11 @@ Follow the Google Common Lisp Style Guide with project-specific additions:
 ### SBCL-Specific Patterns
 
 ```lisp
-;; SBCL debug internals
+;; SBCL debug internals (use #+sb-dbg feature guard)
+#+sb-dbg
 (sb-di:frame-debug-function frame)
+#+sb-dbg
 (sb-di:debug-var-valid-p debug-var)
-(sb-debug:break-at-breakpoint code-location)
 
 ;; Thread operations (Bordeaux-threads abstraction)
 (bt:make-thread #'(lambda () ...) :name "worker")
@@ -404,6 +405,8 @@ clgrep   lisp-read   inspect   code_      compile   tests
 
 ### Thread Tools
 - `thread_list` - List all threads with their status
+- `thread_inspect` - Get detailed information about a thread
+- `thread_backtrace` - Get backtrace for a specific thread
 
 ### Monitor Tools
 - `health_check` - Basic health check for the MCP server
@@ -420,6 +423,7 @@ clgrep   lisp-read   inspect   code_      compile   tests
 | "Transport bind failed" | Port in use | Use different port or kill conflicting process |
 | Tests failing | Stale FASL files | `(asdf:compile-system :cl-tron-mcp :force t)` |
 | HTTP transport unavailable | Hunchentoot not loaded | Add `:hunchentoot` to dependencies |
+| Debugger features unavailable | SBCL compiled without :sb-dbg | Rebuild SBCL with debugging or use default fallbacks |
 
 ### Getting Help
 
@@ -437,4 +441,4 @@ clgrep   lisp-read   inspect   code_      compile   tests
 - **Tests**: Rove in `tests/`, mirror source structure
 - **Security**: User approval required for modifying operations
 - **Docs**: See `@prompts/` and `docs/tools/` for detailed guides
-- **Tools**: 21 tools implemented across 8 categories
+- **Tools**: 23 tools implemented across 8 categories
