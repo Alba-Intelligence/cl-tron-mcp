@@ -374,10 +374,18 @@ clgrep   lisp-read   inspect   code_      compile   tests
 
 ### Inspector Tools
 - `inspect_object` - Inspect an object by ID
+- `inspect_slot` - Get or set a slot value on an object
+- `inspect_class` - Inspect a CLOS class definition
+- `inspect_function` - Inspect a function definition
+- `inspect_package` - Inspect a package and list its contents
 
 ### Debugger Tools
 - `debugger_frames` - Get debugger stack frames
 - `debugger_restarts` - List available debugger restarts
+- `breakpoint_set` - Set a breakpoint on a function (requires approval)
+- `breakpoint_remove` - Remove a breakpoint by ID
+- `breakpoint_list` - List all active breakpoints
+- `step_frame` - Step execution in a frame
 
 ### REPL Tools
 - `repl_eval` - Evaluate Lisp code in REPL context (requires approval)
@@ -429,4 +437,4 @@ clgrep   lisp-read   inspect   code_      compile   tests
 - **Tests**: Rove in `tests/`, mirror source structure
 - **Security**: User approval required for modifying operations
 - **Docs**: See `@prompts/` and `docs/tools/` for detailed guides
-- **Tools**: 13 tools implemented across 8 categories
+- **Tools**: 21 tools implemented across 8 categories

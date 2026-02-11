@@ -14,6 +14,38 @@
  :requires-approval nil)
 (register-tool-handler "inspect_object" (function cl-tron-mcp/inspector:inspect-object))
 
+(register-tool
+ "inspect_slot"
+ "Get or set a slot value on an object"
+ :input-schema (list :objectId "string" :slotName "string" :value "string")
+ :output-schema (list :type "object")
+ :requires-approval nil)
+(register-tool-handler "inspect_slot" (function cl-tron-mcp/inspector:inspect-slot))
+
+(register-tool
+ "inspect_class"
+ "Inspect a CLOS class definition"
+ :input-schema (list :className "string")
+ :output-schema (list :type "object")
+ :requires-approval nil)
+(register-tool-handler "inspect_class" (function cl-tron-mcp/inspector:inspect-class))
+
+(register-tool
+ "inspect_function"
+ "Inspect a function definition"
+ :input-schema (list :symbolName "string")
+ :output-schema (list :type "object")
+ :requires-approval nil)
+(register-tool-handler "inspect_function" (function cl-tron-mcp/inspector:inspect-function))
+
+(register-tool
+ "inspect_package"
+ "Inspect a package and list its contents"
+ :input-schema (list :packageName "string")
+ :output-schema (list :type "object")
+ :requires-approval nil)
+(register-tool-handler "inspect_package" (function cl-tron-mcp/inspector:inspect-package))
+
 ;;; REPL tools
 (register-tool
  "repl_eval"
@@ -51,11 +83,43 @@
 
 (register-tool
  "debugger_restarts"
- "List available debugger restarts"
+  "List available debugger restarts"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+(register-tool-handler "debugger_restarts" (function cl-tron-mcp/debugger:list-restarts))
+
+(register-tool
+ "breakpoint_set"
+ "Set a breakpoint on a function"
+ :input-schema (list :functionName "string" :condition "string" :hitCount "integer")
+ :output-schema (list :type "object")
+ :requires-approval t)
+(register-tool-handler "breakpoint_set" (function cl-tron-mcp/debugger:set-breakpoint))
+
+(register-tool
+ "breakpoint_remove"
+ "Remove a breakpoint by ID"
+ :input-schema (list :breakpointId "integer")
+ :output-schema (list :type "object")
+ :requires-approval nil)
+(register-tool-handler "breakpoint_remove" (function cl-tron-mcp/debugger:remove-breakpoint))
+
+(register-tool
+ "breakpoint_list"
+ "List all active breakpoints"
  :input-schema nil
  :output-schema (list :type "object")
  :requires-approval nil)
-(register-tool-handler "debugger_restarts" (function cl-tron-mcp/debugger:list-restarts))
+(register-tool-handler "breakpoint_list" (function cl-tron-mcp/debugger:list-breakpoints))
+
+(register-tool
+ "step_frame"
+  "Step execution in a frame"
+  :input-schema (list :frame "integer" :mode "string")
+  :output-schema (list :type "object")
+ :requires-approval nil)
+(register-tool-handler "step_frame" (function cl-tron-mcp/debugger:step-frame))
 
 ;;; Hot-reload tools
 (register-tool
@@ -111,8 +175,10 @@
 ;;; SBCL tools
 (register-tool
  "thread_list"
- "List all threads with their status"
- :input-schema nil
- :output-schema (list :type "object")
- :requires-approval nil)
+  "List all threads with their status"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
 (register-tool-handler "thread_list" (function cl-tron-mcp/sbcl:list-threads))
+
+

@@ -2,12 +2,16 @@
 
 (defpackage :cl-tron-mcp/sbcl
   (:use :cl)
-  (:export
-   #:safe-eval
-   #:safe-compile
-   #:find-thread
-   #:list-threads
-   #:get-thread-state
-   #:get-object-id
-   #:lookup-object
-   #:*object-registry*))
+   (:export
+    ;; Safe evaluation
+    #:safe-eval
+    #:safe-compile
+    ;; Thread management
+    #:find-thread
+    #:list-threads
+    #:get-thread-state
+    #:thread-state
+    ;; Object registry
+    #:get-object-id
+    #:lookup-object
+    #:*object-registry*))

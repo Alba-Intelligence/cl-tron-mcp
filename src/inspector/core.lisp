@@ -64,23 +64,45 @@
       (return-from inspect-slot
         (list :error t
               :message (format nil "Object ~a not found" object-id))))
-    (when value
-      (setf (slot-value object (intern (string-upcase slot-name) :keyword))
-            value))
-    (list :slot slot-name
-          :value (format nil "~a"
-                        (ignore-errors
-                          (slot-value object (intern (string-upcase slot-name) :keyword)))))))
+    (let ((slot-symbol (intern (string-upcase slot-name) :keyword)))
+      (when value
+        (setf (slot-value object slot-symbol) value))
+      (list :slot slot-name
+            :value (format nil "~a"
+                          (ignore-errors
+                            (slot-value object slot-symbol)))))))
 
 (defun inspect-class (class-name)
-  "Inspect class definition."
-  (list :name class-name
-        :message "Class inspection placeholder"))
+  "Inspect class definition using CLOS MOP."
+  (let ((class (find-class (intern (string-upcase class-name) :cl) nil)))
+    (unless class
+      (return-from inspect-class
+        (list :error t
+              :message (format nil "Class ~a not found" class-name))))
+    (list :name (class-name class)
+          :direct-superclasses (mapcar #'class-name (class-direct-superclasses class))
+          :direct-slots (mapcar (lambda (s)
+                                  (list :name (slot-definition-name s)))
+                                (class-direct-slots class))
+                     :precedence-list (mapcar #'class-name (class-precedence-list class)))))
 
 (defun inspect-function (symbol-name)
   "Inspect function definition."
-  (list :symbol symbol-name
-        :message "Function inspection placeholder"))
+  (let ((symbol (intern symbol-name :cl)))
+    (cond
+      ((fboundp symbol)
+       (let ((fn (symbol-function symbol)))
+         (list :symbol symbol-name
+               :type (typecase fn
+                       (standard-method "method")
+                       (generic-function "generic-function")
+                       (compiled-function "compiled-function")
+                       (t "function"))
+               :lambda-list (ignore-errors (multiple-value-list (function-lambda-expression fn))))))
+      ((macro-function symbol)
+       (list :symbol symbol-name :type "macro"))
+      (t
+       (list :error t :message (format nil "~a is not a function" symbol-name))))))
 
 (defun inspect-package (package-name)
   "Inspect package contents."
@@ -89,10 +111,20 @@
       (return-from inspect-package
         (list :error t
               :message (format nil "Package ~a not found" package-name))))
-    (let ((count 0))
+    (let ((external-count 0)
+          (internal-count 0)
+          (use-packages nil)
+          (used-by nil))
       (do-external-symbols (s package)
-        (declare (ignore s))
-        (incf count))
+        (incf external-count))
+      (do-symbols (s package)
+        (when (eq (symbol-package s) package)
+          (incf internal-count)))
+      (setf use-packages (mapcar #'package-name (package-use-list package)))
+      (setf used-by (mapcar #'package-name (package-used-by-list package)))
       (list :name (package-name package)
             :nicknames (package-nicknames package)
-            :exports-count count))))
+            :exports-count external-count
+            :internal-count internal-count
+            :use-packages use-packages
+            :used-by used-by))))
