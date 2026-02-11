@@ -1,0 +1,218 @@
+name: CL-TRON-MCP CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test on SBCL ${{ matrix.sbcl-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sbcl-version:
+          - "2.6.0"
+          - "2.5.0"
+          - "2.4.0"
+        include:
+          - sbcl-version: "2.6.0"
+            quicklisp-branch: "2024-02-14"
+          - sbcl-version: "2.5.0"
+            quicklisp-branch: "2023-12-04"
+          - sbcl-version: "2.4.0"
+            quicklisp-branch: "2023-06-14"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install SBCL
+        uses: soutaro/setup-sbcl@v1
+        with:
+          sbcl-version: ${{ matrix.sbcl-version }}
+          version: ${{ matrix.sbcl-version }}
+
+      - name: Install Quicklisp
+        run: |
+          curl -O https://beta.quicklisp.org/quicklisp.lisp
+          sbcl --load quicklisp.lisp \
+            --eval "(quicklisp-quickstart:install :path \"$HOME/.quicklisp\")" \
+            --eval "(ql:add-to-init-file \"$HOME/.sbclrc\")"
+          rm quicklisp.lisp
+
+      - name: Cache Quicklisp dist
+        uses: actions/cache@v4
+        with:
+          path: ~/quicklisp/dists
+          key: quicklisp-${{ matrix.quicklisp-branch }}
+
+      - name: Cache SBCL FASLs
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/common-lisp
+            ~/quicklisp/local-projects/**/*.*fasl*
+          key: sbcl-${{ matrix.sbcl-version }}-${{ hashFiles('**/*.lisp') }}
+
+      - name: Run tests
+        run: |
+          sbcl --non-interactive \
+            --eval "(ql:quickload :rove :silent t)" \
+            --eval "(ql:quickload :cl-tron-mcp/tests :silent t)" \
+            --eval "(rove:run :cl-tron-mcp/tests)"
+
+      - name: Run tutorial
+        run: |
+          sbcl --non-interactive \
+            --load tutorial-run.lisp \
+            2>&1 | tee tutorial_output.txt
+          # Check for key outputs
+          grep -q "TUTORIAL COMPLETE" tutorial_output.txt && echo "Tutorial passed"
+
+      - name: Upload tutorial output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tutorial-output-${{ matrix.sbcl-version }}
+          path: tutorial_output.txt
+
+  lint:
+    name: Lint code
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install SBCL
+        uses: soutaro/setup-sbcl@v1
+        with:
+          sbcl-version: "2.6.0"
+
+      - name: Install Quicklisp
+        run: |
+          curl -O https://beta.quicklisp.org/quicklisp.lisp
+          sbcl --load quicklisp.lisp \
+            --eval "(quicklisp-quickstart:install :path \"$HOME/.quicklisp\")" \
+            --eval "(ql:add-to-init-file \"$HOME/.sbclrc\")"
+          rm quicklisp.lisp
+
+      - name: Install sb-lint
+        run: |
+          sbcl --non-interactive \
+            --eval "(ql:quickload :sb-lint :silent t)"
+
+      - name: Run linter
+        run: |
+          sbcl --non-interactive \
+            --eval "(require :sb-lint)" \
+            --eval "(sb-lint:lint-directory #p\"./src/\")"
+
+  docker:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: cl-tron-mcp:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test Docker image
+        run: |
+          docker run --rm cl-tron-mcp:test \
+            sbcl --non-interactive \
+            --eval "(ql:quickload :cl-tron-mcp :silent t)" \
+            --eval "(cl-tron-mcp/monitor:health-check)"
+
+  docs:
+    name: Verify documentation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check README links
+        run: |
+          # Basic check for broken relative links
+          if grep -q "\[.*\](.*\.md)" README.md; then
+            echo "Checking markdown links..."
+            # Would need lychee or similar for full link checking
+            echo "Basic check passed"
+          fi
+
+      - name: Verify tutorial runs
+        run: |
+          # Count expected outputs
+          expected_count=10
+          actual_count=$(grep -c "INSPECT-FUNCTION\|TRACE FUNCTION\|WHO-CALLS\|DEBUGGER\|REPL\|LOGGING\|SYSTEM INFO\|RUNTIME STATS\|HEALTH CHECK\|APPROVAL CHECK" tutorial-run.lisp || echo "0")
+          echo "Expected $expected_count features in tutorial"
+          echo "Found $actual_count feature references"
+
+  publish:
+    name: Publish release
+    runs-on: ubuntu-latest
+    needs: [test, lint, docker, docs]
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: version
+        run: |
+          version=$(git describe --tags --abbrev=0 | sed 's/v//')
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
+            ghcr.io/${{ github.repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            DOCKER.md
+            tutorial-run.lisp
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  cl-tron-mcp:
+    build: .
+    container_name: cl-tron-mcp
+    ports:
+      - "8080:8080"
+    environment:
+      - MCP_PORT=8080
+      - MCP_TRANSPORT=http
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Example: Python client connecting to the server
+  test-client:
+    image: python:3.11-slim
+    container_name: cl-tron-test-client
+    depends_on:
+      cl-tron-mcp:
+        condition: service_healthy
+    volumes:
+      - ./test_client.py:/test_client.py:ro
+    command: python /test_client.py
+    environment:
+      - MCP_HOST=cl-tron-mcp
+      - MCP_PORT=8080
+
+networks:
+  default:
+    name: cl-tron-network
