@@ -344,13 +344,122 @@
   :requires-approval nil)
  (register-tool-handler "whitelist_enable" (function cl-tron-mcp/security:whitelist-enable))
 
-  (register-tool
-   "whitelist_status"
-   "Get current whitelist status"
-   :input-schema nil
-   :output-schema (list :type "object")
-   :requires-approval nil)
-  (register-tool-handler "whitelist_status" (function cl-tron-mcp/security:whitelist-status))
+   (register-tool
+    "whitelist_status"
+    "Get current whitelist status"
+    :input-schema nil
+    :output-schema (list :type "object")
+    :requires-approval nil)
+   (register-tool-handler "whitelist_status" (function cl-tron-mcp/security:whitelist-status))
+
+ ;;; Swank integration tools
+ ;;; Connect CL-TRON-MCP to a running SBCL with Swank loaded
+
+   (register-tool
+    "swank_connect"
+    "Connect to a running SBCL with Swank loaded. On SBCL: (ql:quickload :swank) (swank:create-server :port 4005)"
+    :input-schema (list :host "string" :port "integer")
+    :output-schema (list :type "object")
+    :requires-approval nil)
+   (register-tool-handler "swank_connect" (function cl-tron-mcp/swank:swank-connect))
+
+   (register-tool
+    "swank_disconnect"
+    "Disconnect from the Swank server"
+    :input-schema nil
+    :output-schema (list :type "object")
+    :requires-approval nil)
+   (register-tool-handler "swank_disconnect" (function cl-tron-mcp/swank:swank-disconnect))
+
+   (register-tool
+    "swank_status"
+    "Get the current Swank connection status"
+    :input-schema nil
+    :output-schema (list :type "object")
+    :requires-approval nil)
+   (register-tool-handler "swank_status" (function cl-tron-mcp/swank:swank-status))
+
+   (register-tool
+    "swank_eval"
+    "Evaluate Lisp code via Swank. Use this to execute code in the connected SBCL."
+    :input-schema (list :code "string" :package "string")
+    :output-schema (list :type "object")
+    :requires-approval t)
+   (register-tool-handler "swank_eval" (function cl-tron-mcp/swank:mcp-swank-eval))
+
+   (register-tool
+    "swank_compile"
+    "Compile Lisp code via Swank"
+    :input-schema (list :code "string" :package "string" :filename "string")
+    :output-schema (list :type "object")
+    :requires-approval t)
+   (register-tool-handler "swank_compile" (function cl-tron-mcp/swank:mcp-swank-compile))
+
+   (register-tool
+    "swank_threads"
+    "List all threads in the Swank-connected SBCL"
+    :input-schema nil
+    :output-schema (list :type "object")
+    :requires-approval nil)
+   (register-tool-handler "swank_threads" (function cl-tron-mcp/swank:mcp-swank-threads))
+
+   (register-tool
+    "swank_abort"
+    "Abort a specific thread, or the current thread if not specified"
+    :input-schema (list :threadId "string")
+    :output-schema (list :type "object")
+    :requires-approval t)
+   (register-tool-handler "swank_abort" (function cl-tron-mcp/swank:mcp-swank-abort))
+
+   (register-tool
+    "swank_interrupt"
+    "Interrupt the current thread's execution"
+    :input-schema nil
+    :output-schema (list :type "object")
+    :requires-approval t)
+   (register-tool-handler "swank_interrupt" (function cl-tron-mcp/swank:mcp-swank-interrupt))
+
+   (register-tool
+    "swank_backtrace"
+    "Get the current backtrace"
+    :input-schema nil
+    :output-schema (list :type "object")
+    :requires-approval nil)
+   (register-tool-handler "swank_backtrace" (function cl-tron-mcp/swank:mcp-swank-backtrace))
+
+   (register-tool
+    "swank_inspect"
+    "Inspect an object via Swank. Example: \"*package*\" or \"(make-hash-table)\""
+    :input-schema (list :expression "string")
+    :output-schema (list :type "object")
+    :requires-approval nil)
+   (register-tool-handler "swank_inspect" (function cl-tron-mcp/swank:mcp-swank-inspect))
+
+   (register-tool
+    "swank_describe"
+    "Describe an object via Swank. Example: \"car\" or \"list\""
+    :input-schema (list :expression "string")
+    :output-schema (list :type "object")
+    :requires-approval nil)
+   (register-tool-handler "swank_describe" (function cl-tron-mcp/swank:mcp-swank-describe))
+
+   (register-tool
+    "swank_autodoc"
+    "Get documentation for a symbol. Example: \"mapcar\" or \"(car list)\""
+    :input-schema (list :symbol "string")
+    :output-schema (list :type "object")
+    :requires-approval nil)
+   (register-tool-handler "swank_autodoc" (function cl-tron-mcp/swank:mcp-swank-autodoc))
+
+   (register-tool
+    "swank_completions"
+    "Get symbol completions via Swank. Example: \"mak\" returns (make-array make-hash-table ...)"
+    :input-schema (list :symbol "string" :package "string")
+    :output-schema (list :type "object")
+    :requires-approval nil)
+   (register-tool-handler "swank_completions" (function cl-tron-mcp/swank:mcp-swank-completions))
+
+
 
 
 

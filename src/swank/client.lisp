@@ -1,5 +1,8 @@
 ;;;; src/swank/client.lisp - Swank client for CL-TRON-MCP
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (ql:quickload :usocket :silent t))
+
 (in-package :cl-tron-mcp/swank)
 
 ;;; This module provides Swank connection tools for CL-TRON-MCP.
@@ -17,11 +20,6 @@
 
 (defvar *swank-connected* nil
   "Connection status")
-
-;;; Quickload usocket for TCP connections
-#+quicklisp
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (ql:quickload :usocket :silent t))
 
 (defun connect-swank (&key (host "127.0.0.1") (port 4005) (timeout 10))
   "Connect to a Swank server.
@@ -61,6 +59,35 @@
   (list :connected *swank-connected*))
 
 ;;; ============================================================
+;;; MCP Wrapper Functions
+;;; ============================================================
+
+(defun swank-connect (&key (host "127.0.0.1") (port 4005))
+  "Connect to a running SBCL with Swank loaded.
+   
+   On the SBCL side, you should have:
+     (ql:quickload :swank)
+     (swank:create-server :port 4005)
+   
+   Returns: Connection status"
+  (let ((result (connect-swank :host host :port port :timeout 30)))
+    (if (getf result :error)
+        result
+        (list :success t
+              :message (format nil "Connected to Swank at ~a:~a" host port)
+              :host host
+              :port port))))
+
+(defun swank-disconnect ()
+  "Disconnect from the Swank server."
+  (disconnect-swank))
+
+(defun swank-status ()
+  "Get the current Swank connection status."
+  (list :connected *swank-connected*
+        :has-connection (not (null *swank-server*))))
+
+;;; ============================================================
 ;;; TCP Message Exchange
 ;;; ============================================================
 
@@ -82,189 +109,108 @@
       (list :error t :message (princ-to-string e)))))
 
 ;;; ============================================================
-;;; Simple Evaluation (via custom TCP protocol)
+;;; Evaluation
 ;;; ============================================================
 
-(defun swank-eval (code &key (package "CL-USER"))
-  "Evaluate Lisp code via the Swank connection.
-   
-   This sends an S-expression to the Swank server for evaluation.
-   
-   Usage:
-     (cl-tron-mcp/swank:swank-eval \"(+ 10 20)\")
-   
-   Returns: Evaluation result"
+(defun swank-eval-internal (code &key (package "CL-USER"))
+  "Evaluate Lisp code via the Swank connection."
   (unless *swank-connected*
-    (return-from swank-eval
+    (return-from swank-eval-internal
       (list :error t :message "Not connected to Swank server")))
-  
   (let ((request `(:eval ,code :package ,package)))
     (send-swank-message request)))
 
-(defun swank-compile (code &key (package "CL-USER") (filename "repl"))
+(defun mcp-swank-eval (code &key (package "CL-USER"))
+  "Evaluate Lisp code via Swank.
+   
+   Example:
+     code: \"(+ 10 20)\"
+     package: \"CL-USER\"
+   
+   Returns: Evaluation result"
+  (swank-eval-internal code :package package))
+
+(defun swank-compile-internal (code &key (package "CL-USER") (filename "repl"))
   "Compile Lisp code via the Swank connection."
   (unless *swank-connected*
-    (return-from swank-compile
+    (return-from swank-compile-internal
       (list :error t :message "Not connected to Swank server")))
-  
   (let ((request `(:compile ,code :package ,package :filename ,filename)))
     (send-swank-message request)))
+
+(defun mcp-swank-compile (code &key (package "CL-USER") (filename "repl"))
+  "Compile Lisp code via Swank."
+  (swank-compile-internal code :package package :filename filename))
 
 ;;; ============================================================
 ;;; Thread Operations
 ;;; ============================================================
 
-(defun swank-threads ()
-  "List threads via Swank."
-  (unless *swank-connected*
-    (return-from swank-threads
-      (list :error t :message "Not connected to Swank server")))
-  
+(defun mcp-swank-threads ()
+  "List all threads in the Swank-connected SBCL."
   (send-swank-message '(:list-threads)))
 
-(defun swank-abort-thread (&optional (thread-id nil))
+(defun mcp-swank-abort (&optional (thread-id nil))
   "Abort a thread."
-  (unless *swank-connected*
-    (return-from swank-abort-thread
-      (list :error t :message "Not connected to Swank server")))
-  
   (send-swank-message `(:abort-thread ,thread-id)))
 
-(defun swank-interrupt ()
+(defun mcp-swank-interrupt ()
   "Interrupt the current thread."
-  (unless *swank-connected*
-    (return-from swank-interrupt
-      (list :error t :message "Not connected to Swank server")))
-  
   (send-swank-message '(:interrupt)))
 
 ;;; ============================================================
 ;;; Debugging
 ;;; ============================================================
 
-(defun swank-backtrace (&optional (thread :repl-thread))
-  "Get backtrace."
-  (unless *swank-connected*
-    (return-from swank-backtrace
-      (list :error t :message "Not connected to Swank server")))
-  
+(defun mcp-swank-backtrace (&optional (thread :repl-thread))
+  "Get the current backtrace."
   (send-swank-message `(:backtrace ,thread)))
 
-(defun swank-frame-locals (frame &optional (thread :repl-thread))
+(defun mcp-swank-frame-locals (frame &optional (thread :repl-thread))
   "Get local variables for a frame."
-  (unless *swank-connected*
-    (return-from swank-frame-locals
-      (list :error t :message "Not connected to Swank server")))
-  
   (send-swank-message `(:frame-locals ,frame ,thread)))
 
 ;;; ============================================================
 ;;; Inspector
 ;;; ============================================================
 
-(defun swank-inspect (expression)
-  "Inspect an expression."
-  (unless *swank-connected*
-    (return-from swank-inspect
-      (list :error t :message "Not connected to Swank server")))
-  
-  (send-swank-message `(:inspect ,expression)))
+(defun mcp-swank-inspect (expression)
+  "Inspect an object via Swank.
+   
+   Example:
+     expression: \"*package*\" or \"(make-hash-table)\""
+  (let ((obj (read-from-string expression)))
+    (send-swank-message `(:inspect ,obj))))
 
-(defun swank-describe (expression)
-  "Describe an expression."
-  (unless *swank-connected*
-    (return-from swank-describe
-      (list :error t :message "Not connected to Swank server")))
-  
-  (send-swank-message `(:describe ,expression)))
+(defun mcp-swank-describe (expression)
+  "Describe an object via Swank.
+   
+   Example:
+     expression: \"car\" or \"list\""
+  (let ((obj (read-from-string expression)))
+    (send-swank-message `(:describe ,obj))))
 
 ;;; ============================================================
 ;;; Documentation
 ;;; ============================================================
 
-(defun swank-autodoc (symbol)
-  "Get documentation for a symbol."
-  (unless *swank-connected*
-    (return-from swank-autodoc
-      (list :error t :message "Not connected to Swank server")))
-  
+(defun mcp-swank-autodoc (symbol)
+  "Get documentation for a symbol.
+   
+   Example:
+     symbol: \"mapcar\" or \"(car list)\""
   (send-swank-message `(:autodoc ,symbol)))
 
-(defun swank-completions (symbol &optional (package "CL-USER"))
-  "Get symbol completions."
-  (unless *swank-connected*
-    (return-from swank-completions
-      (list :error t :message "Not connected to Swank server")))
-  
+(defun mcp-swank-completions (symbol &optional (package "CL-USER"))
+  "Get symbol completions via Swank.
+   
+   Example:
+     symbol: \"mak\" returns (make-array make-hash-table ...)"
   (send-swank-message `(:completions ,symbol ,package)))
 
 ;;; ============================================================
-;;; REPL
+;;; Help
 ;;; ============================================================
-
-(defun swank-switch-to-repl (&optional (package "CL-USER"))
-  "Switch to a REPL for a package."
-  (unless *swank-connected*
-    (return-from swank-switch-to-repl
-      (list :error t :message "Not connected to Swank server")))
-  
-  (send-swank-message `(:repl ,package)))
-
-(defun swank-clear-repl ()
-  "Clear the REPL."
-  (unless *swank-connected*
-    (return-from swank-clear-repl
-      (list :error t :message "Not connected to Swank server")))
-  
-  (send-swank-message '(:clear-repl)))
-
-;;; ============================================================
-;;; MCP Tool Wrappers
-;;; ============================================================
-
-(defun mcp-swank-eval (code &key (package "CL-USER"))
-  "Evaluate Lisp code via Swank."
-  (swank-eval code :package package))
-
-(defun mcp-swank-compile (code &key (package "CL-USER") (filename "repl"))
-  "Compile Lisp code via Swank."
-  (swank-compile code :package package :filename filename))
-
-(defun mcp-swank-threads ()
-  "List threads."
-  (swank-threads))
-
-(defun mcp-swank-abort (&optional (thread-id nil))
-  "Abort a thread."
-  (swank-abort-thread thread-id))
-
-(defun mcp-swank-interrupt ()
-  "Interrupt thread."
-  (swank-interrupt))
-
-(defun mcp-swank-backtrace ()
-  "Get backtrace."
-  (swank-backtrace))
-
-(defun mcp-swank-frame-locals (frame)
-  "Get frame locals."
-  (swank-frame-locals frame))
-
-(defun mcp-swank-inspect (expression)
-  "Inspect expression."
-  (swank-inspect expression))
-
-(defun mcp-swank-describe (expression)
-  "Describe expression."
-  (swank-describe expression))
-
-(defun mcp-swank-autodoc (symbol)
-  "Get autodoc."
-  (swank-autodoc symbol))
-
-(defun mcp-swank-completions (symbol &optional (package "CL-USER"))
-  "Get completions."
-  (swank-completions symbol package))
 
 (defun swank-help ()
   "Get help on available Swank tools."

@@ -7,38 +7,27 @@
    #:connect-swank
    #:disconnect-swank
    #:swank-connected-p
-   ;; Evaluation
-   #:swank-eval
-   #:swank-compile
-   ;; Debugging
-   #:swank-threads
-   #:swank-abort-thread
-   #:swank-interrupt
-   #:swank-backtrace
-   #:swank-frame-locals
-   ;; Inspector
-   #:swank-inspect
-   #:swank-describe
-   ;; REPL
-   #:swank-switch-to-repl
-   #:swank-clear-repl
-   ;; Autodoc
-   #:swank-autodoc
-   ;; Completion
-   #:swank-completions
-   ;; MCP Tools
+   ;; MCP Wrappers
    #:swank-connect
    #:swank-disconnect
    #:swank-status
+   ;; Evaluation
+   #:swank-eval-internal
    #:mcp-swank-eval
+   #:swank-compile-internal
    #:mcp-swank-compile
+   ;; Threads
    #:mcp-swank-threads
    #:mcp-swank-abort
    #:mcp-swank-interrupt
+   ;; Debugging
    #:mcp-swank-backtrace
    #:mcp-swank-frame-locals
+   ;; Inspector
    #:mcp-swank-inspect
    #:mcp-swank-describe
+   ;; Documentation
    #:mcp-swank-autodoc
    #:mcp-swank-completions
+   ;; Help
    #:swank-help))
