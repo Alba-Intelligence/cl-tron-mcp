@@ -7,7 +7,5 @@
    #:who-references
    #:who-binds
    #:who-sets
-   #:who-specializes
-   #:who-macroexpands
    #:list-callees
    #:list-callers))

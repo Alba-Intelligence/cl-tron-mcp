@@ -22,9 +22,9 @@ CL-TRON-MCP provides a comprehensive debugging and introspection toolkit for SBC
 
 ### Statistics
 
-- **43 tools** across 11 categories
-- Rove test suite with 8 tests
-- Full MCP protocol support (stdio, HTTP, WebSocket)
+- **43 tools** across 10 categories
+- Rove test suite with 16 tests
+- Full MCP protocol support (stdio, HTTP)
 
 ### Requirements
 
@@ -36,13 +36,15 @@ CL-TRON-MCP provides a comprehensive debugging and introspection toolkit for SBC
 
 ### Quicklisp (Recommended)
 
+It is recommended to run those from your IDE of choice, but the CLI works as well.
+
 ```lisp
 ;; Install via Quicklisp (if not already installed)
 (ql:quickload :cl-tron-mcp)
 
 ;; Verify installation
-(cl-tron-mcp:health-check)
-;; => (:STATUS :HEALTHY ...)
+(cl-tron-mcp/core:health-check)
+;; => (:STATUS :HEALTHY :TOOLS 43 ...)
 ```
 
 ### From Source
@@ -77,22 +79,39 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 
 ```lisp
 ;; Start MCP server with stdio transport
-(cl-tron-mcp:start-server :transport :stdio)
+(cl-tron-mcp/core:start-server :transport :stdio)
 ```
 
 #### HTTP Transport
 
+HTTP transport is now implemented using `usocket` (no external dependencies needed):
+
 ```lisp
 ;; Start MCP server on port 8080
-(cl-tron-mcp:start-server :transport :http :port 8080)
+(cl-tron-mcp/core:start-server :transport :http :port 8080)
+```
+
+HTTP Endpoints:
+- `GET /` - List available tools
+- `POST /rpc` - Send MCP JSON-RPC message
+- `GET /health` - Health check
+
+Example:
+```bash
+curl http://127.0.0.1:8080/health
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' \
+  http://127.0.0.1:8080/rpc
 ```
 
 #### WebSocket Transport
 
 ```lisp
 ;; Start MCP server with WebSocket on port 8081
-(cl-tron-mcp:start-server :transport :websocket :port 8081)
+(cl-tron-mcp/core:start-server :transport :websocket :port 8081)
 ```
+
+Note: WebSocket transport is a placeholder. Full implementation requires additional dependencies.
 
 ### Available Tools
 
@@ -512,6 +531,8 @@ Whitelist management tools:
 
 ## Cross-Reference Tools
 
+CL-TRON-MCP uses SBCL's built-in `sb-introspect` library for cross-referencing:
+
 **who_calls** - Find functions that call a symbol
 
 ```json
@@ -537,12 +558,30 @@ Whitelist management tools:
 **who_references** - Find references to a symbol
 **who_binds** - Find bindings of a symbol
 **who_sets** - Find setq/makunbound of a symbol
-**who_specializes** - Find methods that specialize on a symbol
-**who_macroexpands** - Find macro expansions
+
+Note: Dynamically created packages (e.g., created during compilation) may not be indexed by sb-introspect.
 
 ## Tutorial
 
-See `tutorial/` directory for step-by-step debugging tutorials:
+Run the factorial tutorial to verify all tools are working:
+
+```bash
+sbcl --load tutorial-run.lisp
+```
+
+The tutorial demonstrates 10 key features:
+1. **INSPECT-FUNCTION** - Inspect function definitions
+2. **TRACE FUNCTION** - Trace function calls
+3. **WHO-CALLS** - Find function callers
+4. **DEBUGGER FRAMES** - Access stack frames
+5. **REPL EVAL** - Evaluate Lisp code
+6. **LOGGING** - Package-level logging
+7. **SYSTEM INFO** - Runtime information
+8. **RUNTIME STATS** - Memory and thread statistics
+9. **HEALTH CHECK** - Server health verification
+10. **APPROVAL CHECK** - Security verification
+
+See `tutorial/` directory for additional debugging tutorials:
 - `tutorial/README.md` - Tutorial guide
 - `tutorial/debugging-tutorial.lisp` - Lisp code examples
 - `tutorial/tutorial.json` - JSON format scenarios
@@ -555,7 +594,9 @@ See `tutorial/` directory for step-by-step debugging tutorials:
 | "Approval timeout"            | User not responding           | Increase timeout or proceed without approval         |
 | "Transport bind failed"       | Port in use                   | Use different port or kill conflicting process       |
 | Tests failing                 | Stale FASL files              | `(asdf:compile-system :cl-tron-mcp :force t)`        |
+| "sb-introspect unavailable"  | SBCL without sb-introspect    | Most SBCL builds include it; reinstall if needed    |
 | Debugger features unavailable | SBCL compiled without :sb-dbg | Rebuild SBCL with debugging or use default fallbacks |
+| "not a function" error        | Case sensitivity in symbol    | Use uppercase: `CL:CAR` not `cl:car`                 |
 
 ## Contributing
 

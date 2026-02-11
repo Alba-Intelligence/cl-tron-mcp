@@ -12,7 +12,7 @@
   (let ((symbol (read-from-string function-name)))
     (handler-case
         (progn
-          #+sbcl (trace symbol :encapsulate nil)
+          #+sbcl (eval `(trace ,symbol))
           (pushnew symbol *traced-functions*)
           (list :success t
                 :function function-name
@@ -27,7 +27,7 @@
   (let ((symbol (read-from-string function-name)))
     (handler-case
         (progn
-          #+sbcl (untrace symbol)
+          #+sbcl (eval `(untrace ,symbol))
           (setq *traced-functions* (remove symbol *traced-functions*))
           (list :success t
                 :function function-name))
@@ -44,7 +44,7 @@
   "Remove all traces."
   (handler-case
       (progn
-        #+sbcl (untrace :all)
+        #+sbcl (eval '(untrace))
         (setq *traced-functions* nil
               *trace-entries* nil
               *trace-count* 0)

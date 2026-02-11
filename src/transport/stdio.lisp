@@ -6,8 +6,9 @@
 (defvar *transport-type* :stdio)
 (defvar *running* nil)
 
-(defun start-transport (&key (handler #'cl-tron-mcp/protocol:handle-message))
+(defun start-stdio-transport (&key (handler #'cl-tron-mcp/protocol:handle-message))
   "Start stdio transport."
+  (format t "[MCP] Starting stdio transport (MCP protocol)~%")
   (setq *running* t)
   (loop while *running*
         do (let ((line (read-line *standard-input* nil)))
@@ -18,11 +19,11 @@
                (error (e)
                  (format *error-output* "Error: ~a~%" e))))))
 
-(defun stop-transport ()
+(defun stop-stdio-transport ()
   "Stop stdio transport."
   (setq *running* nil))
 
-(defun send-message (message)
+(defun send-message-via-stdio (message)
   "Send message via stdio."
   (format *standard-output* "~a~%" (jonathan:to-json message))
   (force-output *standard-output*))

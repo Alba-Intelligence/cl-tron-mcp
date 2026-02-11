@@ -80,27 +80,31 @@
         (list :error t
               :message (format nil "Class ~a not found" class-name))))
     (list :name (class-name class)
-          :direct-superclasses (mapcar #'class-name (class-direct-superclasses class))
+          :direct-superclasses (mapcar #'class-name (closer-mop:class-direct-superclasses class))
           :direct-slots (mapcar (lambda (s)
-                                  (list :name (slot-definition-name s)))
-                                (class-direct-slots class))
-                     :precedence-list (mapcar #'class-name (class-precedence-list class)))))
+                                  (list :name (closer-mop:slot-definition-name s)))
+                                (closer-mop:class-direct-slots class))
+          :precedence-list (mapcar #'class-name (closer-mop:class-precedence-list class)))))
 
 (defun inspect-function (symbol-name)
   "Inspect function definition."
-  (let ((symbol (intern symbol-name :cl)))
+  (let* ((name (string symbol-name))
+         (package-str (if (find #\: name) (subseq name 0 (position #\: name)) "CL"))
+         (symbol-name-only (if (find #\: name) (subseq name (1+ (position #\: name))) name))
+         (package (or (find-package (string-upcase package-str)) (find-package :cl)))
+         (symbol (find-symbol (string-upcase symbol-name-only) package)))
     (cond
-      ((fboundp symbol)
+      ((and symbol (fboundp symbol))
        (let ((fn (symbol-function symbol)))
-         (list :symbol symbol-name
+         (list :symbol (format nil "~a::~a" package-str (string-upcase symbol-name-only))
                :type (typecase fn
                        (standard-method "method")
                        (generic-function "generic-function")
                        (compiled-function "compiled-function")
                        (t "function"))
                :lambda-list (ignore-errors (multiple-value-list (function-lambda-expression fn))))))
-      ((macro-function symbol)
-       (list :symbol symbol-name :type "macro"))
+      ((and symbol (macro-function symbol))
+       (list :symbol (format nil "~a::~a" package-str (string-upcase symbol-name-only)) :type "macro"))
       (t
        (list :error t :message (format nil "~a is not a function" symbol-name))))))
 

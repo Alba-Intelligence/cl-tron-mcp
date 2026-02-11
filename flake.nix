@@ -71,8 +71,21 @@
               spec-kit
             ]);
 
-          # Set up environment variables for pkg-config and C compilation
-          shellHook = "";
+          # Set up environment variables. Fix for 'missing libcrypto'.
+          shellHook = ''
+            export LD_LIBRARY_PATH="${pkgs-unstable.openssl.out}/lib:${
+              pkgs-unstable.lib.makeLibraryPath (
+                with pkgs-unstable;
+                [
+                  stdenv.cc.cc
+                  openssl
+                  libGL
+                  libuuid
+                  curlFull
+                ]
+              )
+            }:$LD_LIBRARY_PATH"
+          '';
         };
       }
     );

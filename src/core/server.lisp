@@ -34,9 +34,9 @@
     (return-from stop-server))
   (format t "[MCP] Stopping server...~%")
   (case *current-transport*
-    (:stdio (cl-tron-mcp/transport:stop-transport))
-    (:http (cl-tron-mcp/transport:stop-transport))
-    (:websocket (cl-tron-mcp/transport:stop-transport)))
+    (:stdio (cl-tron-mcp/transport:stop-stdio-transport))
+    (:http (cl-tron-mcp/transport:stop-http-transport))
+    (:websocket (cl-tron-mcp/transport:stop-websocket-transport)))
   (setq *current-transport* nil)
   (setq *server-state* :stopped)
   (format t "[MCP] Server stopped~%"))
@@ -44,17 +44,17 @@
 (defun start-stdio-transport ()
   "Start stdio transport."
   (setq *current-transport* :stdio)
-  (cl-tron-mcp/transport:start-transport))
+  (cl-tron-mcp/transport:start-stdio-transport))
 
 (defun start-http-transport (port)
   "Start HTTP transport."
   (setq *current-transport* :http)
-  (cl-tron-mcp/transport:start-transport :port port))
+  (cl-tron-mcp/transport:start-http-transport :port port))
 
 (defun start-websocket-transport (port)
   "Start WebSocket transport."
   (setq *current-transport* :websocket)
-  (cl-tron-mcp/transport:start-transport :port port))
+  (cl-tron-mcp/transport:start-websocket-transport :port port))
 
 (defun get-server-state ()
   "Get current server state."

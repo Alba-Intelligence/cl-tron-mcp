@@ -1,177 +1,94 @@
-# CL-TRON-MCP Tutorial
+# CL-TRON-MCP Tutorials
 
-This tutorial provides step-by-step instructions for using CL-TRON-MCP to debug Common Lisp applications.
+This directory contains tutorials for CL-TRON-MCP, an MCP server for SBCL Common Lisp debugging, introspection, profiling, and hot code reloading.
 
-## Tutorial Files
+## Tutorials
 
-- `debugging-tutorial.lisp` - Lisp code examples to follow along
-- `tutorial.json` - JSON format tutorial for MCP clients
+### 1. Quick Start: `tutorial.lisp`
 
-## Quick Start
+Run the basic demo:
+```lisp
+(load "tutorial/tutorial.lisp")
+```
 
-### 1. Load CL-TRON-MCP
+Shows system info, runtime stats, and available tools.
+
+### 2. Interactive Debugging: `factorial-demo.lisp`
+
+Replicates the [Common Lisp Cookbook Debugging](https://lispcookbook.github.io/cl-cookbook/debugging.html) examples with the factorial function.
 
 ```lisp
-(ql:quickload :cl-tron-mcp)
+(load "tutorial/factorial-demo.lisp")
 ```
 
-### 2. Start the MCP Server
+Demonstrates:
+- Defining and testing the factorial function
+- Using `trace` to reveal recursion
+- CL-TRON-MCP AI agent commands for tracing
+- Cross-reference analysis
+- Function inspection
+- Interactive debugger integration
+- Performance profiling
 
-```lisp
-;; Stdio transport (recommended for CLI tools)
-(cl-tron-mcp:start-server :transport :stdio)
+### 3. Full IDE Setup: `CURSOR-MCP-TUTORIAL.md`
 
-;; HTTP transport (for web-based tools)
-(cl-tron-mcp:start-server :transport :http :port 8080)
+Comprehensive guide for setting up CL-TRON-MCP with Cursor IDE.
+
+Contents:
+- Installation instructions
+- Cursor IDE MCP configuration
+- Your first AI-assisted debug session
+- Deep dive into tracing the factorial function
+- Interactive debugger integration
+- Advanced examples
+- Complete tool reference
+
+Read with any markdown viewer, or open in Cursor/VS Code.
+
+## Quick Start with AI Agent
+
+### Start the MCP Server
+
+```bash
+sbcl --non-interactive \
+  --eval '(ql:quickload :cl-tron-mcp)' \
+  --eval '(cl-tron-mcp:start-server :transport :stdio)'
 ```
 
-### 3. Run Through the Tutorial
+### Example AI Agent Session
 
-Load the tutorial code and follow along:
+```
+User: "Trace the factorial function and call (factorial 5)"
 
-```lisp
-;; Load the tutorial
-(load "tutorial/debugging-tutorial.lisp")
-
-;; Or use the JSON tutorial with your MCP client
-;; Each scenario contains multiple tool calls
+AI Agent:
+1. trace_function {"functionName": "factorial"}
+2. repl_eval {"code": "(factorial 5)"}
+3. trace_list {}
+4. trace_remove {"functionName": "factorial"}
 ```
 
-## Tutorial Scenarios
+## Tool Categories
 
-### 1. Setup and Inspect
-- Inspect function definitions
-- Explore package contents
-- Examine CLOS classes
+| Category | Count | Description |
+|----------|-------|-------------|
+| Inspector | 5 | Object, class, function introspection |
+| Debugger | 6 | Frames, restarts, breakpoints |
+| REPL | 1 | Code evaluation with approval |
+| Hot Reload | 2 | Live code modification |
+| Profiler | 3 | Performance analysis |
+| Tracer | 3 | Function tracing |
+| Thread | 3 | Thread management |
+| Monitor | 4 | Health, stats, GC, system info |
+| Logging | 5 | log4cl integration |
+| XRef | 7 | Cross-reference analysis |
+| Security | 5 | Approval workflow |
 
-### 2. Trace Function Calls
-- Start tracing a function
-- View call stack
-- Remove traces
+**Total: 43 tools**
 
-### 3. Cross-Reference Analysis
-- Find who calls a function
-- List called functions
-- Find variable references
+## Files
 
-### 4. Interactive Debugging
-- Evaluate code in REPL context
-- Inspect stack frames
-- List available restarts
-
-### 5. Logging Setup
-- Configure log levels per package
-- Add debug/info/warn/error logs
-- Control logging output
-
-### 6. Hot Code Reload
-- Compile and load code strings
-- Reload ASDF systems
-- Fix bugs without restart
-
-### 7. Performance Profiling
-- Start/stop profiling
-- Generate reports
-- Analyze performance
-
-### 8. Thread Management
-- List all threads
-- Inspect thread state
-- Get thread backtraces
-
-### 9. System Monitoring
-- Health checks
-- Runtime statistics
-- Memory and GC info
-
-### 10. Approval Whitelist
-- Add patterns to whitelist
-- Enable/disable approval
-- Automate with confidence
-
-## Example: Debugging Factorial
-
-```lisp
-;; Define a buggy function
-(defun factorial (n)
-  (if (plusp n)
-      (* n (factorial (1- n)))
-      1))
-
-;; Inspect it
-#{
-  "tool": "inspect_function",
-  "arguments": {"symbolName": "factorial"}
-}#
-
-;; Trace it
-#{
-  "tool": "trace_function",
-  "arguments": {"functionName": "factorial"}
-}#
-
-;; Call it and see trace output
-(factorial 5)  ;; => 120
-
-;; Cross-reference analysis
-#{
-  "tool": "who_calls",
-  "arguments": {"symbolName": "factorial"}
-}#
-
-;; Fix and reload
-#{
-  "tool": "code_compile_string",
-  "arguments": {
-    "code": "(defun factorial (n)
-  (cond
-    ((plusp n) (* n (factorial (1- n))))
-    ((zerop n) 1)
-    (t (error \"Negative!\"))))",
-    "filename": "factorial.lisp"
-  }
-}#
-```
-
-## Using with AI Agents
-
-CL-TRON-MCP is designed for both human developers and AI agents:
-
-### For Human Developers
-- Interactive REPL debugging
-- Visual inspection tools
-- Easy-to-use MCP interface
-
-### For AI Agents
-- Comprehensive tool suite
-- Approval whitelist for automation
-- Stateless tool calls
-
-### Automation Example
-
-```json
-{
-  "tool": "whitelist_add",
-  "arguments": {
-    "operation": "eval",
-    "pattern": "test-*"
-  }
-}
-```
-
-Then run automated tests without approval prompts.
-
-## Next Steps
-
-1. Review the [API Documentation](../docs/tools/)
-2. Check the [Cookbook Examples](https://lispcookbook.github.io/cl-cookbook/debugging.html)
-3. Explore the [AGENTS.md](../AGENTS.md) for AI agent guidelines
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| Can't connect to server | Check port 8080 or use stdio transport |
-| Approval timeout | Add pattern to whitelist |
-| Missing features | Rebuild SBCL with :sb-dbg for debugger features |
-| Tests failing | `(asdf:compile-system :cl-tron-mcp :force t)` |
+- `tutorial.lisp` - Basic demo
+- `factorial-demo.lisp` - Interactive debugging tutorial
+- `CURSOR-MCP-TUTORIAL.md` - Full IDE setup guide
+- `debugging-tutorial.lisp` - Original debugging examples
+- `tutorial.json` - MCP tool definitions for testing

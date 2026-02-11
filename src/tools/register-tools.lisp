@@ -296,22 +296,14 @@
  (register-tool-handler "who_binds" (function cl-tron-mcp/xref:who-binds))
 
  (register-tool
-  "who_sets"
-  "Find setq/makunbound of the given symbol"
-  :input-schema (list :symbolName "string")
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "who_sets" (function cl-tron-mcp/xref:who-sets))
+   "who_sets"
+   "Find setq/makunbound of the given symbol"
+   :input-schema (list :symbolName "string")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "who_sets" (function cl-tron-mcp/xref:who-sets))
 
- (register-tool
-  "who_specializes"
-  "Find methods that specialize on the given symbol"
-  :input-schema (list :symbolName "string")
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "who_specializes" (function cl-tron-mcp/xref:who-specializes))
-
- (register-tool
+  (register-tool
   "list_callees"
   "List functions called by the given symbol"
   :input-schema (list :symbolName "string")
