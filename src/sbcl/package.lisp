@@ -11,6 +11,8 @@
     #:list-threads
     #:get-thread-state
     #:thread-state
+    #:inspect-thread
+    #:thread-backtrace
     ;; Object registry
     #:get-object-id
     #:lookup-object

@@ -173,12 +173,29 @@
 (register-tool-handler "trace_list" (function cl-tron-mcp/tracer:trace-list))
 
 ;;; SBCL tools
-(register-tool
- "thread_list"
-  "List all threads with their status"
-  :input-schema nil
+ (register-tool
+  "thread_list"
+   "List all threads with their status"
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+ (register-tool-handler "thread_list" (function cl-tron-mcp/sbcl:list-threads))
+
+ (register-tool
+  "thread_inspect"
+  "Get detailed information about a thread"
+  :input-schema (list :threadId "string")
   :output-schema (list :type "object")
   :requires-approval nil)
-(register-tool-handler "thread_list" (function cl-tron-mcp/sbcl:list-threads))
+ (register-tool-handler "thread_inspect" (function cl-tron-mcp/sbcl:inspect-thread))
+
+ (register-tool
+  "thread_backtrace"
+  "Get backtrace for a specific thread"
+  :input-schema (list :threadId "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "thread_backtrace" (function cl-tron-mcp/sbcl:thread-backtrace))
+
 
 
