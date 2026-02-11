@@ -36,8 +36,6 @@ CL-TRON-MCP provides a comprehensive debugging and introspection toolkit for SBC
 
 ### Quicklisp (Recommended)
 
-It is recommended to run those from your IDE of choice, but the CLI works as well.
-
 ```lisp
 ;; Install via Quicklisp (if not already installed)
 (ql:quickload :cl-tron-mcp)
@@ -69,9 +67,119 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 - `bordeaux-threads` - Portable threading
 - `local-time` - Timestamp handling
 - `rove` - Testing framework
-- `hunchentoot` - HTTP transport (optional)
+- `jonathan` - JSON handling
+- `usocket` - Socket support for HTTP transport
+
+## MCP Client Integration
+
+CL-TRON-MCP works with any MCP-compatible client including **Opencode**, **Cursor**, **Claude Code**, and **VS Code**.
+
+### Python Client Library
+
+```python
+from cl_tron_client import CLTronClient
+
+with CLTronClient() as client:
+    # Inspect a function
+    result = client.inspect_function("CL:CAR")
+    print(result)
+    
+    # Evaluate Lisp code
+    result = client.repl_eval("(+ 10 20)")
+    print(result)  # {"result": "30"}
+```
+
+Install the client:
+```bash
+pip install cl-tron-mcp  # Coming soon
+# Or use directly:
+python cl_tron_client.py
+```
+
+### Opencode Integration
+
+1. **Start the MCP server**:
+   ```bash
+   # Stdio transport (for direct integration)
+   sbcl --non-interactive \
+     --eval '(ql:quickload :cl-tron-mcp :silent t)' \
+     --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
+   ```
+
+2. **Use with Opencode**:
+   The server communicates via JSON-RPC 2.0 over stdio:
+   - Send requests to stdin
+   - Receive responses from stdout
+
+### Cursor Integration
+
+See `tutorial/CURSOR-MCP-TUTORIAL.md` for Cursor-specific setup.
+
+### VS Code Integration
+
+Configure in `.vscode/mcp.json`:
+```json
+{
+  "servers": {
+    "cl-tron-mcp": {
+      "command": "sbcl",
+      "args": [
+        "--non-interactive",
+        "--eval", "(ql:quickload :cl-tron-mcp :silent t)",
+        "--eval", "(cl-tron-mcp/core:start-server :transport :stdio)"
+      ]
+    }
+  }
+}
+```
+
+### Claude Code CLI
+
+```bash
+# Start MCP server
+sbcl --non-interactive \
+  --eval '(ql:quickload :cl-tron-mcp :silent t)' \
+  --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
+
+# Claude Code can connect via MCP protocol
+```
 
 ## Usage
+
+### Quick Start
+
+#### Lisp REPL
+
+```lisp
+;; Load the system
+(ql:quickload :cl-tron-mcp)
+
+;; Run the tutorial
+(load "tutorial-run.lisp")
+
+;; Or start the server
+(cl-tron-mcp/core:start-server :transport :stdio)
+```
+
+#### Python Client
+
+```python
+# Demo
+python cl_tron_client.py
+
+# Or import in your code
+from cl_tron_client import CLTronClient
+
+with CLTronClient() as client:
+    # List all available tools
+    print(client.tools.keys())
+    
+    # Inspect a function
+    result = client.inspect_function("CL:CAR")
+    
+    # Evaluate Lisp
+    result = client.repl_eval("(+ 1 2 3)")
+```
 
 ### Starting the Server
 
@@ -455,6 +563,7 @@ cl-tron-mcp/
 │   ├── tracer/            # Tracing
 │   └── monitor/           # Monitoring
 ├── tests/                 # Rove test suites
+├── cl_tron_client.py      # Python MCP client
 ├── cl-tron-mcp.asd       # ASDF system definition
 └── AGENTS.md             # AI agent guidelines
 ```

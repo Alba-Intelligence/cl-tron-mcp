@@ -8,8 +8,10 @@
 ;; Define function
 (defpackage :tut (:use :cl))
 (in-package :tut)
+
 (defun factorial (n) (if (plusp n) (* n (factorial (1- n))) 1))
 (format t "[0] Defined factorial(5)=~d~%" (factorial 5))
+
 ;; Export so inspector can find it
 (export 'factorial :tut)
 
