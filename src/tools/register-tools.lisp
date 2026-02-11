@@ -153,19 +153,35 @@
  :input-schema nil
  :output-schema (list :type "object")
  :requires-approval t)
-(register-tool-handler "profile_stop" (function cl-tron-mcp/profiler:profile-stop))
+ (register-tool-handler "profile_stop" (function cl-tron-mcp/profiler:profile-stop))
 
-;;; Tracer tools
+ (register-tool
+  "profile_report"
+  "Get profiling report"
+  :input-schema (list :format (list :enum (list "flat" "graph" "cumulative")))
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "profile_report" (function cl-tron-mcp/profiler:profile-report))
+
+ ;;; Tracer tools
 (register-tool
  "trace_function"
  "Add trace to a function"
  :input-schema (list :functionName "string")
  :output-schema (list :type "object")
  :requires-approval t)
-(register-tool-handler "trace_function" (function cl-tron-mcp/tracer:trace-function))
+ (register-tool-handler "trace_function" (function cl-tron-mcp/tracer:trace-function))
 
-(register-tool
- "trace_list"
+ (register-tool
+  "trace_remove"
+  "Remove trace from a function"
+  :input-schema (list :functionName "string")
+  :output-schema (list :type "object")
+  :requires-approval t)
+ (register-tool-handler "trace_remove" (function cl-tron-mcp/tracer:trace-remove))
+
+ (register-tool
+  "trace_list"
  "List all traced functions"
  :input-schema nil
  :output-schema (list :type "object")

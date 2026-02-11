@@ -7,4 +7,5 @@
    #:trace-remove
    #:trace-list
    #:trace-clear
-   #:trace-get-entries))
+   #:trace-get-entries
+   #:trace-capture-entry))
