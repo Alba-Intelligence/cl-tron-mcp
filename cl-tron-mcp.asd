@@ -7,7 +7,7 @@
   :author "Emmanuel[emms@anoma.ai]"
   :licence "MIT"
   :serial t
-   :depends-on (:jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl)
+   :depends-on (:jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket)
    :components ((:file "src/core/package")
                 (:file "src/core/version")
                 (:file "src/core/config")
@@ -24,6 +24,8 @@
                 (:file "src/logging/core")
                 (:file "src/xref/package")
                 (:file "src/xref/core")
+                (:file "src/swank/package")
+                (:file "src/swank/client")
                 (:file "src/tools/package")
                 (:file "src/tools/registry")
                 (:file "src/tools/define-tool")

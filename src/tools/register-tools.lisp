@@ -344,13 +344,13 @@
   :requires-approval nil)
  (register-tool-handler "whitelist_enable" (function cl-tron-mcp/security:whitelist-enable))
 
- (register-tool
-  "whitelist_status"
-  "Get current whitelist status"
-  :input-schema nil
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "whitelist_status" (function cl-tron-mcp/security:whitelist-status))
+  (register-tool
+   "whitelist_status"
+   "Get current whitelist status"
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "whitelist_status" (function cl-tron-mcp/security:whitelist-status))
 
 
 
