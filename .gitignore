@@ -19,3 +19,8 @@ Thumbs.db
 
 # Project-specific
 .sbclrc
+
+flake.lock
+git_examples
+
+
