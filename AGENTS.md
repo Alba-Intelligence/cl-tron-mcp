@@ -398,9 +398,11 @@ clgrep   lisp-read   inspect   code_      compile   tests
 ### Profiler Tools
 - `profile_start` - Start deterministic profiling (requires approval)
 - `profile_stop` - Stop profiling (requires approval)
+- `profile_report` - Get profiling report
 
 ### Tracer Tools
 - `trace_function` - Add trace to a function (requires approval)
+- `trace_remove` - Remove trace from a function (requires approval)
 - `trace_list` - List all traced functions
 
 ### Thread Tools
@@ -441,4 +443,4 @@ clgrep   lisp-read   inspect   code_      compile   tests
 - **Tests**: Rove in `tests/`, mirror source structure
 - **Security**: User approval required for modifying operations
 - **Docs**: See `@prompts/` and `docs/tools/` for detailed guides
-- **Tools**: 23 tools implemented across 8 categories
+- **Tools**: 25 tools implemented across 8 categories
