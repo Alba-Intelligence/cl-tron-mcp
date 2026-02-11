@@ -10,6 +10,8 @@
    #:start-server
    #:stop-server
    #:*current-transport*
+   #:get-server-state
+   #:get-transport-type
    #:get-tool-descriptor
    #:get-tool-handler
    #:get-config

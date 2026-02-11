@@ -2,18 +2,12 @@
 
 (in-package :cl-tron-mcp/transport)
 
-#+hunchentoot
-(progn
-  (defvar *acceptor* nil)
+(defun start-transport (&key (port 8080) (handler #'cl-tron-mcp/protocol:handle-message))
+  "Start HTTP transport - requires Hunchentoot."
+  (declare (ignore port handler))
+  (format *error-output* "[MCP] HTTP transport requires Hunchentoot.~%")
+  (format *error-output* "[MCP] Add :hunchentoot to cl-tron-mcp.asd dependencies and quickload it.~%"))
 
-  (defun start-transport (&key (port 8080) (handler #'cl-tron-mcp/protocol:handle-message))
-    "Start HTTP transport."
-    (setq *acceptor* (make-instance 'hunchentoot:easy-acceptor
-                                     :port port
-                                     :document-root #P"/tmp/"))
-    (hunchentoot:start *acceptor*))
-
-  (defun stop-transport ()
-    "Stop HTTP transport."
-    (when *acceptor*
-      (hunchentoot:stop *acceptor*))))
+(defun stop-transport ()
+  "Stop HTTP transport."
+  nil)

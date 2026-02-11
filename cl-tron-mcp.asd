@@ -7,7 +7,7 @@
   :author "Emmanuel[emms@anoma.ai]"
   :licence "MIT"
   :serial t
-  :depends-on (:jonathan :alexandria :local-time :bordeaux-threads)
+  :depends-on (:jonathan :alexandria :local-time :bordeaux-threads :closer-mop)
   :components ((:file "src/core/package")
                (:file "src/core/version")
                (:file "src/core/config")
@@ -23,6 +23,7 @@
                (:file "src/tools/package")
                (:file "src/tools/registry")
                (:file "src/tools/define-tool")
+               (:file "src/tools/all")
                (:file "src/protocol/package")
                (:file "src/protocol/messages")
                (:file "src/protocol/handlers")
@@ -30,11 +31,25 @@
                (:file "src/transport/stdio")
                (:file "src/transport/http")
                (:file "src/transport/websocket")
+               (:file "src/core/server")
                (:file "src/debugger/package")
                (:file "src/debugger/frames")
                (:file "src/debugger/restarts")
                (:file "src/debugger/breakpoints")
-               (:file "src/debugger/stepping")))
+               (:file "src/debugger/stepping")
+               (:file "src/inspector/package")
+               (:file "src/inspector/core")
+               (:file "src/repl/package")
+               (:file "src/repl/core")
+               (:file "src/hot-reload/package")
+               (:file "src/hot-reload/core")
+               (:file "src/profiler/package")
+               (:file "src/profiler/core")
+               (:file "src/tracer/package")
+               (:file "src/tracer/core")
+               (:file "src/monitor/package")
+               (:file "src/monitor/core")
+               (:file "src/tools/register-tools")))
 
 (asdf:defsystem :cl-tron-mcp/tests
   :name "cl-tron-mcp Tests"
