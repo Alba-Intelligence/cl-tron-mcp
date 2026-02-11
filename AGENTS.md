@@ -413,6 +413,8 @@ clgrep   lisp-read   inspect   code_      compile   tests
 ### Monitor Tools
 - `health_check` - Basic health check for the MCP server
 - `runtime_stats` - Get runtime statistics including memory and thread info
+- `gc_run` - Force garbage collection
+- `system_info` - Get comprehensive system information
 
 ## Troubleshooting
 
@@ -443,4 +445,4 @@ clgrep   lisp-read   inspect   code_      compile   tests
 - **Tests**: Rove in `tests/`, mirror source structure
 - **Security**: User approval required for modifying operations
 - **Docs**: See `@prompts/` and `docs/tools/` for detailed guides
-- **Tools**: 25 tools implemented across 8 categories
+- **Tools**: 27 tools implemented across 8 categories
