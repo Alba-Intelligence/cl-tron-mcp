@@ -229,5 +229,136 @@
   :requires-approval nil)
  (register-tool-handler "thread_backtrace" (function cl-tron-mcp/sbcl:thread-backtrace))
 
+ ;;; Logging tools
+ (register-tool
+  "log_configure"
+  "Configure logging level for a package"
+  :input-schema (list :level (list :enum (list "trace" "debug" "info" "warn" "error" "fatal")) :package "string" :appender "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "log_configure" (function cl-tron-mcp/logging:log-configure))
+
+ (register-tool
+  "log_info"
+  "Log an info message"
+  :input-schema (list :message "string" :package "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "log_info" (function cl-tron-mcp/logging:log-info))
+
+ (register-tool
+  "log_debug"
+  "Log a debug message"
+  :input-schema (list :message "string" :package "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "log_debug" (function cl-tron-mcp/logging:log-debug))
+
+ (register-tool
+  "log_warn"
+  "Log a warning message"
+  :input-schema (list :message "string" :package "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "log_warn" (function cl-tron-mcp/logging:log-warn))
+
+ (register-tool
+  "log_error"
+  "Log an error message"
+  :input-schema (list :message "string" :package "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "log_error" (function cl-tron-mcp/logging:log-error))
+
+ ;;; Cross-reference tools
+ (register-tool
+  "who_calls"
+  "Find functions that call the given symbol"
+  :input-schema (list :symbolName "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "who_calls" (function cl-tron-mcp/xref:who-calls))
+
+ (register-tool
+  "who_references"
+  "Find references to the given symbol"
+  :input-schema (list :symbolName "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "who_references" (function cl-tron-mcp/xref:who-references))
+
+ (register-tool
+  "who_binds"
+  "Find bindings of the given symbol"
+  :input-schema (list :symbolName "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "who_binds" (function cl-tron-mcp/xref:who-binds))
+
+ (register-tool
+  "who_sets"
+  "Find setq/makunbound of the given symbol"
+  :input-schema (list :symbolName "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "who_sets" (function cl-tron-mcp/xref:who-sets))
+
+ (register-tool
+  "who_specializes"
+  "Find methods that specialize on the given symbol"
+  :input-schema (list :symbolName "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "who_specializes" (function cl-tron-mcp/xref:who-specializes))
+
+ (register-tool
+  "list_callees"
+  "List functions called by the given symbol"
+  :input-schema (list :symbolName "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "list_callees" (function cl-tron-mcp/xref:list-callees))
+
+ ;;; Approval whitelist tools
+ (register-tool
+  "whitelist_add"
+  "Add a pattern to the approval whitelist"
+  :input-schema (list :operation "string" :pattern "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "whitelist_add" (function cl-tron-mcp/security:whitelist-add))
+
+ (register-tool
+  "whitelist_remove"
+  "Remove a pattern from the approval whitelist"
+  :input-schema (list :operation "string" :pattern "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "whitelist_remove" (function cl-tron-mcp/security:whitelist-remove))
+
+ (register-tool
+  "whitelist_clear"
+  "Clear the approval whitelist"
+  :input-schema (list :operation "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "whitelist_clear" (function cl-tron-mcp/security:whitelist-clear))
+
+ (register-tool
+  "whitelist_enable"
+  "Enable or disable the approval whitelist"
+  :input-schema (list :enable "boolean")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "whitelist_enable" (function cl-tron-mcp/security:whitelist-enable))
+
+ (register-tool
+  "whitelist_status"
+  "Get current whitelist status"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "whitelist_status" (function cl-tron-mcp/security:whitelist-status))
+
 
 

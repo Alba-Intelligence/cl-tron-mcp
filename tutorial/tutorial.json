@@ -1,0 +1,260 @@
+{
+  "title": "CL-TRON-MCP Debugging Tutorial",
+  "description": "A step-by-step tutorial demonstrating CL-TRON-MCP debugging capabilities",
+  "version": "1.0.0",
+  "scenarios": [
+    {
+      "title": "Setup and Inspect a Function",
+      "description": "Learn how to inspect function definitions using CL-TRON-MCP",
+      "steps": [
+        {
+          "tool": "inspect_function",
+          "description": "Inspect the factorial function",
+          "arguments": {
+            "symbolName": "factorial"
+          }
+        },
+        {
+          "tool": "inspect_package",
+          "description": "Inspect the current package",
+          "arguments": {
+            "packageName": "CL-USER"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Trace Function Calls",
+      "description": "Track function execution using the tracer",
+      "steps": [
+        {
+          "tool": "trace_function",
+          "description": "Start tracing factorial",
+          "arguments": {
+            "functionName": "factorial"
+          }
+        },
+        {
+          "tool": "trace_list",
+          "description": "List all traced functions",
+          "arguments": {}
+        },
+        {
+          "tool": "trace_remove",
+          "description": "Remove the trace",
+          "arguments": {
+            "functionName": "factorial"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Cross-Reference Analysis",
+      "description": "Find function relationships using cross-references",
+      "steps": [
+        {
+          "tool": "who_calls",
+          "description": "Find who calls factorial",
+          "arguments": {
+            "symbolName": "factorial"
+          }
+        },
+        {
+          "tool": "list_callees",
+          "description": "Find functions called by factorial",
+          "arguments": {
+            "symbolName": "factorial"
+          }
+        },
+        {
+          "tool": "who_references",
+          "description": "Find references to a variable",
+          "arguments": {
+            "symbolName": "*my-variable*"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Interactive Debugging",
+      "description": "Use REPL for interactive debugging",
+      "steps": [
+        {
+          "tool": "repl_eval",
+          "description": "Evaluate code in CL-USER package",
+          "arguments": {
+            "code": "(defun test-fact () (format t \"Testing~%\"))",
+            "package": "CL-USER"
+          }
+        },
+        {
+          "tool": "debugger_frames",
+          "description": "Get current stack frames",
+          "arguments": {
+            "start": 0,
+            "end": 10
+          }
+        },
+        {
+          "tool": "debugger_restarts",
+          "description": "List available restarts",
+          "arguments": {}
+        }
+      ]
+    },
+    {
+      "title": "Logging Setup",
+      "description": "Configure logging for your package",
+      "steps": [
+        {
+          "tool": "log_configure",
+          "description": "Configure debug logging for a package",
+          "arguments": {
+            "level": "debug",
+            "package": "my-package"
+          }
+        },
+        {
+          "tool": "log_info",
+          "description": "Log an info message",
+          "arguments": {
+            "message": "Function started",
+            "package": "my-package"
+          }
+        },
+        {
+          "tool": "log_debug",
+          "description": "Log a debug message",
+          "arguments": {
+            "message": "Debug info here",
+            "package": "my-package"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Hot Code Reload",
+      "description": "Modify and reload code without restarting",
+      "steps": [
+        {
+          "tool": "code_compile_string",
+          "description": "Compile and load new function definition",
+          "arguments": {
+            "code": "(defun my-function (x) (* x x))",
+            "filename": "my-function.lisp"
+          }
+        },
+        {
+          "tool": "reload_system",
+          "description": "Reload an ASDF system",
+          "arguments": {
+            "systemName": "my-system",
+            "force": true
+          }
+        }
+      ]
+    },
+    {
+      "title": "Performance Profiling",
+      "description": "Profile code performance",
+      "steps": [
+        {
+          "tool": "profile_start",
+          "description": "Start deterministic profiling",
+          "arguments": {}
+        },
+        {
+          "tool": "profile_stop",
+          "description": "Stop profiling",
+          "arguments": {}
+        },
+        {
+          "tool": "profile_report",
+          "description": "Get profiling report",
+          "arguments": {
+            "format": "flat"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Thread Management",
+      "description": "Monitor and inspect threads",
+      "steps": [
+        {
+          "tool": "thread_list",
+          "description": "List all threads",
+          "arguments": {}
+        },
+        {
+          "tool": "thread_inspect",
+          "description": "Inspect a specific thread",
+          "arguments": {
+            "threadId": "main thread"
+          }
+        },
+        {
+          "tool": "thread_backtrace",
+          "description": "Get thread backtrace",
+          "arguments": {
+            "threadId": "main thread"
+          }
+        }
+      ]
+    },
+    {
+      "title": "System Monitoring",
+      "description": "Monitor system health and resources",
+      "steps": [
+        {
+          "tool": "health_check",
+          "description": "Check MCP server health",
+          "arguments": {}
+        },
+        {
+          "tool": "runtime_stats",
+          "description": "Get runtime statistics",
+          "arguments": {}
+        },
+        {
+          "tool": "system_info",
+          "description": "Get comprehensive system information",
+          "arguments": {}
+        },
+        {
+          "tool": "gc_run",
+          "description": "Force garbage collection",
+          "arguments": {
+            "generation": 0
+          }
+        }
+      ]
+    },
+    {
+      "title": "Approval Whitelist",
+      "description": "Configure approval whitelist for automation",
+      "steps": [
+        {
+          "tool": "whitelist_add",
+          "description": "Add a pattern to whitelist",
+          "arguments": {
+            "operation": "eval",
+            "pattern": "test-*"
+          }
+        },
+        {
+          "tool": "whitelist_status",
+          "description": "Check whitelist status",
+          "arguments": {}
+        },
+        {
+          "tool": "whitelist_enable",
+          "description": "Enable whitelist",
+          "arguments": {
+            "enable": true
+          }
+        }
+      ]
+    }
+  ]
+}

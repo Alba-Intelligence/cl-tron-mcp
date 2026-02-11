@@ -90,6 +90,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 #### Inspector Tools
 
 **inspect_object** - Inspect an object by ID
+
 ```json
 {
   "tool": "inspect_object",
@@ -101,6 +102,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **inspect_slot** - Get or set a slot value on an object
+
 ```json
 {
   "tool": "inspect_slot",
@@ -113,6 +115,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **inspect_class** - Inspect a CLOS class definition
+
 ```json
 {
   "tool": "inspect_class",
@@ -123,6 +126,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **inspect_function** - Inspect a function definition
+
 ```json
 {
   "tool": "inspect_function",
@@ -133,6 +137,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **inspect_package** - Inspect a package and list its contents
+
 ```json
 {
   "tool": "inspect_package",
@@ -145,6 +150,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 #### Debugger Tools
 
 **debugger_frames** - Get debugger stack frames
+
 ```json
 {
   "tool": "debugger_frames",
@@ -157,6 +163,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **debugger_restarts** - List available debugger restarts
+
 ```json
 {
   "tool": "debugger_restarts",
@@ -165,6 +172,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **breakpoint_set** - Set a breakpoint on a function
+
 ```json
 {
   "tool": "breakpoint_set",
@@ -177,6 +185,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **breakpoint_remove** - Remove a breakpoint by ID
+
 ```json
 {
   "tool": "breakpoint_remove",
@@ -187,6 +196,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **breakpoint_list** - List all active breakpoints
+
 ```json
 {
   "tool": "breakpoint_list",
@@ -195,6 +205,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **step_frame** - Step execution in a frame
+
 ```json
 {
   "tool": "step_frame",
@@ -208,6 +219,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 #### REPL Tools
 
 **repl_eval** - Evaluate Lisp code (requires approval)
+
 ```json
 {
   "tool": "repl_eval",
@@ -221,6 +233,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 #### Hot Reload Tools
 
 **code_compile_string** - Compile and load Lisp code (requires approval)
+
 ```json
 {
   "tool": "code_compile_string",
@@ -232,6 +245,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **reload_system** - Reload ASDF system (requires approval)
+
 ```json
 {
   "tool": "reload_system",
@@ -245,6 +259,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 #### Profiler Tools
 
 **profile_start** - Start deterministic profiling (requires approval)
+
 ```json
 {
   "tool": "profile_start",
@@ -253,6 +268,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **profile_stop** - Stop profiling (requires approval)
+
 ```json
 {
   "tool": "profile_stop",
@@ -261,6 +277,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **profile_report** - Get profiling report
+
 ```json
 {
   "tool": "profile_report",
@@ -273,6 +290,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 #### Tracer Tools
 
 **trace_function** - Add trace to a function (requires approval)
+
 ```json
 {
   "tool": "trace_function",
@@ -285,6 +303,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **trace_remove** - Remove trace from a function (requires approval)
+
 ```json
 {
   "tool": "trace_remove",
@@ -295,6 +314,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **trace_list** - List all traced functions
+
 ```json
 {
   "tool": "trace_list",
@@ -305,6 +325,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 #### Thread Tools
 
 **thread_list** - List all threads with their status
+
 ```json
 {
   "tool": "thread_list",
@@ -313,6 +334,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **thread_inspect** - Get detailed information about a thread
+
 ```json
 {
   "tool": "thread_inspect",
@@ -323,6 +345,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **thread_backtrace** - Get backtrace for a specific thread
+
 ```json
 {
   "tool": "thread_backtrace",
@@ -335,6 +358,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 #### Monitor Tools
 
 **health_check** - Basic health check for the MCP server
+
 ```json
 {
   "tool": "health_check",
@@ -343,6 +367,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **runtime_stats** - Get runtime statistics
+
 ```json
 {
   "tool": "runtime_stats",
@@ -351,6 +376,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **gc_run** - Force garbage collection
+
 ```json
 {
   "tool": "gc_run",
@@ -361,6 +387,7 @@ CL-TRON-MCP automatically pulls dependencies via Quicklisp:
 ```
 
 **system_info** - Get comprehensive system information
+
 ```json
 {
   "tool": "system_info",
@@ -429,19 +456,19 @@ Configure approval timeouts and behavior through the security module.
 
 ## Troubleshooting
 
-| Symptom | Cause | Solution |
-|---------|-------|----------|
-| "Symbol not found" | Package not loaded | `(ql:quickload :cl-tron-mcp)` |
-| "Approval timeout" | User not responding | Increase timeout or proceed without approval |
-| "Transport bind failed" | Port in use | Use different port or kill conflicting process |
-| Tests failing | Stale FASL files | `(asdf:compile-system :cl-tron-mcp :force t)` |
+| Symptom                       | Cause                         | Solution                                             |
+| ----------------------------- | ----------------------------- | ---------------------------------------------------- |
+| "Symbol not found"            | Package not loaded            | `(ql:quickload :cl-tron-mcp)`                        |
+| "Approval timeout"            | User not responding           | Increase timeout or proceed without approval         |
+| "Transport bind failed"       | Port in use                   | Use different port or kill conflicting process       |
+| Tests failing                 | Stale FASL files              | `(asdf:compile-system :cl-tron-mcp :force t)`        |
 | Debugger features unavailable | SBCL compiled without :sb-dbg | Rebuild SBCL with debugging or use default fallbacks |
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Implement changes following the AGENTS.md guidelines
+3. Implement changes following the `AGENTS.md` guidelines
 4. Add tests for new functionality
 5. Ensure all tests pass
 6. Submit a pull request

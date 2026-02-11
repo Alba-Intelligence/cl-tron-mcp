@@ -12,4 +12,11 @@
    #:log-operation
    #:get-audit-log
    #:*pending-approvals*
-   #:get-unix-time))
+   #:get-unix-time
+   ;; Whitelist
+   #:whitelist-add
+   #:whitelist-remove
+   #:whitelist-clear
+   #:whitelist-enable
+   #:whitelist-status
+   #:whitelist-check))
