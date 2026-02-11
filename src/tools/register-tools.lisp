@@ -56,21 +56,37 @@
 (register-tool-handler "repl_eval" (function cl-tron-mcp/repl:repl-eval))
 
 ;;; Monitor tools
-(register-tool
- "health_check"
- "Basic health check for the MCP server"
- :input-schema nil
- :output-schema (list :type "object")
- :requires-approval nil)
-(register-tool-handler "health_check" (function cl-tron-mcp/monitor:health-check))
+ (register-tool
+  "health_check"
+  "Basic health check for the MCP server"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "health_check" (function cl-tron-mcp/monitor:health-check))
 
-(register-tool
- "runtime_stats"
- "Get runtime statistics including memory and thread info"
- :input-schema nil
- :output-schema (list :type "object")
- :requires-approval nil)
-(register-tool-handler "runtime_stats" (function cl-tron-mcp/monitor:runtime-stats))
+ (register-tool
+  "runtime_stats"
+  "Get runtime statistics including memory and thread info"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "runtime_stats" (function cl-tron-mcp/monitor:runtime-stats))
+
+ (register-tool
+  "gc_run"
+  "Force garbage collection"
+  :input-schema (list :generation "integer")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "gc_run" (function cl-tron-mcp/monitor:gc-run))
+
+ (register-tool
+  "system_info"
+  "Get comprehensive system information"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "system_info" (function cl-tron-mcp/monitor:system-info))
 
 ;;; Debugger tools
 (register-tool

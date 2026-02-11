@@ -8,4 +8,5 @@
    #:runtime-stats
    #:health-check
    #:metrics-export
-   #:gc-tune))
+   #:gc-run
+   #:system-info))
