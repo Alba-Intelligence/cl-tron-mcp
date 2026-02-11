@@ -68,4 +68,5 @@
                (:file "tests/core-test")
                (:file "tests/protocol-test")
                (:file "tests/security-test")
-               (:file "tests/transport-test")))
+               (:file "tests/transport-test")
+               (:file "tests/swank-test")))

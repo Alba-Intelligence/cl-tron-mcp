@@ -7,6 +7,8 @@
    #:connect-swank
    #:disconnect-swank
    #:swank-connected-p
+   ;; Internal message passing (for testing)
+   #:send-swank-message
    ;; MCP Wrappers
    #:swank-connect
    #:swank-disconnect
