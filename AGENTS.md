@@ -5,6 +5,7 @@ This document provides guidelines for AI agents working on the SBCL Debugging MC
 ## Quick Reference
 
 **Core Development Loop:**
+
 ```
 EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
           ↑                              ↓
@@ -12,16 +13,17 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
 ```
 
 **Tool Categories:**
-| Category | Purpose | Key Tools |
-|----------|---------|-----------|
-| Inspector | Object introspection | `inspect_object`, `inspect_class`, `inspect_function` |
-| Debugger | Debugging operations | `debugger_frames`, `debugger_restarts`, `breakpoint_set` |
-| REPL | Code evaluation | `repl_eval` |
-| Hot Reload | Live code modification | `code_compile_string`, `reload_system` |
-| Profiler | Performance analysis | `profile_start`, `profile_stop` |
-| Tracer | Function tracing | `trace_function`, `trace_list` |
-| Threads | Thread management | `thread_list`, `thread_inspect`, `thread_backtrace` |
-| Monitor | Production monitoring | `health_check`, `runtime_stats` |
+
+| Category   | Purpose                | Key Tools                                                |
+| ---------- | ---------------------- | -------------------------------------------------------- |
+| Inspector  | Object introspection   | `inspect_object`, `inspect_class`, `inspect_function`    |
+| Debugger   | Debugging operations   | `debugger_frames`, `debugger_restarts`, `breakpoint_set` |
+| REPL       | Code evaluation        | `repl_eval`                                              |
+| Hot Reload | Live code modification | `code_compile_string`, `reload_system`                   |
+| Profiler   | Performance analysis   | `profile_start`, `profile_stop`                          |
+| Tracer     | Function tracing       | `trace_function`, `trace_list`                           |
+| Threads    | Thread management      | `thread_list`, `thread_inspect`, `thread_backtrace`      |
+| Monitor    | Production monitoring  | `health_check`, `runtime_stats`                          |
 
 ## Cross-References
 
@@ -62,6 +64,7 @@ cl-tron-mcp/
 ```
 
 **Module Organization:**
+
 - Each `src/` subdirectory is a separate package
 - Tests mirror source file names under `tests/` with `-test` suffix
 - New packages require explicit export lists
@@ -143,20 +146,21 @@ sbcl --non-interactive \
 Follow the Google Common Lisp Style Guide with project-specific additions:
 
 ### Formatting
+
 - 2-space indent, ≤100 columns, no tabs
 - One blank line between top-level forms
 - File header → `(in-package ...)` → file-specific `declaim`
 
 ### Naming Conventions
 
-| Pattern | Example | Usage |
-|---------|---------|-------|
-| Package | `:cl-tron-mcp/debugger` | Package names use dash-separated words |
-| Functions | `get-backtrace` | Lower-case lisp-case |
-| Predicates | `breakpoint-active-p` | End with `-p` |
-| Constants | `+max-registry-size+` | Surrounded by `+` |
-| Special variables | `*current-thread*` | Surrounded by `*` |
-| Condition types | `evaluation-timeout` | Lower-case, dash-separated |
+| Pattern           | Example                 | Usage                                  |
+| ----------------- | ----------------------- | -------------------------------------- |
+| Package           | `:cl-tron-mcp/debugger` | Package names use dash-separated words |
+| Functions         | `get-backtrace`         | Lower-case lisp-case                   |
+| Predicates        | `breakpoint-active-p`   | End with `-p`                          |
+| Constants         | `+max-registry-size+`   | Surrounded by `+`                      |
+| Special variables | `*current-thread*`      | Surrounded by `*`                      |
+| Condition types   | `evaluation-timeout`    | Lower-case, dash-separated             |
 
 ### SBCL-Specific Patterns
 
@@ -183,6 +187,7 @@ Follow the Google Common Lisp Style Guide with project-specific additions:
 ## Testing Guidelines
 
 ### Test Framework
+
 - Use **Rove** for all tests
 - Tests live in `tests/` with matching source file names
 - ASDF `test-op` wires to Rove test suites
@@ -289,6 +294,7 @@ Closes: #38
 The MCP requires user approval for operations that can modify running code:
 
 **Operations Requiring Approval:**
+
 - `:eval` - Code execution
 - `:compile-file` - Compilation
 - `:modify-running-code` - Hot swapping
@@ -298,6 +304,7 @@ The MCP requires user approval for operations that can modify running code:
 - `:modify-restarts` - Restart manipulation
 
 **Tools Requiring Approval:**
+
 - `repl_eval`
 - `code_compile_string`
 - `reload_system`
@@ -322,6 +329,7 @@ The MCP requires user approval for operations that can modify running code:
 ### Audit Logging
 
 All operations are logged with:
+
 - Timestamp
 - Operation type
 - User approval status
@@ -374,6 +382,7 @@ clgrep   lisp-read   inspect   code_      compile   tests
 ## Implemented Tools
 
 ### Inspector Tools
+
 - `inspect_object` - Inspect an object by ID
 - `inspect_slot` - Get or set a slot value on an object
 - `inspect_class` - Inspect a CLOS class definition
@@ -381,6 +390,7 @@ clgrep   lisp-read   inspect   code_      compile   tests
 - `inspect_package` - Inspect a package and list its contents
 
 ### Debugger Tools
+
 - `debugger_frames` - Get debugger stack frames
 - `debugger_restarts` - List available debugger restarts
 - `breakpoint_set` - Set a breakpoint on a function (requires approval)
@@ -389,28 +399,34 @@ clgrep   lisp-read   inspect   code_      compile   tests
 - `step_frame` - Step execution in a frame
 
 ### REPL Tools
+
 - `repl_eval` - Evaluate Lisp code in REPL context (requires approval)
 
 ### Hot Reload Tools
+
 - `code_compile_string` - Compile and load Lisp code string (requires approval)
 - `reload_system` - Reload ASDF system (requires approval)
 
 ### Profiler Tools
+
 - `profile_start` - Start deterministic profiling (requires approval)
 - `profile_stop` - Stop profiling (requires approval)
 - `profile_report` - Get profiling report
 
 ### Tracer Tools
+
 - `trace_function` - Add trace to a function (requires approval)
 - `trace_remove` - Remove trace from a function (requires approval)
 - `trace_list` - List all traced functions
 
 ### Thread Tools
+
 - `thread_list` - List all threads with their status
 - `thread_inspect` - Get detailed information about a thread
 - `thread_backtrace` - Get backtrace for a specific thread
 
 ### Monitor Tools
+
 - `health_check` - Basic health check for the MCP server
 - `runtime_stats` - Get runtime statistics including memory and thread info
 - `gc_run` - Force garbage collection
@@ -420,13 +436,13 @@ clgrep   lisp-read   inspect   code_      compile   tests
 
 ### Common Issues
 
-| Symptom | Cause | Solution |
-|---------|-------|----------|
-| "Symbol not found" | Package not loaded | `(ql:quickload :cl-tron-mcp)` |
-| "Approval timeout" | User not responding | Increase timeout or proceed without approval |
-| "Transport bind failed" | Port in use | Use different port or kill conflicting process |
-| Tests failing | Stale FASL files | `(asdf:compile-system :cl-tron-mcp :force t)` |
-| HTTP transport unavailable | Hunchentoot not loaded | Add `:hunchentoot` to dependencies |
+| Symptom                       | Cause                         | Solution                                             |
+| ----------------------------- | ----------------------------- | ---------------------------------------------------- |
+| "Symbol not found"            | Package not loaded            | `(ql:quickload :cl-tron-mcp)`                        |
+| "Approval timeout"            | User not responding           | Increase timeout or proceed without approval         |
+| "Transport bind failed"       | Port in use                   | Use different port or kill conflicting process       |
+| Tests failing                 | Stale FASL files              | `(asdf:compile-system :cl-tron-mcp :force t)`        |
+| HTTP transport unavailable    | Hunchentoot not loaded        | Add `:hunchentoot` to dependencies                   |
 | Debugger features unavailable | SBCL compiled without :sb-dbg | Rebuild SBCL with debugging or use default fallbacks |
 
 ### Getting Help
