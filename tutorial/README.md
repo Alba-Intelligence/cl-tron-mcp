@@ -80,10 +80,13 @@ AI Agent:
 | Thread | 3 | Thread management |
 | Monitor | 4 | Health, stats, GC, system info |
 | Logging | 5 | log4cl integration |
-| XRef | 7 | Cross-reference analysis |
+| XRef | 5 | Cross-reference analysis |
 | Security | 5 | Approval workflow |
+| Swank | 13 | Swank server integration |
+| nrepl | 14 | nrepl server integration |
+| Unified | 12 | Auto-detecting unified REPL interface |
 
-**Total: 43 tools**
+**Total: 81 tools**
 
 ## Files
 
@@ -92,3 +95,5 @@ AI Agent:
 - `CURSOR-MCP-TUTORIAL.md` - Full IDE setup guide
 - `debugging-tutorial.lisp` - Original debugging examples
 - `tutorial.json` - MCP tool definitions for testing
+- `swank-tutorial.lisp` - Swank integration tutorial
+- `nrepl-tutorial.lisp` - nrepl integration tutorial

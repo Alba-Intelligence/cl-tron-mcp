@@ -19,11 +19,12 @@ CL-TRON-MCP provides a comprehensive debugging and introspection toolkit for SBC
 - **Logging**: log4cl integration for package-level logging
 - **Cross-Reference**: Find function callers, callees, and symbol references
 - **Approval Whitelist**: Automate with pattern-based approval bypass
+- **Unified REPL Interface**: Single API for Swank (Slime) and nrepl (Sly, CIDER) - auto-detects protocol
 
 ### Statistics
 
-- **43 tools** across 10 categories
-- Rove test suite with 16 tests
+- **81 tools** across 14 categories
+- Rove test suite with 20 tests
 - Full MCP protocol support (stdio, HTTP)
 
 ### Requirements
@@ -42,7 +43,7 @@ CL-TRON-MCP provides a comprehensive debugging and introspection toolkit for SBC
 
 ;; Verify installation
 (cl-tron-mcp/core:health-check)
-;; => (:STATUS :HEALTHY :TOOLS 43 ...)
+;; => (:STATUS :HEALTHY :TOOLS 55 ...)
 ```
 
 ### From Source
@@ -220,6 +221,189 @@ curl -X POST -H "Content-Type: application/json" \
 ```
 
 Note: WebSocket transport is a placeholder. Full implementation requires additional dependencies.
+
+#### Swank Integration
+
+Connect CL-TRON-MCP to a running SBCL instance with Swank loaded for full IDE-like debugging:
+
+```lisp
+;; 1. Start SBCL with Swank server (in one terminal)
+(ql:quickload :swank)
+(swank:create-server :port 4005)
+;; => Swank started on port 4005
+
+;; 2. Connect CL-TRON-MCP (in another terminal)
+(ql:quickload :cl-tron-mcp)
+
+;; Connect to Swank
+(cl-tron-mcp/swank:swank-connect :port 4005)
+;; => (:SUCCESS T :HOST "127.0.0.1" :PORT 4005)
+
+;; Evaluate code via Swank
+(cl-tron-mcp/swank:swank-eval :code "(+ 10 20)" :package "CL-USER")
+;; => (:VALUE "30" ...)
+
+;; Get backtrace on error
+(cl-tron-mcp/swank:swank-backtrace)
+
+;; Inspect objects
+(cl-tron-mcp/swank:swank-inspect :expression "*package*")
+
+;; Get documentation
+(cl-tron-mcp/swank:swank-autodoc :symbol "mapcar")
+
+;; Disconnect when done
+(cl-tron-mcp/swank:swank-disconnect)
+```
+
+**Available Swank Tools (13 total):**
+
+| Tool | Description |
+|------|-------------|
+| `swank_connect` | Connect to Swank server |
+| `swank_disconnect` | Disconnect from Swank |
+| `swank_status` | Check connection status |
+| `swank_eval` | Evaluate Lisp code |
+| `swank_compile` | Compile Lisp code |
+| `swank_threads` | List all threads |
+| `swank_abort` | Abort a thread |
+| `swank_interrupt` | Interrupt evaluation |
+| `swank_backtrace` | Get backtrace |
+| `swank_inspect` | Inspect objects |
+| `swank_describe` | Describe symbols |
+| `swank_autodoc` | Get documentation |
+| `swank_completions` | Symbol completion |
+
+ This enables the same workflow as SLIME/SLY in Emacs, but via MCP for AI agents.
+
+#### nrepl Integration (Sly, CIDER)
+
+Connect CL-TRON-MCP to a running SBCL with nrepl loaded (Sly, CIDER, etc.) for full IDE-like debugging:
+
+```lisp
+;; 1. Start SBCL with nrepl (Sly example)
+(ql:quickload :sly)
+(sly:nrepl-start :port 7888)
+;; => nrepl started on port 7888
+
+;; 2. Connect CL-TRON-MCP (in another terminal)
+(ql:quickload :cl-tron-mcp)
+
+;; Connect to nrepl
+(cl-tron-mcp/nrepl:nrepl-connect :port 7888)
+;; => (:SUCCESS T :HOST "127.0.0.1" :PORT 7888 ...)
+
+;; Evaluate code via nrepl
+(cl-tron-mcp/nrepl:nrepl-eval :code "(+ 10 20)" :package "CL-USER")
+;; => (:VALUE "30" ...)
+
+;; Get backtrace on error
+(cl-tron-mcp/nrepl:nrepl-backtrace)
+
+;; Inspect objects
+(cl-tron-mcp/nrepl:nrepl-inspect :expression "*package*")
+
+;; Get documentation
+(cl-tron-mcp/nrepl:nrepl-doc :symbol "mapcar")
+
+;; Disconnect when done
+(cl-tron-mcp/nrepl:nrepl-disconnect)
+```
+
+**Available nrepl Tools (14 total):**
+
+| Tool | Description |
+|------|-------------|
+| `nrepl_connect` | Connect to nrepl server |
+| `nrepl_disconnect` | Disconnect from nrepl |
+| `nrepl_status` | Check connection status |
+| `nrepl_eval` | Evaluate Lisp code |
+| `nrepl_compile` | Compile Lisp code |
+| `nrepl_sessions` | List nrepl sessions |
+| `nrepl_close_session` | Close a session |
+| `nrepl_threads` | List all threads |
+| `nrepl_interrupt` | Interrupt evaluation |
+| `nrepl_backtrace` | Get backtrace |
+| `nrepl_inspect` | Inspect objects |
+| `nrepl_describe` | Describe symbols |
+| `nrepl_doc` | Get documentation |
+| `nrepl_completions` | Symbol completion |
+
+ This enables the same workflow as CIDER/SLY in Emacs, but via MCP for AI agents.
+
+#### Unified REPL Interface (Recommended)
+
+CL-TRON-MCP provides a **unified REPL interface** that automatically detects and works with both Swank and nrepl:
+
+```lisp
+;; Auto-detect (tries Swank first, then nrepl)
+(cl-tron-mcp/unified:repl-connect :port 4005)
+;; => (:SUCCESS T :TYPE :SWANK ...)
+
+;; Or explicitly specify
+(cl-tron-mcp/unified:repl-connect :type :nrepl :port 7888)
+
+;; Same API regardless of protocol!
+(cl-tron-mcp/unified:repl-eval :code "(+ 10 20)")
+(cl-tron-mcp/unified:repl-completions :prefix "mak")
+(cl-tron-mcp/unified:repl-threads)
+```
+
+**Benefits:**
+- No need to know which REPL you're using
+- Auto-detection tries Swank (port 4005) first, then nrepl (port 7888)
+- Same tool names work with any REPL
+- Future-proof: works with any Swank or nrepl compatible tool
+
+**Available Unified Tools (12):**
+
+| Tool | Description |
+|------|-------------|
+| `repl_connect` | Connect to any REPL (auto-detect) |
+| `repl_disconnect` | Disconnect from REPL |
+| `repl_status` | Check connection status |
+| `repl_eval` | Evaluate Lisp code |
+| `repl_compile` | Compile Lisp code |
+| `repl_threads` | List all threads |
+| `repl_abort` | Abort/interrupt evaluation |
+| `repl_backtrace` | Get backtrace |
+| `repl_inspect` | Inspect object |
+| `repl_describe` | Describe symbol |
+| `repl_completions` | Get completions |
+| `repl_doc` | Get documentation |
+
+**MCP Tool Usage:**
+
+```json
+{
+  "tool": "repl_connect",
+  "arguments": {"port": 4005}
+}
+
+{
+  "tool": "repl_eval",
+  "arguments": {"code": "(+ 1 2 3)"}
+}
+
+{
+  "tool": "repl_completions",
+  "arguments": {"prefix": "mak"}
+}
+```
+
+**Swank vs nrepl:**
+
+| Feature | Swank | nrepl |
+|---------|-------|-------|
+| Slime | ✓ Native | Via compat |
+| Portacle | ✓ Native | Via compat |
+| Sly | ✗ | ✓ Native |
+| CIDER | ✗ | ✓ Native |
+| Protocol | S-expressions | JSON |
+
+**Choose your REPL:**
+- **Slime/Portacle**: Use `swank_connect` (port 4005)
+- **Sly/CIDER**: Use `nrepl_connect` (port 7888)
 
 ### Available Tools
 
@@ -694,6 +878,7 @@ See `tutorial/` directory for additional debugging tutorials:
 - `tutorial/README.md` - Tutorial guide
 - `tutorial/debugging-tutorial.lisp` - Lisp code examples
 - `tutorial/tutorial.json` - JSON format scenarios
+- `tutorial/swank-tutorial.lisp` - Swank integration tutorial
 
 ## Troubleshooting
 

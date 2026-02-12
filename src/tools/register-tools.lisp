@@ -457,9 +457,217 @@
     :input-schema (list :symbol "string" :package "string")
     :output-schema (list :type "object")
     :requires-approval nil)
-   (register-tool-handler "swank_completions" (function cl-tron-mcp/swank:mcp-swank-completions))
+    (register-tool-handler "swank_completions" (function cl-tron-mcp/swank:mcp-swank-completions))
 
+;;; nrepl tools (Sly, CIDER compatibility)
+ (register-tool
+  "nrepl_connect"
+  "Connect to an nrepl server (Sly, CIDER)"
+  :input-schema (list :host "string" :port "integer")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "nrepl_connect" (function cl-tron-mcp/nrepl:nrepl-connect))
 
+ (register-tool
+  "nrepl_disconnect"
+  "Disconnect from nrepl server"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "nrepl_disconnect" (function cl-tron-mcp/nrepl:nrepl-disconnect))
+
+ (register-tool
+  "nrepl_status"
+  "Check nrepl connection status"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "nrepl_status" (function cl-tron-mcp/nrepl:nrepl-status))
+
+ (register-tool
+  "nrepl_eval"
+  "Evaluate Lisp code via nrepl"
+  :input-schema (list :code "string" :package "string")
+  :output-schema (list :type "object")
+  :requires-approval t)
+ (register-tool-handler "nrepl_eval" (function cl-tron-mcp/nrepl:nrepl-eval))
+
+ (register-tool
+  "nrepl_compile"
+  "Compile Lisp code via nrepl"
+  :input-schema (list :code "string" :package "string" :filename "string")
+  :output-schema (list :type "object")
+  :requires-approval t)
+ (register-tool-handler "nrepl_compile" (function cl-tron-mcp/nrepl:nrepl-compile))
+
+ (register-tool
+  "nrepl_sessions"
+  "List all nrepl sessions"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "nrepl_sessions" (function cl-tron-mcp/nrepl:nrepl-sessions))
+
+ (register-tool
+  "nrepl_close_session"
+  "Close an nrepl session"
+  :input-schema (list :session "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "nrepl_close_session" (function cl-tron-mcp/nrepl:nrepl-close-session))
+
+ (register-tool
+  "nrepl_threads"
+  "List all threads via nrepl"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "nrepl_threads" (function cl-tron-mcp/nrepl:nrepl-threads))
+
+ (register-tool
+  "nrepl_interrupt"
+  "Interrupt evaluation via nrepl"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "nrepl_interrupt" (function cl-tron-mcp/nrepl:nrepl-interrupt))
+
+ (register-tool
+  "nrepl_backtrace"
+  "Get backtrace via nrepl"
+  :input-schema (list :thread "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "nrepl_backtrace" (function cl-tron-mcp/nrepl:nrepl-backtrace))
+
+ (register-tool
+  "nrepl_inspect"
+  "Inspect an object via nrepl"
+  :input-schema (list :expression "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "nrepl_inspect" (function cl-tron-mcp/nrepl:nrepl-inspect))
+
+ (register-tool
+  "nrepl_describe"
+  "Describe a symbol via nrepl"
+  :input-schema (list :symbol "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "nrepl_describe" (function cl-tron-mcp/nrepl:nrepl-describe))
+
+ (register-tool
+  "nrepl_doc"
+  "Get documentation for a symbol via nrepl"
+  :input-schema (list :symbol "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "nrepl_doc" (function cl-tron-mcp/nrepl:nrepl-doc))
+
+ (register-tool
+  "nrepl_completions"
+  "Get symbol completions via nrepl"
+  :input-schema (list :prefix "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+  (register-tool-handler "nrepl_completions" (function cl-tron-mcp/nrepl:nrepl-completions))
+
+;;; Unified REPL tools (auto-detects Swank vs nrepl)
+ (register-tool
+  "repl_connect"
+  "Connect to any Lisp REPL (auto-detects Swank/nrepl)"
+  :input-schema (list :type "string" :host "string" :port "integer")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "repl_connect" (function cl-tron-mcp/unified:repl-connect))
+
+ (register-tool
+  "repl_disconnect"
+  "Disconnect from the current REPL"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "repl_disconnect" (function cl-tron-mcp/unified:repl-disconnect))
+
+ (register-tool
+  "repl_status"
+  "Check REPL connection status and type"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "repl_status" (function cl-tron-mcp/unified:repl-status))
+
+ (register-tool
+  "repl_eval"
+  "Evaluate Lisp code via the connected REPL"
+  :input-schema (list :code "string" :package "string")
+  :output-schema (list :type "object")
+  :requires-approval t)
+ (register-tool-handler "repl_eval" (function cl-tron-mcp/unified:repl-eval))
+
+ (register-tool
+  "repl_compile"
+  "Compile Lisp code via the connected REPL"
+  :input-schema (list :code "string" :package "string" :filename "string")
+  :output-schema (list :type "object")
+  :requires-approval t)
+ (register-tool-handler "repl_compile" (function cl-tron-mcp/unified:repl-compile))
+
+ (register-tool
+  "repl_threads"
+  "List all threads via the connected REPL"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "repl_threads" (function cl-tron-mcp/unified:repl-threads))
+
+ (register-tool
+  "repl_abort"
+  "Abort/interrupt evaluation via the connected REPL"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "repl_abort" (function cl-tron-mcp/unified:repl-abort))
+
+ (register-tool
+  "repl_backtrace"
+  "Get backtrace via the connected REPL"
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "repl_backtrace" (function cl-tron-mcp/unified:repl-backtrace))
+
+ (register-tool
+  "repl_inspect"
+  "Inspect an object via the connected REPL"
+  :input-schema (list :expression "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "repl_inspect" (function cl-tron-mcp/unified:repl-inspect))
+
+ (register-tool
+  "repl_describe"
+  "Describe a symbol via the connected REPL"
+  :input-schema (list :symbol "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "repl_describe" (function cl-tron-mcp/unified:repl-describe))
+
+ (register-tool
+  "repl_completions"
+  "Get symbol completions via the connected REPL"
+  :input-schema (list :prefix "string" :package "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "repl_completions" (function cl-tron-mcp/unified:repl-completions))
+
+ (register-tool
+  "repl_doc"
+  "Get documentation for a symbol via the connected REPL"
+  :input-schema (list :symbol "string")
+  :output-schema (list :type "object")
+  :requires-approval nil)
+ (register-tool-handler "repl_doc" (function cl-tron-mcp/unified:repl-doc))
 
 
 
