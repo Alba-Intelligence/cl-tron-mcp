@@ -4,6 +4,9 @@
       "command": [
         "sbcl",
         "--non-interactive",
+        "--noinform",
+        "--eval",
+        "(setq *compile-verbose* nil *load-verbose* nil)",
         "--eval",
         "(ql:quickload :cl-tron-mcp :silent t)",
         "--eval",

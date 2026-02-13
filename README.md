@@ -228,7 +228,7 @@ with CLTronClient() as client:
 (cl-tron-mcp/core:start-server :transport :stdio)
 ```
 
-**Stdio requirements (for MCP clients):** When the server is launched by an MCP client (Cursor, Kilocode, Opencode), stdout must contain only newline-delimited JSON-RPC messages. The server uses log4cl for all activity logging (to stderr) and does not write banners or logs to stdout. When starting SBCL via `start-mcp.sh` for stdio, the script uses `--noinform` to suppress the SBCL banner and redirects its own echo output to stderr so the client sees only JSON.
+**Stdio requirements (for MCP clients):** When the server is launched by an MCP client (Cursor, Kilocode, Opencode), stdout must contain only newline-delimited JSON-RPC messages. The server uses log4cl for all activity logging (to stderr) and does not write banners or logs to stdout. When starting SBCL via `start-mcp.sh` for stdio, the script uses `--noinform` to suppress the SBCL banner and redirects its own echo output to stderr so the client sees only JSON. Compilation and load progress are silenced (`*compile-verbose*` / `*load-verbose*` nil) so first-run build output does not appear on stdout. If the client still fails on first start, precompile once in a REPL: `(ql:quickload :cl-tron-mcp)` then restart the MCP server.
 
 #### HTTP Transport
 

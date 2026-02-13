@@ -476,6 +476,8 @@ Expected response:
 (cl-tron-mcp/core:start-server :transport :stdio)
 ```
 
+**First run with MCP clients:** `start-mcp.sh` and the direct SBCL configs (e.g. `.cursor/mcp-direct.json`, `.kilocode/run-mcp.sh`) set `*compile-verbose*` and `*load-verbose*` to nil so compilation does not pollute stdout. If a client still fails on first start, precompile once in a REPL with `(ql:quickload :cl-tron-mcp)` then restart the MCP server.
+
 ### Typical Development Session
 
 1. **Explore**: Use tools to understand current state

@@ -106,6 +106,7 @@ if [[ "$TRANSPORT" == "stdio" ]]; then
     exec \
         "$SBCL" \
         --noinform \
+        --eval "(setq *compile-verbose* nil *load-verbose* nil)" \
         --eval "(push #p\"$(pwd)/\" ql:*local-project-directories*)" \
         --eval "(asdf:compile-system :cl-tron-mcp :force t)" \
         --eval "(asdf:load-system :cl-tron-mcp)" \
