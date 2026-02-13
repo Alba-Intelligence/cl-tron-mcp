@@ -23,14 +23,14 @@
 (defun handle-request (id method params)
   "Handle JSON-RPC 2.0 request."
   (let ((*request-id* id))
-    (case method
-      ("initialize"
+    (cond
+      ((string= method "initialize")
        (handle-initialize id params))
-      ("tools/list"
+      ((string= method "tools/list")
        (handle-tools-list id))
-      ("tools/call"
+      ((string= method "tools/call")
        (handle-tool-call id params))
-      ("ping"
+      ((string= method "ping")
        (handle-ping id))
       (t
        (make-error-response id -32601 (format nil "Unknown method: ~a" method))))))
@@ -42,14 +42,19 @@
 
 (defun handle-initialize (id params)
   "Handle initialize request."
-  (jonathan:to-json (list :name "cl-tron-mcp"
-                          :version "0.1.0"
-                          :protocolVersion "2024-11-05")))
+  (jonathan:to-json (list :|jsonrpc| "2.0"
+                          :|id| 1
+                          :|result| (list :|protocolVersion| "2024-11-05"
+                                       :|capabilities| (list)
+                                       :|serverInfo| (list :|name| "cl-tron-mcp"
+                                                        :|version| "0.1.0")))))
 
 (defun handle-tools-list (id)
   "Handle tools/list request."
   (let ((tools (cl-tron-mcp/tools:list-tool-descriptors)))
-    (jonathan:to-json (list :tools tools))))
+    (jonathan:to-json (list :|jsonrpc| "2.0"
+                            :|id| id
+                            :|result| (list :|tools| tools)))))
 
 (defun handle-tool-call (id params)
   "Handle tools/call request."
@@ -57,11 +62,22 @@
         (arguments (getf params :|arguments|)))
     (handler-case
         (let ((result (cl-tron-mcp/tools:call-tool tool-name arguments)))
-          (jonathan:to-json (list :content (list :type "text"
-                                                  :text (format nil "~a" result)))))
+          (jonathan:to-json (list :|jsonrpc| "2.0"
+                                  :|id| id
+                                  :|result| (list :|content| (list :|type| "text"
+                                                           :|text| (format nil "~a" result))))))
       (error (e)
         (make-error-response id -32000 (princ-to-string e))))))
 
 (defun handle-ping (id)
   "Handle ping request."
-  (jonathan:to-json (list :pong t)))
+  (jonathan:to-json (list :|jsonrpc| "2.0"
+                          :|id| id
+                          :|result| (list :|pong| t))))
+
+(defun make-error-response (id code message)
+  "Create JSON-RPC error response."
+  (jonathan:to-json (list :|jsonrpc| "2.0"
+                          :|id| id
+                          :|error| (list :|code| code
+                                       :|message| message))))

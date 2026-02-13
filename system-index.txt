@@ -1,0 +1,4 @@
+cl-tron-mcp.asd
+git_examples/slime/swank.asd
+git_examples/cl-mcp/cl-mcp.asd
+git_examples/sly/slynk/slynk.asd

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "cl-tron-mcp": {
+      "command": [
+        "bash",
+        "-c",
+        "cd /home/emmanuel/quicklisp/local-projects/cl-tron-mcp && sbcl --non-interactive --eval '(ql:quickload :cl-tron-mcp :silent t)' --eval '(cl-tron-mcp/core:start-server :transport :stdio)'"
+      ],
+      "disabled": false,
+      "env": {}
+    }
+  }
+}

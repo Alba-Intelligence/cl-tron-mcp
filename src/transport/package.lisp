@@ -13,6 +13,7 @@
    #:http-not-found
    #:http-bad-request
    #:parse-http-request
+   #:http-server-loop
    #:start-websocket-transport
    #:stop-websocket-transport
    #:send-message-via-websocket

@@ -24,8 +24,9 @@ CL-TRON-MCP provides a comprehensive debugging and introspection toolkit for SBC
 ### Statistics
 
 - **81 tools** across 14 categories
-- Rove test suite with 20 tests
-- Full MCP protocol support (stdio, HTTP)
+- Rove test suite with 20+ tests
+- Full MCP protocol support (stdio, HTTP, WebSocket)
+- Verified working with OpenCode, Cursor, and VS Code
 
 ### Requirements
 
@@ -99,36 +100,72 @@ python cl_tron_client.py
 
 ### Opencode Integration
 
-1. **Start the MCP server**:
+1. **Configure OpenCode** (`~/.config/opencode/opencode.json`):
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "cl-tron-mcp": {
+      "type": "local",
+      "command": ["/path/to/cl-tron-mcp/start-mcp.sh"],
+      "enabled": true
+    }
+  }
+}
+```
+
+2. **Start the MCP server**:
    ```bash
-   # Stdio transport (for direct integration)
+   # Using the start script (stdio transport)
+   ./start-mcp.sh
+
+   # Or directly
    sbcl --non-interactive \
      --eval '(ql:quickload :cl-tron-mcp :silent t)' \
      --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
    ```
 
-2. **Use with Opencode**:
-   The server communicates via JSON-RPC 2.0 over stdio:
-   - Send requests to stdin
-   - Receive responses from stdout
-
 ### Cursor Integration
 
-See `tutorial/CURSOR-MCP-TUTORIAL.md` for Cursor-specific setup.
+1. Install the MCP extension for Cursor
+2. Copy `.cursor/mcp.json` to your Cursor settings or use the local workspace config:
+
+```bash
+# Copy to your Cursor settings
+cp .cursor/mcp.json ~/.cursor/mcp.json
+```
+
+Or use the direct config (`.cursor/mcp-direct.json`):
+```json
+{
+  "mcpServers": {
+    "cl-tron-mcp": {
+      "command": ["sbcl", "--non-interactive", "--eval", "(ql:quickload :cl-tron-mcp :silent t)", "--eval", "(cl-tron-mcp/core:start-server :transport :stdio)"],
+      "disabled": false,
+      "env": {}
+    }
+  }
+}
+```
 
 ### VS Code Integration
 
-Configure in `.vscode/mcp.json`:
+1. Install the MCP extension for VS Code
+2. Copy `.vscode/mcp.json` to your VS Code settings or use the local workspace config:
+
+```bash
+# Copy to your VS Code settings
+cp .vscode/mcp.json ~/.vscode/mcp.json
+```
+
+Or configure directly in `.vscode/mcp.json`:
 ```json
 {
-  "servers": {
+  "mcpServers": {
     "cl-tron-mcp": {
-      "command": "sbcl",
-      "args": [
-        "--non-interactive",
-        "--eval", "(ql:quickload :cl-tron-mcp :silent t)",
-        "--eval", "(cl-tron-mcp/core:start-server :transport :stdio)"
-      ]
+      "command": ["bash", "-c", "cd /home/emmanuel/quicklisp/local-projects/cl-tron-mcp && sbcl --non-interactive --eval '(ql:quickload :cl-tron-mcp :silent t)' --eval '(cl-tron-mcp/core:start-server :transport :stdio)'"],
+      "disabled": false,
+      "env": {}
     }
   }
 }
@@ -193,12 +230,14 @@ with CLTronClient() as client:
 
 #### HTTP Transport
 
-HTTP transport is now implemented using `usocket` (no external dependencies needed):
+HTTP transport is implemented using `usocket` (no external dependencies needed):
 
 ```lisp
 ;; Start MCP server on port 8080
 (cl-tron-mcp/core:start-server :transport :http :port 8080)
 ```
+
+**Note:** HTTP transport has some issues with thread handling. Stdio transport is recommended for production use.
 
 HTTP Endpoints:
 - `GET /` - List available tools
@@ -882,15 +921,40 @@ See `tutorial/` directory for additional debugging tutorials:
 
 ## Troubleshooting
 
-| Symptom                       | Cause                         | Solution                                             |
-| ----------------------------- | ----------------------------- | ---------------------------------------------------- |
-| "Symbol not found"            | Package not loaded            | `(ql:quickload :cl-tron-mcp)`                        |
-| "Approval timeout"            | User not responding           | Increase timeout or proceed without approval         |
-| "Transport bind failed"       | Port in use                   | Use different port or kill conflicting process       |
-| Tests failing                 | Stale FASL files              | `(asdf:compile-system :cl-tron-mcp :force t)`        |
-| "sb-introspect unavailable"  | SBCL without sb-introspect    | Most SBCL builds include it; reinstall if needed    |
+### MCP Client Issues
+
+| Symptom | Cause | Solution |
+| ------- | ----- | -------- |
+| Client shows "failed" after startup | Server using wrong JSON key case | Ensure responses use lowercase keys (`jsonrpc`, `id`, `result`) |
+| No response to requests | Thread crash or buffering | Use stdio transport; ensure `force-output` is called |
+| "Package not found" error | Quicklisp not loaded | Add `(ql:quickload :cl-tron-mcp)` before starting server |
+
+### Lisp Runtime Issues
+
+| Symptom | Cause | Solution |
+| ------- | ----- | -------- |
+| "Symbol not found" | Package not loaded | `(ql:quickload :cl-tron-mcp)` |
+| "Approval timeout" | User not responding | Increase timeout or proceed without approval |
+| "Transport bind failed" | Port in use | Use different port or kill conflicting process |
+| Tests failing | Stale FASL files | `(asdf:compile-system :cl-tron-mcp :force t)` |
+| "sb-introspect unavailable" | SBCL without sb-introspect | Most SBCL builds include it; reinstall if needed |
 | Debugger features unavailable | SBCL compiled without :sb-dbg | Rebuild SBCL with debugging or use default fallbacks |
-| "not a function" error        | Case sensitivity in symbol    | Use uppercase: `CL:CAR` not `cl:car`                 |
+| "not a function" error | Case sensitivity in symbol | Use uppercase: `CL:CAR` not `cl:car` |
+
+### Verifying Server Works
+
+Test the server manually:
+```bash
+echo '{"jsonrpc": "2.0", "method": "initialize", "params": {}, "id": 1}' | \
+  sbcl --non-interactive \
+    --eval '(ql:quickload :cl-tron-mcp :silent t)' \
+    --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
+```
+
+Expected response:
+```json
+{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05",...}}
+```
 
 ## Contributing
 

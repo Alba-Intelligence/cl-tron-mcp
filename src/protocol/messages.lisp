@@ -8,16 +8,16 @@
 
 (defun make-response (id result)
   "Create JSON-RPC 2.0 response."
-  (jonathan:to-json (list :jsonrpc "2.0" :id id :result result)))
+  (jonathan:to-json (list :|jsonrpc| "2.0" :|id| id :|result| result)))
 
 (defun make-error-response (id code message &optional data)
   "Create JSON-RPC 2.0 error response."
-  (jonathan:to-json (list :jsonrpc "2.0"
-                          :id id
-                          :error (list :code code
-                                       :message message
-                                       :data data))))
+  (jonathan:to-json (list :|jsonrpc| "2.0"
+                          :|id| id
+                          :|error| (list :|code| code
+                                       :|message| message
+                                       :|data| data))))
 
 (defun make-notification (method params)
   "Create JSON-RPC 2.0 notification."
-  (jonathan:to-json (list :jsonrpc "2.0" :method method :params params)))
+  (jonathan:to-json (list :|jsonrpc| "2.0" :|method| method :|params| params)))

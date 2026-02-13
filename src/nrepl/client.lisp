@@ -124,8 +124,8 @@
     (return-from nrepl-send
       (list :error t :message "Not connected to nrepl server")))
 
-  (let* ((msg-id (nrepl-next-id))
-         (msg (append (list :id msg-id :session *nrepl-session) args)))
+   (let* ((msg-id (nrepl-next-id))
+          (msg (append (list :id msg-id :session *nrepl-session*) args)))
     (write-nrepl-message msg)
     (read-nrepl-message)))
 

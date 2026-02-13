@@ -1,5 +1,8 @@
 ;;;; src/core/utils.lisp
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (ql:quickload :jonathan :silent t))
+
 (in-package :cl-tron-mcp/core)
 
 (defun safe-json-encode (object)

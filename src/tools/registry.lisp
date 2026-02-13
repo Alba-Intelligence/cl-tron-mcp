@@ -17,7 +17,7 @@
     (setf (gethash :inputSchema descriptor) (or input-schema (make-hash-table :test 'equal)))
     (setf (gethash :outputSchema descriptor) (or output-schema (make-hash-table :test 'equal)))
     (setf (gethash :requiresApproval descriptor) (or requires-approval nil))
-    (setf (gethash :concurrency descriptor) (or concurrency :sequential))
+    (setf (gethash :concurrency descriptor) (or concurrency "sequential"))
     (setf (gethash name *tool-registry*)
           (make-tool-entry :name name
                           :descriptor descriptor
