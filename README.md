@@ -16,7 +16,7 @@ CL-TRON-MCP provides a comprehensive debugging and introspection toolkit for SBC
 - **Tracer**: Function tracing with conditional support
 - **Thread Management**: List, inspect, and get backtraces for threads
 - **Monitor**: Health checks, memory statistics, and system information
-- **Logging**: log4cl integration for package-level logging
+- **Logging**: log4cl integration for package-level and server-activity logging (stdout kept clean for stdio MCP)
 - **Cross-Reference**: Find function callers, callees, and symbol references
 - **Approval Whitelist**: Automate with pattern-based approval bypass
 - **Unified REPL Interface**: Single API for Swank (Slime) and nrepl (Sly, CIDER) - auto-detects protocol
@@ -227,6 +227,8 @@ with CLTronClient() as client:
 ;; Start MCP server with stdio transport
 (cl-tron-mcp/core:start-server :transport :stdio)
 ```
+
+**Stdio requirements (for MCP clients):** When the server is launched by an MCP client (Cursor, Kilocode, Opencode), stdout must contain only newline-delimited JSON-RPC messages. The server uses log4cl for all activity logging (to stderr) and does not write banners or logs to stdout. When starting SBCL via `start-mcp.sh` for stdio, the script uses `--noinform` to suppress the SBCL banner and redirects its own echo output to stderr so the client sees only JSON.
 
 #### HTTP Transport
 
@@ -926,6 +928,7 @@ See `tutorial/` directory for additional debugging tutorials:
 | Symptom | Cause | Solution |
 | ------- | ----- | -------- |
 | Client shows "failed" after startup | Server using wrong JSON key case | Ensure responses use lowercase keys (`jsonrpc`, `id`, `result`) |
+| Client shows "failed" or parse error (stdio) | Non-JSON on stdout (banner, logs) | Use `start-mcp.sh` (uses `--noinform`, banner to stderr); do not write to stdout except JSON responses |
 | No response to requests | Thread crash or buffering | Use stdio transport; ensure `force-output` is called |
 | "Package not found" error | Quicklisp not loaded | Add `(ql:quickload :cl-tron-mcp)` before starting server |
 
@@ -943,13 +946,14 @@ See `tutorial/` directory for additional debugging tutorials:
 
 ### Verifying Server Works
 
-Test the server manually:
+Test the server manually (use `--noinform` so stdout contains only JSON when piped):
 ```bash
 echo '{"jsonrpc": "2.0", "method": "initialize", "params": {}, "id": 1}' | \
-  sbcl --non-interactive \
+  sbcl --non-interactive --noinform \
     --eval '(ql:quickload :cl-tron-mcp :silent t)' \
     --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
 ```
+Or use the script: `echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | ./start-mcp.sh`
 
 Expected response:
 ```json

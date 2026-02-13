@@ -1,4 +1,7 @@
 ;;;; src/core/server.lisp
+;;;; MCP server entry. CRITICAL for stdio: all [MCP] activity is logged via log4cl;
+;;;; for :stdio we call ensure-log-to-stream(*error-output*) so log4cl writes to
+;;;; stderr and stdout stays clean for JSON-RPC only.
 
 (in-package :cl-tron-mcp/core)
 
@@ -9,12 +12,15 @@
 (defun start-server (&key (transport :stdio) (port 8080))
   "Start the MCP server with the specified transport.
    TRANSPORT can be :stdio, :http, or :websocket.
-   PORT is used for HTTP/WebSocket transports."
+   PORT is used for HTTP/WebSocket transports.
+   For :stdio, log4cl is configured to stderr so stdout contains only JSON-RPC."
   (when (eq *server-state* :running)
-    (format t "[MCP] Server is already running~%")
+    (cl-tron-mcp/logging:log-warn "[MCP] Server is already running")
     (return-from start-server))
   (setq *server-state* :running)
-  (format t "[MCP] Starting server with ~a transport~%" transport)
+  (when (eq transport :stdio)
+    (cl-tron-mcp/logging:ensure-log-to-stream *error-output*))
+  (cl-tron-mcp/logging:log-info (format nil "[MCP] Starting server with ~a transport" transport))
   (case transport
     (:stdio
      (start-stdio-transport))
@@ -23,23 +29,23 @@
     (:websocket
      (start-websocket-transport port))
     (t
-     (format *error-output* "[MCP] Unknown transport: ~a~%" transport)
+     (cl-tron-mcp/logging:log-error (format nil "[MCP] Unknown transport: ~a" transport))
      (setq *server-state* :stopped)))
   *server-state*)
 
 (defun stop-server ()
   "Stop the MCP server."
   (when (eq *server-state* :stopped)
-    (format t "[MCP] Server is not running~%")
+    (cl-tron-mcp/logging:log-warn "[MCP] Server is not running")
     (return-from stop-server))
-  (format t "[MCP] Stopping server...~%")
+  (cl-tron-mcp/logging:log-info "[MCP] Stopping server...")
   (case *current-transport*
     (:stdio (cl-tron-mcp/transport:stop-stdio-transport))
     (:http (cl-tron-mcp/transport:stop-http-transport))
     (:websocket (cl-tron-mcp/transport:stop-websocket-transport)))
   (setq *current-transport* nil)
   (setq *server-state* :stopped)
-  (format t "[MCP] Server stopped~%"))
+  (cl-tron-mcp/logging:log-info "[MCP] Server stopped"))
 
 (defun start-stdio-transport ()
   "Start stdio transport."

@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# start-mcp.sh - Start CL-TRON-MCP server for OpenCode
+# start-mcp.sh - Start CL-TRON-MCP server for MCP clients (OpenCode, Cursor, Kilocode)
+#
+# CRITICAL for stdio: stdout must contain only newline-delimited JSON-RPC.
+# - All pre-exec echo output is sent to stderr (>&2) so the client sees no banner.
+# - For stdio we run SBCL with --noinform so the SBCL banner is not on stdout.
 #
 # Usage:
-#   ./start-mcp.sh              # Start with stdio (default, for OpenCode)
+#   ./start-mcp.sh              # Start with stdio (default, for MCP clients)
 #   ./start-mcp.sh --http      # Start with HTTP transport
 #   ./start-mcp.sh --port 8080 # Custom port for HTTP
-#
-# For OpenCode MCP integration, use stdio transport (default).
 #
 # Example OpenCode config (~/.config/opencode/opencode.json):
 # {
@@ -78,37 +80,39 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-echo "Starting CL-TRON-MCP..."
-echo "  SBCL: $SBCL"
-echo "  Transport: $TRANSPORT"
+echo "Starting CL-TRON-MCP..." >&2
+echo "  SBCL: $SBCL" >&2
+echo "  Transport: $TRANSPORT" >&2
 if [[ "$TRANSPORT" != "stdio" ]]; then
-    echo "  Port: $PORT"
+    echo "  Port: $PORT" >&2
 fi
-echo ""
-echo "Available tools: 80"
-echo "  - Unified REPL (auto-detects Swank/nrepl)"
-echo "  - Inspector, Debugger, Profiler, Tracer"
-echo "  - Thread management, Monitoring"
-echo "  - Logging, Cross-reference, Security"
-echo ""
+echo "" >&2
+echo "Available tools: 80" >&2
+echo "  - Unified REPL (auto-detects Swank/nrepl)" >&2
+echo "  - Inspector, Debugger, Profiler, Tracer" >&2
+echo "  - Thread management, Monitoring" >&2
+echo "  - Logging, Cross-reference, Security" >&2
+echo "" >&2
 
 # Build and execute the command
-echo ""
-echo "-------------------------------------------------------------------------"
-echo "--"
+echo "" >&2
+echo "-------------------------------------------------------------------------" >&2
+echo "--" >&2
 if [[ "$TRANSPORT" == "stdio" ]]; then
-    echo "-- Starting the stdio MCP"
-    echo "--"
-    # exec "$SBCL" --eval "(ql:quickload :cl-tron-mcp)" --eval "(cl-tron-mcp/core:start-server :transport :stdio)"
+    echo "-- Starting the stdio MCP" >&2
+    echo "--" >&2
+    # --noinform: suppress SBCL banner so stdout = JSON-RPC only for MCP clients
+    # exec "$SBCL" --noinform --eval "(ql:quickload :cl-tron-mcp)" --eval "(cl-tron-mcp/core:start-server :transport :stdio)"
     exec \
         "$SBCL" \
+        --noinform \
         --eval "(push #p\"$(pwd)/\" ql:*local-project-directories*)" \
         --eval "(asdf:compile-system :cl-tron-mcp :force t)" \
         --eval "(asdf:load-system :cl-tron-mcp)" \
         --eval "(cl-tron-mcp/core:start-server :transport :stdio)"
 elif [[ "$TRANSPORT" == "http" ]]; then
-    echo "-- Starting the HTTP server on port $PORT"
-    echo "--"
+    echo "-- Starting the HTTP server on port $PORT" >&2
+    echo "--" >&2
     # exec "$SBCL" --eval "(ql:quickload :cl-tron-mcp)" --eval "(cl-tron-mcp/core:start-server :transport :http :port $PORT)"
     exec \
         "$SBCL" \
@@ -117,8 +121,8 @@ elif [[ "$TRANSPORT" == "http" ]]; then
         --eval "(asdf:load-system :cl-tron-mcp)" \
         --eval "(cl-tron-mcp/core:start-server :transport :http :port $PORT)"
 elif [[ "$TRANSPORT" == "websocket" ]]; then
-    echo "-- Starting Websocket server on port $PORT"
-    echo "--"
+    echo "-- Starting Websocket server on port $PORT" >&2
+    echo "--" >&2
     # exec "$SBCL" --eval "(ql:quickload :cl-tron-mcp)" --eval "(cl-tron-mcp/core:start-server :transport :websocket :port $PORT)"
     exec \
         "$SBCL" \

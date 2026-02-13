@@ -41,6 +41,30 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
 @agents/performance-engineer.md
 @agents/hot-reload-specialist.md
 
+## CRITICAL: Stdio Transport and Logging
+
+When the server is launched by MCP clients (Cursor, Kilocode, Opencode) over stdio, the following rules are **mandatory** or clients will fail to parse the stream.
+
+### Stdout purity (stdio transport)
+
+- **MCP over stdio expects stdout to contain only newline-delimited JSON-RPC messages.** The client reads line-by-line and parses each line as JSON. Any other output on stdout breaks the protocol.
+- **Do not write to stdout** except the single JSON response line per request in `send-message-via-stdio`. No banners, no `[MCP]` messages, no notifications, no SBCL startup text on stdout.
+- **All server activity must be logged via log4cl** (see below), not `format t` or `*standard-output*`. For stdio transport, log4cl is configured to write to stderr via `ensure-log-to-stream(*error-output*)`.
+
+### Logging: use log4cl, not *error-output*
+
+- **MCP activity (server start/stop, transport start, notifications, errors) must be logged through the `cl-tron-mcp/logging` API** (`log-info`, `log-warn`, `log-error`), not by writing directly to `*error-output*`. This keeps behaviour consistent and allows log4cl to route output (e.g. to stderr for stdio).
+- When starting with `:stdio` transport, the server calls `ensure-log-to-stream(*error-output*)` so log4cl writes to stderr and stdout stays clean.
+
+### SBCL startup (stdio)
+
+- When launching SBCL for stdio transport (e.g. in `start-mcp.sh`), use **`--noinform`** so the SBCL banner is not printed to stdout. Otherwise the first line the client sees is not JSON and the handshake fails.
+- In `start-mcp.sh`, the stdio branch uses `--noinform` and all pre-exec `echo` output is redirected to stderr (`>&2`) so no script banner appears on stdout.
+
+### Reports
+
+- **Result and diagnostic reports** (e.g. from diagnostic runs, test result summaries) must be stored in **`reports/`**, not in `tmp/`. See Project Structure.
+
 ## Project Structure & Module Organization
 
 ```
@@ -66,6 +90,7 @@ cl-tron-mcp/
 │   └── tools/                   # Tool registration
 │
 ├── tests/                       # Rove test suites
+├── reports/                     # Result and diagnostic reports (not tmp/)
 ├── prompts/                     # Workflow-specific prompts
 ├── agents/                      # Specialized agent personas
 ├── docs/
@@ -83,6 +108,7 @@ cl-tron-mcp/
 - Tests mirror source file names under `tests/` with `-test` suffix
 - New packages require explicit export lists
 - Documentation files correspond to source modules
+- **Reports:** Result and diagnostic reports (e.g. from diagnostic runs, test result summaries) must be stored in `reports/`, not in `tmp/`; `tmp/` is for ephemeral files only
 
 ## Build, Test, and Development Commands
 
@@ -128,11 +154,11 @@ cl-tron-mcp/
 ;; Start MCP server (stdio transport - primary for AI agents)
 (cl-tron-mcp/core:start-server :transport :stdio)
 
-;; Start MCP server (HTTP transport on port 8080)
-(cl-tron-mcp/core:start-server :transport :http :port 8080)
+;; Start MCP server (HTTP transport on port 12345)
+(cl-tron-mcp/core:start-server :transport :http :port 12345)
 
 ;; Start MCP server (WebSocket transport)
-(cl-tron-mcp/core:start-server :transport :websocket :port 8081)
+(cl-tron-mcp/core:start-server :transport :websocket :port 23456)
 
 ;; Stop the server
 (cl-tron-mcp/core:stop-server)
@@ -144,11 +170,12 @@ cl-tron-mcp/
 ### Testing with MCP Client
 
 ```bash
-# Test with stdio transport (primary method)
+# Test with stdio transport (primary method). Use --noinform so stdout = JSON only.
 echo '{"jsonrpc": "2.0", "method": "initialize", "params": {}, "id": 1}' | \
-  sbcl --non-interactive \
+  sbcl --non-interactive --noinform \
     --eval '(ql:quickload :cl-tron-mcp :silent t)' \
     --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
+# Or: echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | ./start-mcp.sh
 
 # Quick verification
 sbcl --non-interactive \
@@ -422,10 +449,11 @@ Configure in `~/.config/opencode/opencode.json`:
 
 ```bash
 echo '{"jsonrpc": "2.0", "method": "initialize", "params": {}, "id": 1}' | \
-  sbcl --non-interactive \
+  sbcl --non-interactive --noinform \
     --eval '(ql:quickload :cl-tron-mcp :silent t)' \
     --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
 ```
+Or: `echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | ./start-mcp.sh`
 
 Expected response:
 ```json
@@ -616,7 +644,7 @@ clgrep   lisp-read   inspect   code_      compile   tests
 5. Test server manually to verify it works:
    ```bash
    echo '{"jsonrpc": "2.0", "method": "initialize", "params": {}, "id": 1}' | \
-     sbcl --non-interactive \
+     sbcl --non-interactive --noinform \
        --eval '(ql:quickload :cl-tron-mcp :silent t)' \
        --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
    ```

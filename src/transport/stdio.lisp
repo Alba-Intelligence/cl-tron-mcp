@@ -1,4 +1,7 @@
 ;;;; src/transport/stdio.lisp
+;;;; Stdio transport for MCP. CRITICAL: stdout must contain only newline-delimited
+;;;; JSON-RPC messages; all other output (logs, errors) goes via log4cl (configured
+;;;; to stderr for stdio by ensure-log-to-stream in server.lisp).
 
 (in-package :cl-tron-mcp/transport)
 
@@ -8,9 +11,8 @@
 
 (defun start-stdio-transport (&key (handler #'cl-tron-mcp/protocol:handle-message)
                                 (output #'cl-tron-mcp/transport::send-message-via-stdio))
-  "Start stdio transport."
-  (format t "[MCP] Starting stdio transport (MCP protocol)~%")
-  (force-output)
+  "Start stdio transport. Activity is logged via log4cl (stderr); only JSON responses go to stdout."
+  (cl-tron-mcp/logging:log-info "[MCP] Starting stdio transport (MCP protocol)")
   (setq *running* t)
   (loop while *running*
         do (let ((line (read-line *standard-input* nil)))
@@ -21,14 +23,13 @@
                    (when response
                      (funcall output response)))
                (error (e)
-                 (format *error-output* "Error: ~a~%" e)
-                 (force-output *error-output*))))))
+                 (cl-tron-mcp/logging:log-error (format nil "Error: ~a" e)))))))
 
 (defun stop-stdio-transport ()
   "Stop stdio transport."
   (setq *running* nil))
 
 (defun send-message-via-stdio (message)
-  "Send message via stdio."
+  "Send a single JSON-RPC message to stdout. CRITICAL: This is the only place that must write to stdout for stdio transport."
   (format *standard-output* "~a~%" (jonathan:to-json message))
   (force-output *standard-output*))

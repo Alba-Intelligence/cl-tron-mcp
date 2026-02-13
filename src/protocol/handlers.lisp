@@ -36,8 +36,8 @@
        (make-error-response id -32601 (format nil "Unknown method: ~a" method))))))
 
 (defun handle-notification (method params)
-  "Handle JSON-RPC 2.0 notification."
-  (format t "Notification: ~a ~a~%" method params)
+  "Handle JSON-RPC 2.0 notification. Logged via log4cl (not stdout) so stdio transport stays clean."
+  (cl-tron-mcp/logging:log-info (format nil "Notification: ~a ~a" method params))
   nil)
 
 (defun handle-initialize (id params)

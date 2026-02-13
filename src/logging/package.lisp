@@ -9,4 +9,5 @@
    #:log-debug
    #:log-warn
    #:log-error
-   #:get-log-config))
+   #:get-log-config
+   #:ensure-log-to-stream))

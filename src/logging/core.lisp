@@ -84,3 +84,17 @@
 (defun get-log-config ()
   "Get current logging configuration."
   *log-config*)
+
+(defun ensure-log-to-stream (stream)
+  "Configure log4cl so root logger output goes to STREAM (e.g. *error-output*).
+   CRITICAL for MCP stdio: call this before any logging when using stdio transport
+   so that stdout contains only newline-delimited JSON-RPC messages and all server
+   activity (startup, notifications, errors) goes to stderr via log4cl."
+  (handler-case
+      (progn
+        #+quicklisp (ql:quickload :log4cl :silent t)
+        (log4cl:clear-logging-configuration)
+        (log:config :stream stream :info)
+        (values))
+    (error (e)
+      (warn "Could not configure log4cl to stream: ~a" e))))
