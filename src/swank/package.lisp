@@ -22,11 +22,12 @@
    #:swank-eval-in-frame
    #:swank-get-restarts
    #:swank-invoke-restart
-   ;; Stepping
-   #:swank-step
-   #:swank-next
-   #:swank-out
-   #:swank-continue
+    ;; Stepping
+    #:swank-step
+    #:swank-next
+    #:swank-out
+    #:swank-continue
+    #:swank-debugger-state
    ;; Breakpoints
    #:swank-set-breakpoint
    #:mcp-swank-set-breakpoint

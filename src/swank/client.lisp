@@ -77,6 +77,12 @@ the Swank server can resolve."
 (defvar *event-processor-running* nil)
 (defvar *event-processor-thread* nil)
 
+;;; Debugger state - tracks which thread is in the debugger
+(defvar *debugger-thread* nil
+  "Thread ID that is currently in the debugger, or NIL.")
+(defvar *debugger-level* 0
+  "Current debugger level (0 = not in debugger).")
+
 ;;; ============================================================
 ;;; Connection Management
 ;;; ============================================================
@@ -246,6 +252,9 @@ Returns the parsed S-expression."
          ;; extra is usually just (level) or similar
          (destructuring-bind (thread level condition restarts frames &optional extra) args
            (declare (ignore extra))
+           ;; Track debugger state
+           (setf *debugger-thread* thread
+                 *debugger-level* level)
            (enqueue-debugger-event condition restarts frames)))
         (:write-string
          (destructuring-bind (string &optional target thread-id) args
@@ -257,14 +266,17 @@ Returns the parsed S-expression."
            ))
         (:debug-activate
          (destructuring-bind (thread-id level selections) args
-           (declare (ignore thread-id level selections))
-           ;; Debugger activated
-           ))
+           (declare (ignore selections))
+           ;; Debugger activated for this thread
+           (setf *debugger-thread* thread-id
+                 *debugger-level* level)))
         (:debug-return
          (destructuring-bind (thread-id level stepping-p) args
-           (declare (ignore thread-id level stepping-p))
+           (declare (ignore thread-id stepping-p))
            ;; Debugger exited
-           ))
+           (when (<= level 0)
+             (setf *debugger-thread* nil
+                   *debugger-level* 0))))
         (:new-package
          (destructuring-bind (name prompt-string) args
            (log-info (format nil "Swank package changed to ~a" name))))
@@ -425,33 +437,47 @@ Uses swank:compile-string-for-emacs with simple arguments."
     (send-request form :package package :thread t)))
 
 (defun swank-invoke-restart (&key (restart-index 1))
-  "Invoke the Nth restart (1-based index)."
-  (let ((form `(,(swank-sym "INVOKE-NTH-RESTART") ,restart-index)))
-    (send-request form :package "CL-USER" :thread t)))
+  "Invoke the Nth restart (1-based index).
+When in debugger, uses the debugger thread and level."
+  (let ((thread (or *debugger-thread* t))
+        (level *debugger-level*))
+    (let ((form `(,(swank-sym "INVOKE-NTH-RESTART-FOR-EMACS") ,level ,restart-index)))
+      (send-request form :package "CL-USER" :thread thread))))
 
 (defun swank-get-restarts (&optional (frame-index 0))
-  "Get available restarts for FRAME-INDEX (default 0 = current/top frame)."
-  (let ((form `(,(swank-sym "COMPUTE-RESTARTS-FOR-EMACS") ,frame-index)))
-    (send-request form :package "CL-USER" :thread t)))
+  "Get available restarts for FRAME-INDEX (default 0 = current/top frame).
+When in debugger, uses the debugger thread."
+  (let ((thread (or *debugger-thread* t)))
+    (let ((form `(,(swank-sym "SLDB-RESTARTS") ,frame-index)))
+      (send-request form :package "CL-USER" :thread thread))))
 
 (defun swank-step (&key (frame-index 0))
-  "Step into next expression."
-  (let ((form `(,(swank-sym "SLDB-STEP-INTO") ,frame-index)))
-    (send-request form :package "CL-USER" :thread t)))
+  "Step into next expression. Uses debugger thread if in debugger."
+  (let ((thread (or *debugger-thread* t)))
+    (let ((form `(,(swank-sym "SLDB-STEP-INTO") ,frame-index)))
+      (send-request form :package "CL-USER" :thread thread))))
 
 (defun swank-next (&key (frame-index 0))
-  "Step over next expression."
-  (let ((form `(,(swank-sym "SLDB-STEP-NEXT") ,frame-index)))
-    (send-request form :package "CL-USER" :thread t)))
+  "Step over next expression. Uses debugger thread if in debugger."
+  (let ((thread (or *debugger-thread* t)))
+    (let ((form `(,(swank-sym "SLDB-STEP-NEXT") ,frame-index)))
+      (send-request form :package "CL-USER" :thread thread))))
 
 (defun swank-out (&key (frame-index 0))
-  "Step out of current frame."
-  (let ((form `(,(swank-sym "SLDB-STEP-OUT") ,frame-index)))
-    (send-request form :package "CL-USER" :thread t)))
+  "Step out of current frame. Uses debugger thread if in debugger."
+  (let ((thread (or *debugger-thread* t)))
+    (let ((form `(,(swank-sym "SLDB-STEP-OUT") ,frame-index)))
+      (send-request form :package "CL-USER" :thread thread))))
 
 (defun swank-continue ()
-  "Continue execution from debugger."
-  (send-request `(,(swank-sym "SLDB-CONTINUE")) :package "CL-USER" :thread t))
+  "Continue execution from debugger. Uses debugger thread if in debugger."
+  (let ((thread (or *debugger-thread* t)))
+    (send-request `(,(swank-sym "SLDB-CONTINUE")) :package "CL-USER" :thread thread)))
+
+(defun swank-debugger-state ()
+  "Get current debugger state.
+Returns (values thread-id level in-debugger-p)."
+  (values *debugger-thread* *debugger-level* (not (null *debugger-thread*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Breakpoint RPCs
