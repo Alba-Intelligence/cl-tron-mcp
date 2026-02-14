@@ -6,6 +6,9 @@
    #:handle-message
    #:handle-request
    #:handle-notification
+   #:handle-initialize
+   #:handle-tools-list
+   #:handle-tool-call
    #:*message-handler*
    #:*request-id*
    #:make-response

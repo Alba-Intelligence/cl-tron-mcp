@@ -57,28 +57,28 @@
   (list :type "standard-object"
         :description (format nil "~a" object)))
 
-(defun inspect-slot (object-id slot-name &optional value)
+(defun inspect-slot (&key object_id slot_name value)
   "Get or set slot value."
-  (let ((object (cl-tron-mcp/sbcl:lookup-object object-id)))
+  (let ((object (cl-tron-mcp/sbcl:lookup-object object_id)))
     (unless object
       (return-from inspect-slot
         (list :error t
-              :message (format nil "Object ~a not found" object-id))))
-    (let ((slot-symbol (intern (string-upcase slot-name) :keyword)))
+              :message (format nil "Object ~a not found" object_id))))
+    (let ((slot-symbol (intern (string-upcase slot_name) :keyword)))
       (when value
         (setf (slot-value object slot-symbol) value))
-      (list :slot slot-name
+      (list :slot slot_name
             :value (format nil "~a"
                           (ignore-errors
                             (slot-value object slot-symbol)))))))
 
-(defun inspect-class (class-name)
+(defun inspect-class (&key class_name)
   "Inspect class definition using CLOS MOP."
-  (let ((class (find-class (intern (string-upcase class-name) :cl) nil)))
+  (let ((class (find-class (intern (string-upcase class_name) :cl) nil)))
     (unless class
       (return-from inspect-class
         (list :error t
-              :message (format nil "Class ~a not found" class-name))))
+              :message (format nil "Class ~a not found" class_name))))
     (list :name (class-name class)
           :direct-superclasses (mapcar #'class-name (closer-mop:class-direct-superclasses class))
           :direct-slots (mapcar (lambda (s)
@@ -86,9 +86,9 @@
                                 (closer-mop:class-direct-slots class))
           :precedence-list (mapcar #'class-name (closer-mop:class-precedence-list class)))))
 
-(defun inspect-function (symbol-name)
+(defun inspect-function (&key symbol_name)
   "Inspect function definition."
-  (let* ((name (string symbol-name))
+  (let* ((name (string symbol_name))
          (package-str (if (find #\: name) (subseq name 0 (position #\: name)) "CL"))
          (symbol-name-only (if (find #\: name) (subseq name (1+ (position #\: name))) name))
          (package (or (find-package (string-upcase package-str)) (find-package :cl)))
@@ -108,13 +108,13 @@
       (t
        (list :error t :message (format nil "~a is not a function" symbol-name))))))
 
-(defun inspect-package (package-name)
+(defun inspect-package (&key package_name)
   "Inspect package contents."
-  (let ((package (find-package (string-upcase package-name))))
+  (let ((package (find-package (string-upcase package_name))))
     (unless package
       (return-from inspect-package
         (list :error t
-              :message (format nil "Package ~a not found" package-name))))
+              :message (format nil "Package ~a not found" package_name))))
     (let ((external-count 0)
           (internal-count 0)
           (use-packages nil)
