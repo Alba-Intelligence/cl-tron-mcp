@@ -578,48 +578,47 @@ EXPRESSION should be a string that evaluates to an object."
   "MCP tool handler: List all threads in Swank-connected SBCL."
   (swank-threads))
 
-(defun mcp-swank-abort (&optional (thread-id :repl-thread))
+(defun mcp-swank-abort (&key (thread-id :repl-thread))
   "MCP tool handler: Abort a thread."
-  (swank-abort-thread thread-id))
+  (swank-abort-thread :thread-id thread-id))
 
 (defun mcp-swank-interrupt ()
   "MCP tool handler: Interrupt current evaluation."
   (swank-interrupt))
 
-(defun mcp-swank-backtrace (&optional (thread :repl-thread))
+(defun mcp-swank-backtrace (&key (start 0) (end 20))
   "MCP tool handler: Get current backtrace."
-  (declare (ignore thread))
-  (swank-backtrace))
+  (swank-backtrace :start start :end end))
 
-(defun mcp-swank-frame-locals (frame &optional (thread :repl-thread))
+(defun mcp-swank-frame-locals (&key frame (thread :repl-thread))
   "MCP tool handler: Get local variables for a frame."
-  (swank-frame-locals frame thread))
+  (swank-frame-locals :frame-index frame :thread thread))
 
-(defun mcp-swank-inspect (expression)
+(defun mcp-swank-inspect (&key expression)
   "MCP tool handler: Inspect an object via Swank."
-  (swank-inspect-object expression))
+  (swank-inspect-object :expression expression))
 
-(defun mcp-swank-describe (expression)
+(defun mcp-swank-describe (&key expression)
   "MCP tool handler: Describe an object via Swank."
-  (swank-describe expression))
+  (swank-describe :symbol expression))
 
-(defun mcp-swank-autodoc (symbol)
+(defun mcp-swank-autodoc (&key symbol)
   "MCP tool handler: Get documentation for a symbol."
-  (swank-autodoc symbol))
+  (swank-autodoc :symbol symbol))
 
-(defun mcp-swank-completions (symbol &optional (package "CL-USER"))
+(defun mcp-swank-completions (&key prefix (package "CL-USER"))
   "MCP tool handler: Get symbol completions via Swank."
-  (swank-completions symbol package))
+  (swank-completions :prefix prefix :package package))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Breakpoint MCP Tool Handlers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun mcp-swank-set-breakpoint (function &key condition hit-count thread)
+(defun mcp-swank-set-breakpoint (&key function condition hit-count thread)
   "MCP tool handler: Set a breakpoint via Swank."
   (swank-set-breakpoint :function function :condition condition :hit-count hit-count :thread thread))
 
-(defun mcp-swank-remove-breakpoint (breakpoint-id)
+(defun mcp-swank-remove-breakpoint (&key breakpoint-id)
   "MCP tool handler: Remove a breakpoint via Swank."
   (swank-remove-breakpoint :breakpoint-id breakpoint-id))
 
@@ -627,7 +626,7 @@ EXPRESSION should be a string that evaluates to an object."
   "MCP tool handler: List all breakpoints via Swank."
   (swank-list-breakpoints))
 
-(defun mcp-swank-toggle-breakpoint (breakpoint-id)
+(defun mcp-swank-toggle-breakpoint (&key breakpoint-id)
   "MCP tool handler: Toggle breakpoint enabled state via Swank."
   (swank-toggle-breakpoint :breakpoint-id breakpoint-id))
 
