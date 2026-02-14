@@ -221,40 +221,56 @@ List all active breakpoints.
 ### 1. Trigger the Debugger
 
 ```json
-{"name": "repl_eval", "arguments": {"code": "(/ 1 0)"}}
+{"name": "repl_eval", "arguments": {"code": "(error \"test error\")"}}
 ```
 
-This triggers a division-by-zero error and enters the debugger.
-
-### 2. Get the Backtrace
+**Response includes debug state (not a timeout):**
 
 ```json
-{"name": "repl_backtrace"}
+{
+  "result": {
+    "debug": true,
+    "thread": 12345,
+    "level": 1,
+    "condition": "test error [Condition of type SIMPLE-ERROR]",
+    "restarts": [
+      ["RETRY", "Retry SLIME evaluation request."],
+      ["*ABORT", "Return to SLIME's top level."],
+      ["ABORT", "abort thread (#<THREAD ...>)"]
+    ],
+    "frames": [
+      [0, "(SB-INT:SIMPLE-EVAL-IN-LEXENV (ERROR \"test error\") ...)"],
+      [1, "(EVAL (ERROR \"test error\"))"]
+    ]
+  }
+}
 ```
 
-### 3. Inspect Frame Locals
+**Key insight:** When `:debug` event arrives from Swank, the pending request is fulfilled with debug state instead of waiting for a `:return` message (which would never come while in debugger).
+
+### 2. Get Available Restarts
 
 ```json
-{"name": "repl_frame_locals", "arguments": {"frame": 0}}
+{"name": "repl_get_restarts", "arguments": {}}
 ```
 
-### 4. Get Available Restarts
+Returns cached restarts from the debug event.
+
+### 3. Invoke a Restart
 
 ```json
-{"name": "repl_get_restarts"}
+{"name": "repl_invoke_restart", "arguments": {"restart_index": 3}}
 ```
 
-### 5. Invoke a Restart
+Invokes restart #3 (ABORT in this example), which exits the debugger.
+
+### 4. Verify Normal Operation
 
 ```json
-{"name": "repl_invoke_restart", "arguments": {"restartIndex": 0}}
+{"name": "repl_eval", "arguments": {"code": "(+ 1 2)"}}
 ```
 
-### 6. Continue Execution
-
-```json
-{"name": "repl_continue"}
-```
+Returns `{"result": {"ok": [3]}}` - debugger has been exited.
 
 ## Error Handling
 

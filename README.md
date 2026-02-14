@@ -316,7 +316,7 @@ From Lisp (e.g. in another REPL) you can also connect the MCP server to Swank ma
 (cl-tron-mcp/swank:swank-disconnect)
 ```
 
-**Available Swank Tools (13 total):**
+**Available Swank Tools (21 total):**
 
 | Tool | Description |
 |------|-------------|
@@ -333,8 +333,39 @@ From Lisp (e.g. in another REPL) you can also connect the MCP server to Swank ma
 | `swank_describe` | Describe symbols |
 | `swank_autodoc` | Get documentation |
 | `swank_completions` | Symbol completion |
+| `swank_get_restarts` | Get available restarts (when in debugger) |
+| `swank_invoke_restart` | Invoke a restart by index |
+| `swank_continue` | Continue from debugger |
+| `swank_step` | Step into next expression |
+| `swank_next` | Step over next expression |
+| `swank_out` | Step out of current frame |
+| `swank_debugger_state` | Get current debugger state |
 
- This enables the same workflow as SLIME/SLY in Emacs, but via MCP for AI agents.
+**Debugger Workflow:**
+
+When code triggers an error, `swank_eval` returns a debug state with condition, restarts, and frames:
+
+```lisp
+;; Trigger an error
+(swank-eval :code "(error \"test\")")
+;; => (:DEBUG T :THREAD 123 :LEVEL 1 :CONDITION "test [Condition...]" 
+;;     :RESTARTS ((RETRY ...) (*ABORT ...) (ABORT ...))
+;;     :FRAMES ((0 ...) (1 ...) ...))
+
+;; Get available restarts
+(swank-get-restarts)
+;; => (:RESTARTS ((RETRY ...) (*ABORT ...) (ABORT ...)) :THREAD 123 :LEVEL 1)
+
+;; Invoke a restart (3 = ABORT in this example)
+(swank-invoke-restart :restart_index 3)
+;; => (:RESULT (OK NIL))
+
+;; Now normal evaluation works
+(swank-eval :code "(+ 1 2)")
+;; => (:RESULT (OK (3)))
+```
+
+This enables the same workflow as SLIME/SLY in Emacs, but via MCP for AI agents.
 
 #### nrepl Integration (Sly, CIDER)
 

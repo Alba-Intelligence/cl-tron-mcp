@@ -141,22 +141,56 @@ Or using the unified interface:
 
 ### Example Debugging Session
 
+When code triggers an error, `swank_eval` (or `repl_eval`) returns a debug state instead of timing out:
+
 ```json
 // 1. Evaluate code that triggers debugger
-{"name": "repl_eval", "arguments": {"code": "(/ 1 0)"}}
+{"name": "repl_eval", "arguments": {"code": "(error \"test error\")"}}
 
-// 2. Get backtrace
-{"name": "repl_backtrace"}
+// Response includes debug state:
+{
+  "result": {
+    "debug": true,
+    "thread": 12345,
+    "level": 1,
+    "condition": "test error [Condition of type SIMPLE-ERROR]",
+    "restarts": [
+      ["RETRY", "Retry SLIME evaluation request."],
+      ["*ABORT", "Return to SLIME's top level."],
+      ["ABORT", "abort thread (#<THREAD ...>)"]
+    ],
+    "frames": [
+      [0, "(SB-INT:SIMPLE-EVAL-IN-LEXENV (ERROR \"test error\") ...)"],
+      [1, "(EVAL (ERROR \"test error\"))"],
+      ...
+    ]
+  }
+}
 
-// 3. Get available restarts
-{"name": "repl_get_restarts"}
+// 2. Get available restarts (uses cached debug state)
+{"name": "repl_get_restarts", "arguments": {}}
 
-// 4. Invoke a restart
-{"name": "repl_invoke_restart", "arguments": {"restartIndex": 1}}
+// 3. Invoke a restart (3 = ABORT to exit debugger)
+{"name": "repl_invoke_restart", "arguments": {"restart_index": 3}}
 
-// 5. Continue execution
-{"name": "repl_continue"}
+// 4. Now normal evaluation works
+{"name": "repl_eval", "arguments": {"code": "(+ 1 2)"}}
+// => {"result": {"ok": [3]}}
 ```
+
+### Key Implementation Details
+
+**Debugger Event Matching:**
+- When `:debug` event arrives, the pending request is fulfilled with debug state
+- This prevents the 30-second timeout that would otherwise occur
+- Debug events are matched to requests via `*current-request-id*`
+
+**Restart Functions:**
+- `swank-get-restarts` returns cached restarts from the most recent debug event
+- `swank-invoke-restart` uses `*debugger-thread*` and `*debugger-level*` to target the correct thread
+
+**Backtrace:**
+- Uses `sb-debug:list-backtrace` since `swank:backtrace` requires debugger context
 
 ## RPC Operations Reference
 
@@ -164,23 +198,27 @@ Or using the unified interface:
 
 | Function | Swank RPC | Description |
 |----------|-----------|-------------|
-| `swank-eval` | `swank:eval` | Evaluate code in package |
+| `swank-eval` | `swank:eval-and-grab-output` | Evaluate code string, capture output |
 | `swank-compile` | `swank:compile-string-for-emacs` | Compile code string |
+
+**Note:** We use `swank:eval-and-grab-output` with a string argument because the Swank IO package only imports `nil`, `t`, and `quote`. Raw forms cannot be serialized correctly.
 
 ### Debugging
 
 | Function | Swank RPC | Description |
 |----------|-----------|-------------|
-| `swank-backtrace` | `swank:backtrace` | Get stack frames |
+| `swank-backtrace` | `sb-debug:list-backtrace` | Get stack frames (works outside debugger) |
 | `swank-frame-locals` | `swank:frame-locals-and-catch-tags` | Get frame locals |
 | `swank-eval-in-frame` | `swank:eval-string-in-frame` | Eval in frame context |
 
+**Note:** `swank:backtrace` requires `*sldb-stack-top*` which is only bound in debugger context. We use `sb-debug:list-backtrace` as a fallback.
+
 ### Restarts
 
-| Function | Swank RPC | Description |
-|----------|-----------|-------------|
-| `swank-get-restarts` | `swank:compute-restarts-for-emacs` | List restarts |
-| `swank-invoke-restart` | `swank:invoke-nth-restart` | Invoke restart by index |
+| Function | Implementation | Description |
+|----------|----------------|-------------|
+| `swank-get-restarts` | Cached from `:debug` event | List restarts from current debugger state |
+| `swank-invoke-restart` | `swank:invoke-nth-restart-for-emacs` | Invoke restart by 1-based index |
 
 ### Stepping
 

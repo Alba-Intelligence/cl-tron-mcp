@@ -1,4 +1,34 @@
 ;;;; src/swank/client.lisp - Proper Swank client for CL-TRON-MCP
+;;;;
+;;;; This file implements a complete Swank protocol client that enables
+;;;; the MCP server to interact with a running SBCL+Swank session exactly
+;;;; like Slime does. The client supports evaluation, debugging, inspection,
+;;;; and all standard Swank operations.
+;;;;
+;;;; ARCHITECTURE:
+;;;; =============
+;;;; 1. Connection Layer - Socket connection to Swank server (port 4005 default)
+;;;; 2. Protocol Layer - Length-prefixed UTF-8 messages (see protocol.lisp)
+;;;; 3. Request/Response - Synchronous RPC with ID correlation
+;;;; 4. Event Queue - Async messages (:debug, :write-string) handled separately
+;;;; 5. Debugger Integration - Tracks debugger state for restarts/stepping
+;;;;
+;;;; KEY CONCEPTS:
+;;;; =============
+;;;; - SWANK symbols are created in a placeholder package for serialization
+;;;; - The actual Swank server resolves these symbols at runtime
+;;;; - Debug events are matched to pending requests by *current-request-id*
+;;;; - Debugger state (thread, level) is tracked in *debugger-thread* and *debugger-level*
+;;;;
+;;;; USAGE:
+;;;; ======
+;;;;   (swank-connect :port 4005)           ; Connect to Swank server
+;;;;   (swank-eval :code "(+ 1 2)")         ; Evaluate code
+;;;;   (swank-backtrace)                     ; Get backtrace
+;;;;   (swank-get-restarts)                  ; Get restarts (when in debugger)
+;;;;   (swank-invoke-restart :restart_index 1) ; Invoke restart
+;;;;
+;;;; See also: docs/swank-integration.md
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (ql:quickload :usocket :silent t)
@@ -23,6 +53,10 @@
 ;;; serialized in protocol messages. We create a placeholder SWANK
 ;;; package for this purpose - the actual symbol resolution happens
 ;;; on the server side where SWANK is properly loaded.
+;;;
+;;; This is a critical design decision: the MCP process does NOT need
+;;; Swank loaded locally - it only needs to serialize symbols that the
+;;; remote Swank server will resolve.
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (find-package :swank)
@@ -31,6 +65,10 @@
 ;;; ============================================================
 ;;; Package-local Swank protocol package
 ;;; ============================================================
+;;;
+;;; The swank-io-package is used for reading Swank responses. It only
+;;; imports NIL, T, and QUOTE, ensuring that arbitrary symbols in
+;;; responses don't intern unexpected symbols in common packages.
 
 (defvar *swank-io-package* (find-package :swank-io-package))
 (unless *swank-io-package*
@@ -42,13 +80,19 @@
   "Create a symbol in the SWANK package for protocol messages.
 This works because we created a placeholder SWANK package above.
 The symbol will print as swank:NAME in protocol messages, which
-the Swank server can resolve."
+the Swank server can resolve at runtime.
+
+Example: (swank-sym \"EVAL-AND-GRAB-OUTPUT\") => SWANK:EVAL-AND-GRAB-OUTPUT"
   (declare (type string name))
   (intern (string-upcase name) :swank))
 
 ;;; ============================================================
 ;;; Connection State
 ;;; ============================================================
+;;;
+;;; These variables track the connection state and are used by all
+;;; Swank operations. They are modified only by swank-connect and
+;;; swank-disconnect.
 
 (defvar *swank-socket* nil
   "Socket connection to Swank server.")
@@ -57,33 +101,47 @@ the Swank server can resolve."
   "Bidirectional I/O stream for Swank communication.")
 
 (defvar *swank-connected* nil
-  "Connection flag.")
+  "Connection flag - T when connected to a Swank server.")
 
 (defvar *swank-reader-thread* nil
   "Background thread that reads incoming Swank messages.")
 
 (defvar *swank-running* nil
-  "Control flag for reader thread.")
+  "Control flag for reader thread - set to NIL to stop.")
 
 ;;; Request tracking (for synchronous RPC calls)
-(defvar *pending-requests* (make-hash-table :test 'eql))
-(defvar *request-lock* (bordeaux-threads:make-lock "swank-requests"))
+(defvar *pending-requests* (make-hash-table :test 'eql)
+  "Hash table mapping request IDs to swank-request structures.")
+(defvar *request-lock* (bordeaux-threads:make-lock "swank-requests")
+  "Lock for synchronizing access to *pending-requests*.")
 (defvar *current-request-id* nil
-  "ID of the most recent request sent (used to match :debug events).")
-(defvar *next-request-id* 1)
+  "ID of the most recent request sent (used to match :debug events to requests).")
+(defvar *next-request-id* 1
+  "Counter for generating unique request IDs.")
 
 ;;; Event queue for asynchronous messages (:debug, :write-string, etc.)
-(defvar *event-queue* (make-array 100 :adjustable t :fill-pointer 0))
-(defvar *event-mutex* (bordeaux-threads:make-lock "swank-events"))
-(defvar *event-condition* (bordeaux-threads:make-condition-variable))
-(defvar *event-processor-running* nil)
-(defvar *event-processor-thread* nil)
+(defvar *event-queue* (make-array 100 :adjustable t :fill-pointer 0)
+  "Queue of async events received from Swank (:debug, :write-string, etc.).")
+(defvar *event-mutex* (bordeaux-threads:make-lock "swank-events")
+  "Lock for synchronizing access to *event-queue*.")
+(defvar *event-condition* (bordeaux-threads:make-condition-variable)
+  "Condition variable for waiting on events.")
+(defvar *event-processor-running* nil
+  "Flag indicating if the event processor thread is running.")
+(defvar *event-processor-thread* nil
+  "Thread that processes async events.")
 
 ;;; Debugger state - tracks which thread is in the debugger
+;;;
+;;; When Swank sends a :debug event, we track the thread and level
+;;; so that subsequent debugger operations (restarts, stepping) can
+;;; target the correct thread.
 (defvar *debugger-thread* nil
-  "Thread ID that is currently in the debugger, or NIL.")
+  "Thread ID that is currently in the debugger, or NIL if not in debugger.
+Set by :debug event, cleared by :debug-return event.")
 (defvar *debugger-level* 0
-  "Current debugger level (0 = not in debugger).")
+  "Current debugger level (0 = not in debugger, 1+ = nested debugger levels).
+Swank supports nested debuggers; each level has its own restarts/frames.")
 
 ;;; ============================================================
 ;;; Connection Management
