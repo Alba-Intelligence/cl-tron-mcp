@@ -108,14 +108,16 @@
 ;;; Unified Evaluation
 ;;; ============================================================
 
-(defun repl-eval (code &key (package "CL-USER"))
+(defun repl-eval (&key code (package "CL-USER"))
   "Evaluate Lisp code via the connected REPL.
 
    Example:
-     (repl-eval \"(+ 10 20)\")
-     (repl-eval \"(defun hello () 'world)\" :package \"MY-PACKAGE\")
+     (repl-eval :code \"(+ 10 20)\")
+     (repl-eval :code \"(defun hello () 'world)\" :package \"MY-PACKAGE\")
 
    Returns: Evaluation result"
+  (unless code
+    (return-from repl-eval (list :error t :message "code is required")))
   (unless *repl-connected*
     (return-from repl-eval
       (list :error t :message "Not connected to any REPL")))
@@ -132,8 +134,10 @@
           (setf (getf result :result) (getf result :|value|)))
         result)))
 
-(defun repl-compile (code &key (package "CL-USER") (filename "repl"))
+(defun repl-compile (&key code (package "CL-USER") (filename "repl"))
   "Compile Lisp code via the connected REPL."
+  (unless code
+    (return-from repl-compile (list :error t :message "code is required")))
   (unless *repl-connected*
     (return-from repl-compile
       (list :error t :message "Not connected to any REPL")))
@@ -156,17 +160,17 @@
        (mcp-swank-threads)
        (nrepl-threads)))
 
-(defun repl-abort (&optional (thread nil))
+(defun repl-abort (&key thread)
   "Abort a thread or interrupt evaluation."
   (unless *repl-connected*
     (return-from repl-abort
       (list :error t :message "Not connected to any REPL")))
 
    (if (eq *repl-type* :swank)
-       (mcp-swank-abort thread)
+       (mcp-swank-abort :thread-id thread)
        (nrepl-threads)))
 
-(defun repl-backtrace (&optional (thread nil))
+(defun repl-backtrace ()
   "Get the current backtrace."
   (unless *repl-connected*
     (return-from repl-backtrace
@@ -176,91 +180,99 @@
        (mcp-swank-backtrace)
        (nrepl-backtrace)))
 
-(defun repl-inspect (expression)
+(defun repl-inspect (&key expression)
   "Inspect an object via the connected REPL."
+  (unless expression
+    (return-from repl-inspect (list :error t :message "expression is required")))
   (unless *repl-connected*
     (return-from repl-inspect
       (list :error t :message "Not connected to any REPL")))
 
    (if (eq *repl-type* :swank)
-       (mcp-swank-inspect expression)
+       (mcp-swank-inspect :expression expression)
        (nrepl-inspect expression)))
 
-(defun repl-describe (symbol)
+(defun repl-describe (&key symbol)
   "Describe a symbol via the connected REPL."
+  (unless symbol
+    (return-from repl-describe (list :error t :message "symbol is required")))
   (unless *repl-connected*
     (return-from repl-describe
       (list :error t :message "Not connected to any REPL")))
 
    (if (eq *repl-type* :swank)
-       (mcp-swank-describe symbol)
+       (mcp-swank-describe :expression symbol)
        (nrepl-describe symbol)))
 
-(defun repl-completions (prefix &optional (package "CL-USER"))
+(defun repl-completions (&key prefix (package "CL-USER"))
   "Get symbol completions via the connected REPL."
+  (unless prefix
+    (return-from repl-completions (list :error t :message "prefix is required")))
   (unless *repl-connected*
     (return-from repl-completions
       (list :error t :message "Not connected to any REPL")))
 
    (if (eq *repl-type* :swank)
-       (mcp-swank-completions prefix package)
+       (mcp-swank-completions :prefix prefix :package package)
        (nrepl-completions prefix)))
 
-(defun repl-doc (symbol)
+(defun repl-doc (&key symbol)
   "Get documentation for a symbol."
+  (unless symbol
+    (return-from repl-doc (list :error t :message "symbol is required")))
   (unless *repl-connected*
     (return-from repl-doc
       (list :error t :message "Not connected to any REPL")))
 
    (if (eq *repl-type* :swank)
-       (mcp-swank-autodoc symbol)
+       (mcp-swank-autodoc :symbol symbol)
        (nrepl-doc symbol)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Unified Debugger Functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun repl-frame-locals (frame &optional (thread :repl-thread))
+(defun repl-frame-locals (&key frame (thread :repl-thread))
   "Get local variables for a frame."
   (unless *repl-connected*
     (return-from repl-frame-locals
       (list :error t :message "Not connected to any REPL")))
 
   (if (eq *repl-type* :swank)
-      (mcp-swank-frame-locals frame thread)
+      (mcp-swank-frame-locals :frame frame :thread thread)
       ;; For nrepl, we might need to implement this differently
       (list :error t :message "Frame locals not implemented for nrepl")))
 
-(defun repl-step (frame)
+(defun repl-step (&key frame)
   "Step into next expression in FRAME."
   (unless *repl-connected*
     (return-from repl-step
       (list :error t :message "Not connected to any REPL")))
 
   (if (eq *repl-type* :swank)
-      (swank-step frame)
+      (swank-step :frame-index frame)
       ;; For nrepl, we might need to implement this differently
       (list :error t :message "Stepping not implemented for nrepl")))
 
-(defun repl-next (frame)
+(defun repl-next (&key frame)
   "Step over next expression in FRAME."
   (unless *repl-connected*
     (return-from repl-next
       (list :error t :message "Not connected to any REPL")))
 
   (if (eq *repl-type* :swank)
-      (swank-next frame)
+      (swank-next :frame-index frame)
       ;; For nrepl, we might need to implement this differently
       (list :error t :message "Next not implemented for nrepl")))
 
-(defun repl-out (frame)
+(defun repl-out (&key frame)
   "Step out of current frame."
   (unless *repl-connected*
     (return-from repl-out
       (list :error t :message "Not connected to any REPL")))
 
   (if (eq *repl-type* :swank)
-      (swank-out frame)
+      (swank-out :frame-index frame)
       ;; For nrepl, we might need to implement this differently
       (list :error t :message "Out not implemented for nrepl")))
 
@@ -275,25 +287,25 @@
       ;; For nrepl, we might need to implement this differently
       (list :error t :message "Continue not implemented for nrepl")))
 
-(defun repl-get-restarts (&optional (frame 0))
-  "Get available restarts for FRAME (default 0 = current/top frame)."
+(defun repl-get-restarts ()
+  "Get available restarts for current debugger state."
   (unless *repl-connected*
     (return-from repl-get-restarts
       (list :error t :message "Not connected to any REPL")))
 
   (if (eq *repl-type* :swank)
-      (swank-get-restarts frame)
+      (swank-get-restarts)
       ;; For nrepl, we might need to implement this differently
       (list :error t :message "Get restarts not implemented for nrepl")))
 
-(defun repl-invoke-restart (restart-index)
+(defun repl-invoke-restart (&key restart_index)
   "Invoke the Nth restart (1-based index)."
   (unless *repl-connected*
     (return-from repl-invoke-restart
       (list :error t :message "Not connected to any REPL")))
 
   (if (eq *repl-type* :swank)
-      (swank-invoke-restart restart-index)
+      (swank-invoke-restart :restart_index restart_index)
       ;; For nrepl, we might need to implement this differently
       (list :error t :message "Invoke restart not implemented for nrepl")))
 
@@ -301,25 +313,25 @@
 ;;; Unified Breakpoint Functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun repl-set-breakpoint (function &key condition hit-count thread)
+(defun repl-set-breakpoint (&key function condition hit_count thread)
   "Set a breakpoint on FUNCTION."
   (unless *repl-connected*
     (return-from repl-set-breakpoint
       (list :error t :message "Not connected to any REPL")))
 
   (if (eq *repl-type* :swank)
-      (mcp-swank-set-breakpoint function :condition condition :hit-count hit-count :thread thread)
+      (mcp-swank-set-breakpoint :function function :condition condition :hit-count hit_count :thread thread)
       ;; For nrepl, we might need to implement this differently
       (list :error t :message "Set breakpoint not implemented for nrepl")))
 
-(defun repl-remove-breakpoint (breakpoint-id)
+(defun repl-remove-breakpoint (&key breakpoint_id)
   "Remove breakpoint by ID."
   (unless *repl-connected*
     (return-from repl-remove-breakpoint
       (list :error t :message "Not connected to any REPL")))
 
   (if (eq *repl-type* :swank)
-      (mcp-swank-remove-breakpoint breakpoint-id)
+      (mcp-swank-remove-breakpoint :breakpoint-id breakpoint_id)
       ;; For nrepl, we might need to implement this differently
       (list :error t :message "Remove breakpoint not implemented for nrepl")))
 
@@ -334,14 +346,14 @@
       ;; For nrepl, we might need to implement this differently
       (list :error t :message "List breakpoints not implemented for nrepl")))
 
-(defun repl-toggle-breakpoint (breakpoint-id)
+(defun repl-toggle-breakpoint (&key breakpoint_id)
   "Toggle breakpoint enabled state."
   (unless *repl-connected*
     (return-from repl-toggle-breakpoint
       (list :error t :message "Not connected to any REPL")))
 
   (if (eq *repl-type* :swank)
-      (mcp-swank-toggle-breakpoint breakpoint-id)
+      (mcp-swank-toggle-breakpoint :breakpoint-id breakpoint_id)
       ;; For nrepl, we might need to implement this differently
       (list :error t :message "Toggle breakpoint not implemented for nrepl")))
 
