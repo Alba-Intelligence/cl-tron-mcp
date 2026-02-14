@@ -23,8 +23,8 @@ CL-TRON-MCP provides a comprehensive debugging and introspection toolkit for SBC
 
 ### Statistics
 
-- **81 tools** across 14 categories
-- Rove test suite with 20+ tests
+- **99 tools** across 14 categories
+- Rove test suite with integration tests
 - Full MCP protocol support (stdio, HTTP, WebSocket)
 - Verified working with OpenCode, Cursor, and VS Code
 
