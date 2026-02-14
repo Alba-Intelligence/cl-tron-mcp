@@ -80,7 +80,7 @@ For the MCP to interact with Swank (or nrepl) the same way a user in Slime would
 
 ### Agent workflow
 
-1. User starts the Lisp session with Swank (e.g. `(swank:create-server :port 4005)`) or nrepl (e.g. `(sly:nrepl-start :port 7888)`).
+1. User starts the Lisp session with Swank (e.g. `(swank:create-server :port 4005)`) or nrepl (e.g. `(nrepl:start-server :port 8675)` using cl-nrepl).
 2. User (or client) starts the MCP server; the agent connects to the Lisp session via `repl_connect` / `swank_connect` / `nrepl_connect` (or the client config is set so the MCP connects on startup).
 3. The agent uses `repl_eval`, `repl_backtrace`, `repl_inspect`, and related tools to load code, run it, see output and debugger state, step, move frames, invoke restarts, and fix code—all through the connected session. No second REPL; one session, MCP as a client of it.
 

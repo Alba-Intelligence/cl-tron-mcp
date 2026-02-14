@@ -369,20 +369,21 @@ This enables the same workflow as SLIME/SLY in Emacs, but via MCP for AI agents.
 
 #### nrepl Integration (Sly, CIDER)
 
-Connect CL-TRON-MCP to a running SBCL with nrepl loaded (Sly, CIDER, etc.) for full IDE-like debugging:
+Connect CL-TRON-MCP to a running SBCL with nrepl (cl-nrepl by Steve Losh) for debugging:
 
 ```lisp
-;; 1. Start SBCL with nrepl (Sly example)
-(ql:quickload :sly)
-(sly:nrepl-start :port 7888)
-;; => nrepl started on port 7888
+;; 1. Start SBCL with cl-nrepl
+(pushnew #p"/path/to/cl-nrepl/" asdf:*central-registry* :test #'equal)
+(ql:quickload :nrepl)
+(nrepl:start-server :port 8675)
+;; => nrepl started on port 8675
 
 ;; 2. Connect CL-TRON-MCP (in another terminal)
 (ql:quickload :cl-tron-mcp)
 
 ;; Connect to nrepl
-(cl-tron-mcp/nrepl:nrepl-connect :port 7888)
-;; => (:SUCCESS T :HOST "127.0.0.1" :PORT 7888 ...)
+(cl-tron-mcp/nrepl:nrepl-connect :port 8675)
+;; => (:SUCCESS T :HOST "127.0.0.1" :PORT 8675 ...)
 
 ;; Evaluate code via nrepl
 (cl-tron-mcp/nrepl:nrepl-eval :code "(+ 10 20)" :package "CL-USER")
@@ -400,6 +401,8 @@ Connect CL-TRON-MCP to a running SBCL with nrepl loaded (Sly, CIDER, etc.) for f
 ;; Disconnect when done
 (cl-tron-mcp/nrepl:nrepl-disconnect)
 ```
+
+**Note:** Slynk/Sly uses Swank protocol, not nrepl. Use `swank_connect` on port 7888 for Slynk servers.
 
 **Available nrepl Tools (14 total):**
 

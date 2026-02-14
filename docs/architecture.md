@@ -10,7 +10,7 @@ This document describes the recommended setup so the MCP can interact with a Lis
 - **Role:** This is the single session where all code is loaded and executed—by you or by the MCP. The debugger runs here. Slime/Sly/Emacs can attach to the same session.
 - **Typical start:**
   - Swank: `(ql:quickload :swank)` then `(swank:create-server :port 4005)` (default port 4005).
-  - nrepl: `(ql:quickload :sly)` then `(sly:nrepl-start :port 7888)` (or CIDER equivalent).
+  - nrepl: `(pushnew #p"/path/to/cl-nrepl/" asdf:*central-registry*)` then `(ql:quickload :nrepl)` then `(nrepl:start-server :port 8675)` (default port 8675).
 
 ### 2. MCP server
 
@@ -20,7 +20,7 @@ This document describes the recommended setup so the MCP can interact with a Lis
 
 ## Agent Workflow
 
-1. **You:** Start the Lisp session with Swank (port 4005) or nrepl (port 7888). Keep it running.
+1. **You:** Start the Lisp session with Swank (port 4005) or nrepl (port 8675). Keep it running.
 2. **Client:** Starts the MCP server (e.g. Cursor runs `start-mcp.sh`). The agent (or you) connects the MCP to your session via `repl_connect` / `swank_connect` / `nrepl_connect`.
 3. **Agent:** Uses MCP tools (`repl_eval`, `repl_backtrace`, `repl_inspect`, `repl_compile`, etc.) to load code, run it, see output and debugger state, step, move frames, invoke restarts, and fix code—all through the connected session. No second REPL; one session, MCP as a client of it.
 
