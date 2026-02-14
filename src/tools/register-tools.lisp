@@ -661,13 +661,112 @@
   :requires-approval nil)
  (register-tool-handler "repl_completions" (function cl-tron-mcp/unified:repl-completions))
 
- (register-tool
-  "repl_doc"
-  "Get documentation for a symbol via the connected REPL"
-  :input-schema (list :symbol "string")
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "repl_doc" (function cl-tron-mcp/unified:repl-doc))
+  (register-tool
+   "repl_doc"
+   "Get documentation for a symbol via the connected REPL"
+   :input-schema (list :symbol "string")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_doc" (function cl-tron-mcp/unified:repl-doc))
+
+;;; Unified REPL debugger tools
+  (register-tool
+   "repl_frame_locals"
+   "Get local variables for a frame via the connected REPL"
+   :input-schema (list :frame "integer" :thread "string")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_frame_locals" (function cl-tron-mcp/unified:repl-frame-locals))
+
+  (register-tool
+   "repl_step"
+   "Step into next expression in frame via the connected REPL"
+   :input-schema (list :frame "integer")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_step" (function cl-tron-mcp/unified:repl-step))
+
+  (register-tool
+   "repl_next"
+   "Step over next expression in frame via the connected REPL"
+   :input-schema (list :frame "integer")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_next" (function cl-tron-mcp/unified:repl-next))
+
+  (register-tool
+   "repl_out"
+   "Step out of current frame via the connected REPL"
+   :input-schema (list :frame "integer")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_out" (function cl-tron-mcp/unified:repl-out))
+
+  (register-tool
+   "repl_continue"
+   "Continue execution from debugger via the connected REPL"
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_continue" (function cl-tron-mcp/unified:repl-continue))
+
+  (register-tool
+   "repl_get_restarts"
+   "Get available restarts via the connected REPL"
+   :input-schema (list :frame "integer")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_get_restarts" (function cl-tron-mcp/unified:repl-get-restarts))
+
+  (register-tool
+   "repl_invoke_restart"
+   "Invoke a restart by index via the connected REPL"
+   :input-schema (list :restartIndex "integer")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_invoke_restart" (function cl-tron-mcp/unified:repl-invoke-restart))
+
+;;; Unified REPL breakpoint tools
+  (register-tool
+   "repl_set_breakpoint"
+   "Set a breakpoint on a function via the connected REPL"
+   :input-schema (list :function "string" :condition "string" :hitCount "integer" :thread "string")
+   :output-schema (list :type "object")
+   :requires-approval t)
+  (register-tool-handler "repl_set_breakpoint" (function cl-tron-mcp/unified:repl-set-breakpoint))
+
+  (register-tool
+   "repl_remove_breakpoint"
+   "Remove a breakpoint by ID via the connected REPL"
+   :input-schema (list :breakpointId "integer")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_remove_breakpoint" (function cl-tron-mcp/unified:repl-remove-breakpoint))
+
+  (register-tool
+   "repl_list_breakpoints"
+   "List all breakpoints via the connected REPL"
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_list_breakpoints" (function cl-tron-mcp/unified:repl-list-breakpoints))
+
+  (register-tool
+   "repl_toggle_breakpoint"
+   "Toggle breakpoint enabled state via the connected REPL"
+   :input-schema (list :breakpointId "integer")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_toggle_breakpoint" (function cl-tron-mcp/unified:repl-toggle-breakpoint))
+
+;;; Unified REPL help tool
+  (register-tool
+   "repl_help"
+   "Get help on available unified REPL tools"
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_help" (function cl-tron-mcp/unified:repl-help))
 
 
 

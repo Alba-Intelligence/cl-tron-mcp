@@ -216,6 +216,135 @@
        (mcp-swank-autodoc symbol)
        (nrepl-doc symbol)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Unified Debugger Functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun repl-frame-locals (frame &optional (thread :repl-thread))
+  "Get local variables for a frame."
+  (unless *repl-connected*
+    (return-from repl-frame-locals
+      (list :error t :message "Not connected to any REPL")))
+
+  (if (eq *repl-type* :swank)
+      (mcp-swank-frame-locals frame thread)
+      ;; For nrepl, we might need to implement this differently
+      (list :error t :message "Frame locals not implemented for nrepl")))
+
+(defun repl-step (frame)
+  "Step into next expression in FRAME."
+  (unless *repl-connected*
+    (return-from repl-step
+      (list :error t :message "Not connected to any REPL")))
+
+  (if (eq *repl-type* :swank)
+      (swank-step frame)
+      ;; For nrepl, we might need to implement this differently
+      (list :error t :message "Stepping not implemented for nrepl")))
+
+(defun repl-next (frame)
+  "Step over next expression in FRAME."
+  (unless *repl-connected*
+    (return-from repl-next
+      (list :error t :message "Not connected to any REPL")))
+
+  (if (eq *repl-type* :swank)
+      (swank-next frame)
+      ;; For nrepl, we might need to implement this differently
+      (list :error t :message "Next not implemented for nrepl")))
+
+(defun repl-out (frame)
+  "Step out of current frame."
+  (unless *repl-connected*
+    (return-from repl-out
+      (list :error t :message "Not connected to any REPL")))
+
+  (if (eq *repl-type* :swank)
+      (swank-out frame)
+      ;; For nrepl, we might need to implement this differently
+      (list :error t :message "Out not implemented for nrepl")))
+
+(defun repl-continue ()
+  "Continue execution from debugger."
+  (unless *repl-connected*
+    (return-from repl-continue
+      (list :error t :message "Not connected to any REPL")))
+
+  (if (eq *repl-type* :swank)
+      (swank-continue)
+      ;; For nrepl, we might need to implement this differently
+      (list :error t :message "Continue not implemented for nrepl")))
+
+(defun repl-get-restarts (&optional (frame 0))
+  "Get available restarts for FRAME (default 0 = current/top frame)."
+  (unless *repl-connected*
+    (return-from repl-get-restarts
+      (list :error t :message "Not connected to any REPL")))
+
+  (if (eq *repl-type* :swank)
+      (swank-get-restarts frame)
+      ;; For nrepl, we might need to implement this differently
+      (list :error t :message "Get restarts not implemented for nrepl")))
+
+(defun repl-invoke-restart (restart-index)
+  "Invoke the Nth restart (1-based index)."
+  (unless *repl-connected*
+    (return-from repl-invoke-restart
+      (list :error t :message "Not connected to any REPL")))
+
+  (if (eq *repl-type* :swank)
+      (swank-invoke-restart restart-index)
+      ;; For nrepl, we might need to implement this differently
+      (list :error t :message "Invoke restart not implemented for nrepl")))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Unified Breakpoint Functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun repl-set-breakpoint (function &key condition hit-count thread)
+  "Set a breakpoint on FUNCTION."
+  (unless *repl-connected*
+    (return-from repl-set-breakpoint
+      (list :error t :message "Not connected to any REPL")))
+
+  (if (eq *repl-type* :swank)
+      (mcp-swank-set-breakpoint function :condition condition :hit-count hit-count :thread thread)
+      ;; For nrepl, we might need to implement this differently
+      (list :error t :message "Set breakpoint not implemented for nrepl")))
+
+(defun repl-remove-breakpoint (breakpoint-id)
+  "Remove breakpoint by ID."
+  (unless *repl-connected*
+    (return-from repl-remove-breakpoint
+      (list :error t :message "Not connected to any REPL")))
+
+  (if (eq *repl-type* :swank)
+      (mcp-swank-remove-breakpoint breakpoint-id)
+      ;; For nrepl, we might need to implement this differently
+      (list :error t :message "Remove breakpoint not implemented for nrepl")))
+
+(defun repl-list-breakpoints ()
+  "List all breakpoints."
+  (unless *repl-connected*
+    (return-from repl-list-breakpoints
+      (list :error t :message "Not connected to any REPL")))
+
+  (if (eq *repl-type* :swank)
+      (mcp-swank-list-breakpoints)
+      ;; For nrepl, we might need to implement this differently
+      (list :error t :message "List breakpoints not implemented for nrepl")))
+
+(defun repl-toggle-breakpoint (breakpoint-id)
+  "Toggle breakpoint enabled state."
+  (unless *repl-connected*
+    (return-from repl-toggle-breakpoint
+      (list :error t :message "Not connected to any REPL")))
+
+  (if (eq *repl-type* :swank)
+      (mcp-swank-toggle-breakpoint breakpoint-id)
+      ;; For nrepl, we might need to implement this differently
+      (list :error t :message "Toggle breakpoint not implemented for nrepl")))
+
 ;;; ============================================================
 ;;; Help
 ;;; ============================================================
@@ -233,10 +362,21 @@
                (list :name "repl_threads" :description "List threads")
                (list :name "repl_abort" :description "Abort/interrupt evaluation")
                (list :name "repl_backtrace" :description "Get backtrace")
+               (list :name "repl_frame_locals" :description "Get frame local variables")
                (list :name "repl_inspect" :description "Inspect object")
                (list :name "repl_describe" :description "Describe symbol")
                (list :name "repl_completions" :description "Get completions")
-               (list :name "repl_doc" :description "Get documentation"))
+               (list :name "repl_doc" :description "Get documentation")
+               (list :name "repl_get_restarts" :description "Get available restarts")
+               (list :name "repl_invoke_restart" :description "Invoke restart by index")
+               (list :name "repl_step" :description "Step into next expression")
+               (list :name "repl_next" :description "Step over next expression")
+               (list :name "repl_out" :description "Step out of current frame")
+               (list :name "repl_continue" :description "Continue execution")
+               (list :name "repl_set_breakpoint" :description "Set breakpoint on function")
+               (list :name "repl_remove_breakpoint" :description "Remove breakpoint by ID")
+               (list :name "repl_list_breakpoints" :description "List all breakpoints")
+               (list :name "repl_toggle_breakpoint" :description "Toggle breakpoint enabled"))
         :examples (list
                   (list :auto-detect "repl_connect" :port 4005)
                   (list :explicit-swank "repl_connect" :type :swank :port 4005)

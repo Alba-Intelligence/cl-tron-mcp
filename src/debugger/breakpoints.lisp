@@ -6,33 +6,46 @@
 (defvar *next-breakpoint-id* 1)
 
 (defun set-breakpoint (function-name &key condition hit-count thread)
-  "Set breakpoint on a function (stores metadata for tracking)."
+  "Set breakpoint on a function via Swank RPC."
   (handler-case
-      (let* ((id *next-breakpoint-id*))
-        (incf *next-breakpoint-id*)
-        (let ((breakpoint-data (list :id id
-                                     :function function-name
-                                     :condition condition
-                                     :hit-count (or hit-count 0)
-                                     :thread thread
-                                     :enabled t)))
-          (setf (gethash id *breakpoints*) breakpoint-data)
-          (list :breakpoint-id id
-                :function function-name
-                :status "active"
-                :message "Breakpoint registered (SBCL breakpoint facility requires sb-sprof or debug policy)")))
+      (let ((result (swank-set-breakpoint
+                     :function function-name
+                     :condition condition
+                     :hit-count hit-count
+                     :thread thread)))
+        (if (getf result :error)
+            result
+            (let* ((id *next-breakpoint-id*))
+              (incf *next-breakpoint-id*)
+              (let ((breakpoint-data (list :id id
+                                           :function function-name
+                                           :condition condition
+                                           :hit-count (or hit-count 0)
+                                           :thread thread
+                                           :enabled t
+                                           :swank-id (getf result :breakpoint-id))))
+                (setf (gethash id *breakpoints*) breakpoint-data)
+                (list :breakpoint-id id
+                      :function function-name
+                      :status "active"
+                      :message "Breakpoint set via Swank")))))
     (error (e)
       (list :error t
             :message (princ-to-string e)))))
 
 (defun remove-breakpoint (breakpoint-id)
-  "Remove breakpoint by ID."
+  "Remove breakpoint by ID via Swank RPC."
   (handler-case
       (let ((bp (gethash breakpoint-id *breakpoints*)))
         (unless bp
           (return-from remove-breakpoint
             (list :error t
                   :message (format nil "Breakpoint ~d not found" breakpoint-id))))
+        (let ((swank-id (getf bp :swank-id)))
+          (when swank-id
+            (let ((result (swank-remove-breakpoint :breakpoint-id swank-id)))
+              (when (getf result :error)
+                (return-from remove-breakpoint result)))))
         (remhash breakpoint-id *breakpoints*)
         (list :breakpoint-id breakpoint-id
               :status "removed"))
@@ -41,23 +54,40 @@
             :message (princ-to-string e)))))
 
 (defun list-breakpoints ()
-  "List all active breakpoints."
-  (let ((bps (loop for id being the hash-keys of *breakpoints*
-                   collect (gethash id *breakpoints*))))
-    (list :breakpoints bps
-          :count (length bps))))
+  "List all active breakpoints via Swank RPC."
+  (handler-case
+      (let ((result (swank-list-breakpoints)))
+        (if (getf result :error)
+            result
+            (list :breakpoints (getf result :breakpoints)
+                  :count (length (getf result :breakpoints)))))
+    (error (e)
+      (list :error t
+            :message (princ-to-string e)))))
 
 (defun toggle-breakpoint (breakpoint-id)
-  "Toggle breakpoint enabled/disabled state."
-  (let ((bp (gethash breakpoint-id *breakpoints*)))
-    (unless bp
-      (return-from toggle-breakpoint
-        (list :error t
-              :message (format nil "Breakpoint ~d not found" breakpoint-id))))
-    (let ((enabled (getf bp :enabled)))
-      (setf (getf bp :enabled) (not enabled))
-      (list :breakpoint-id breakpoint-id
-            :enabled (getf bp :enabled)))))
+  "Toggle breakpoint enabled/disabled state via Swank RPC."
+  (handler-case
+      (let ((bp (gethash breakpoint-id *breakpoints*)))
+        (unless bp
+          (return-from toggle-breakpoint
+            (list :error t
+                  :message (format nil "Breakpoint ~d not found" breakpoint-id))))
+        (let ((swank-id (getf bp :swank-id)))
+          (unless swank-id
+            (return-from toggle-breakpoint
+              (list :error t
+                    :message (format nil "Breakpoint ~d not associated with Swank" breakpoint-id)))))
+        (let ((result (swank-toggle-breakpoint :breakpoint-id (getf bp :swank-id))))
+          (if (getf result :error)
+              result
+              (let ((enabled (getf bp :enabled)))
+                (setf (getf bp :enabled) (not enabled))
+                (list :breakpoint-id breakpoint-id
+                      :enabled (getf bp :enabled))))))
+    (error (e)
+      (list :error t
+            :message (princ-to-string e)))))
 
 (defun get-breakpoint-info (breakpoint-id)
   "Get detailed information about a breakpoint."

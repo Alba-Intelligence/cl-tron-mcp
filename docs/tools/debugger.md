@@ -1,225 +1,301 @@
 # Debugger Tools
 
-Tools for debugging Common Lisp applications at runtime.
+Tools for debugging Common Lisp applications at runtime via Swank connection.
+
+## Prerequisites
+
+The debugger tools require an active Swank connection. Connect first:
+
+```json
+{"name": "swank_connect", "arguments": {"port": 4005}}
+```
+
+Or use the unified interface:
+
+```json
+{"name": "repl_connect", "arguments": {"type": "swank", "port": 4005}}
+```
 
 ## Tools Overview
+
+### Core Debugger Tools
 
 | Tool | Purpose | Approval Required |
 |------|---------|------------------|
 | `debugger_frames` | Get stack frames | No |
-| `debugger_frame_locals` | Get local variables in frame | No |
-| `debugger_eval_in_frame` | Evaluate in frame context | Yes (:eval) |
 | `debugger_restarts` | List available restarts | No |
-| `debugger_invoke_restart` | Invoke a restart | Yes (:modify-restarts) |
-| `breakpoint_set` | Set breakpoint | Yes (:set-breakpoint) |
-| `breakpoint_remove` | Remove breakpoint | No |
+| `step_frame` | Step execution (into/over/out) | No |
+| `breakpoint_set` | Set breakpoint on function | Yes |
+| `breakpoint_remove` | Remove breakpoint by ID | No |
 | `breakpoint_list` | List all breakpoints | No |
-| `debugger_step` | Step through code | Yes (:modify-running-code) |
-| `debugger_continue` | Continue execution | No |
+
+### Unified REPL Debugger Tools
+
+| Tool | Purpose | Swank Backend |
+|------|---------|---------------|
+| `repl_backtrace` | Get current backtrace | `swank:backtrace` |
+| `repl_frame_locals` | Get frame variables | `swank:frame-locals-and-catch-tags` |
+| `repl_get_restarts` | List available restarts | `swank:compute-restarts-for-emacs` |
+| `repl_invoke_restart` | Invoke restart by index | `swank:invoke-nth-restart` |
+| `repl_step` | Step into next expression | `swank:sldb-step-into` |
+| `repl_next` | Step over next expression | `swank:sldb-step-next` |
+| `repl_out` | Step out of current frame | `swank:sldb-step-out` |
+| `repl_continue` | Continue execution | `swank:sldb-continue` |
+| `repl_set_breakpoint` | Set breakpoint | `swank:break` |
+| `repl_remove_breakpoint` | Remove breakpoint | `swank:break-remove` |
+| `repl_list_breakpoints` | List breakpoints | `swank:break-list` |
 
 ## debugger_frames
 
-### Overview
-Get the current debugger stack frames for a thread.
+Get the current debugger stack frames.
 
-### Tool Definition
+### Parameters
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| thread | string | No | nil | Thread ID |
+| start | integer | No | 0 | Start frame index |
+| end | integer | No | 20 | End frame index |
+
+### Example Request
+
 ```json
 {
   "name": "debugger_frames",
-  "description": "Get current debugger stack frames",
-  "parameters": {
-    "type": "object",
-    "properties": {
-      "thread": {
-        "type": "string",
-        "description": "Thread ID or 'auto' for current"
-      },
-      "start": {
-        "type": "integer",
-        "description": "Start frame index",
-        "default": 0
-      },
-      "end": {
-        "type": "integer",
-        "description": "End frame index",
-        "default": 20
-      }
-    },
-    "required": []
-  }
+  "arguments": {"start": 0, "end": 10}
 }
 ```
 
-### Return Value
+### Example Response
+
 ```json
 {
   "frames": [
     {
       "index": 0,
-      "function": "MY-APP:COMPUTE",
-      "source": {
-        "file": "src/compute.lisp",
-        "line": 42,
-        "column": 10
-      },
-      "locals": [
-        {
-          "name": "X",
-          "value": "10",
-          "object_id": 42
-        }
-      ]
+      "function": "MY-APP:COMPUTE-DATA",
+      "source": {"file": "src/compute.lisp", "line": 42}
+    },
+    {
+      "index": 1,
+      "function": "MY-APP:PROCESS-REQUEST",
+      "source": {"file": "src/handler.lisp", "line": 15}
     }
   ],
-  "total_frames": 5
+  "total": 5
 }
 ```
 
-## debugger_eval_in_frame
+## debugger_restarts
 
-### Overview
-Evaluate Lisp code in the lexical environment of a specific frame.
+List available debugger restarts.
 
-### Tool Definition
+### Parameters
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| thread | string | No | nil | Thread ID |
+
+### Example Response
+
 ```json
 {
-  "name": "debugger_eval_in_frame",
-  "description": "Evaluate expression in frame's lexical environment",
-  "parameters": {
-    "type": "object",
-    "properties": {
-      "frame": {
-        "type": "integer",
-        "description": "Frame index"
-      },
-      "code": {
-        "type": "string",
-        "description": "Lisp code to evaluate"
-      },
-      "thread": {
-        "type": "string",
-        "description": "Thread ID or 'auto'"
-      }
-    },
-    "required": ["frame", "code"]
-  }
+  "restarts": [
+    {"index": 0, "name": "ABORT", "description": "Return to SLIME's top level"},
+    {"index": 1, "name": "RETRY", "description": "Retry the current operation"},
+    {"index": 2, "name": "CONTINUE", "description": "Continue from error"}
+  ],
+  "count": 3
 }
 ```
 
-### Approval Required
-This tool requires approval for `:eval` operation.
+## step_frame
 
-### User Prompt
+Step execution in a frame with the specified mode.
+
+### Parameters
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| frame | integer | Yes | - | Frame index |
+| mode | string | No | "into" | Step mode: "into", "over", or "out" |
+
+### Example
+
+```json
+// Step into
+{"name": "step_frame", "arguments": {"frame": 0, "mode": "into"}}
+
+// Step over
+{"name": "step_frame", "arguments": {"frame": 0, "mode": "over"}}
+
+// Step out
+{"name": "step_frame", "arguments": {"frame": 0, "mode": "out"}}
 ```
-AI agent wants to evaluate code in frame #2:
-Code: (type-of x)
 
-Allow? [Yes/No/Show Code] Timeout: 60s
+### Response
+
+```json
+{
+  "mode": "into",
+  "status": "stepping",
+  "message": "Stepping into next function call"
+}
 ```
 
 ## breakpoint_set
 
-### Overview
-Set a breakpoint on a function or source location.
+Set a breakpoint on a function.
 
-### Tool Definition
+### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| functionName | string | Yes | Function name (package:symbol) |
+| condition | string | No | Lisp condition for conditional breakpoint |
+| hitCount | integer | No | Break after N hits |
+
+### Approval Required
+
+This tool requires user approval for `:set-breakpoint` operation.
+
+### Example
+
 ```json
 {
   "name": "breakpoint_set",
-  "description": "Set breakpoint on function",
-  "parameters": {
-    "type": "object",
-    "properties": {
-      "function": {
-        "type": "string",
-        "description": "Function symbol (package:name)"
-      },
-      "condition": {
-        "type": "string",
-        "description": "Lisp condition for conditional breakpoint"
-      },
-      "hit_count": {
-        "type": "integer",
-        "description": "Break after N hits"
-      },
-      "thread": {
-        "type": "string",
-        "description": "Thread ID for thread-specific breakpoint"
-      }
-    },
-    "required": ["function"]
+  "arguments": {
+    "functionName": "my-app:process-item",
+    "condition": "(> count 10)"
   }
 }
 ```
 
-### Approval Required
-This tool requires approval for `:set-breakpoint` operation.
+### Response
 
-### Usage Examples
-
-**Simple breakpoint:**
 ```json
 {
-  "tool": "breakpoint_set",
-  "arguments": {
-    "function": "my-app:process-item"
-  }
+  "breakpoint-id": 1,
+  "function": "my-app:process-item",
+  "status": "active",
+  "message": "Breakpoint set via Swank"
 }
 ```
 
-**Conditional breakpoint:**
+## breakpoint_remove
+
+Remove a breakpoint by ID.
+
+### Parameters
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| breakpointId | integer | Yes | Breakpoint ID from `breakpoint_set` |
+
+### Example
+
 ```json
 {
-  "tool": "breakpoint_set",
-  "arguments": {
-    "function": "my-app:handle-request",
-    "condition": "(equal (car args) \"admin\")"
-  }
+  "name": "breakpoint_remove",
+  "arguments": {"breakpointId": 1}
 }
 ```
 
-**Hit count breakpoint:**
+## breakpoint_list
+
+List all active breakpoints.
+
+### Example Response
+
 ```json
 {
-  "tool": "breakpoint_set",
-  "arguments": {
-    "function": "my-app:loop-body",
-    "hit_count": 10
-  }
+  "breakpoints": [
+    {"id": 1, "function": "my-app:process-item", "enabled": true}
+  ],
+  "count": 1
 }
+```
+
+## Debugging Workflow Example
+
+### 1. Trigger the Debugger
+
+```json
+{"name": "repl_eval", "arguments": {"code": "(/ 1 0)"}}
+```
+
+This triggers a division-by-zero error and enters the debugger.
+
+### 2. Get the Backtrace
+
+```json
+{"name": "repl_backtrace"}
+```
+
+### 3. Inspect Frame Locals
+
+```json
+{"name": "repl_frame_locals", "arguments": {"frame": 0}}
+```
+
+### 4. Get Available Restarts
+
+```json
+{"name": "repl_get_restarts"}
+```
+
+### 5. Invoke a Restart
+
+```json
+{"name": "repl_invoke_restart", "arguments": {"restartIndex": 0}}
+```
+
+### 6. Continue Execution
+
+```json
+{"name": "repl_continue"}
 ```
 
 ## Error Handling
 
-### Common Errors
+### Not Connected
 
-**Thread not in debugger:**
 ```json
 {
-  "error": {
-    "code": -32000,
-    "message": "Thread not in debugger",
-    "data": {
-      "type": "NOT_DEBUGGING"
-    }
-  }
+  "error": true,
+  "message": "Not connected to any REPL"
 }
 ```
 
-**Invalid frame index:**
+### Swank Package Not Loaded
+
 ```json
 {
-  "error": {
-    "code": -32000,
-    "message": "Frame index out of range",
-    "data": {
-      "type": "INVALID_FRAME"
-    }
-  }
+  "error": true,
+  "message": "SWANK package not loaded. Connect to a Swank server first."
 }
 ```
+
+### Request Timeout
+
+```json
+{
+  "error": true,
+  "message": "Request timeout"
+}
+```
+
+## Implementation Notes
+
+The debugger tools use the Swank RPC protocol to communicate with the remote Lisp:
+
+1. **All operations are remote**: The MCP does not access SBCL internals directly
+2. **Thread-aware**: Operations can target specific threads via Swank
+3. **Async events**: Debugger events are queued and can be processed asynchronously
+4. **Symbol resolution**: Swank symbols are resolved at runtime to allow compilation without Swank loaded locally
 
 ## See Also
 
-- @prompts/debugging-workflows.md - Complete debugging workflows
-- @agents/sbcl-debugging-expert.md - Debugging strategies
+- [swank-integration.md](swank-integration.md) - Swank protocol implementation
+- [architecture.md](architecture.md) - Overall architecture
+- [../prompts/debugging-workflows.md](../prompts/debugging-workflows.md) - Complete debugging workflows

@@ -34,6 +34,16 @@ CL-TRON-MCP provides a comprehensive debugging and introspection toolkit for SBC
 - Quicklisp
 - ASDF 3.0 or later
 
+### Recommended Setup: One Long-Running Lisp Session
+
+For the MCP to interact with Swank (or nrepl) the same way a user in Slime would—see output, debugger state, step, move frames, invoke restarts, inspect, compile—use **one long-running Lisp session** that you start and keep running:
+
+1. **Start the Lisp session** with Swank (e.g. `(swank:create-server :port 4005)`) or nrepl (e.g. `(sly:nrepl-start :port 7888)`). All code loading and execution (by you or by the MCP) happens in this process; the debugger runs here; Slime/Sly can attach to the same session.
+2. **Start the MCP server** (e.g. Cursor starts it via `start-mcp.sh`). The MCP runs in a separate process and connects to your Lisp session as a Swank (or nrepl) client.
+3. **Use MCP tools** (`repl_eval`, `repl_backtrace`, `repl_inspect`, etc.) so the agent can load code, run it, see output and debugger state, step, move frames, invoke restarts, and fix code—all through the connected session.
+
+See [Architecture](docs/architecture.md) and the Swank / nrepl Integration sections below for step-by-step setup.
+
 ## Installation
 
 ### Quicklisp (Recommended)
@@ -263,20 +273,29 @@ curl -X POST -H "Content-Type: application/json" \
 
 Note: WebSocket transport is a placeholder. Full implementation requires additional dependencies.
 
-#### Swank Integration
+#### Swank Integration (Recommended for agent workflow)
 
-Connect CL-TRON-MCP to a running SBCL instance with Swank loaded for full IDE-like debugging:
+Use **one long-running Lisp session** with Swank so the MCP (and Slime) can attach and interact with the same session—eval, debugger, backtrace, restarts, stepping, inspect. The MCP connects as a Swank client, like Slime.
+
+**Step 1: Start the Lisp session with Swank** (leave it running):
 
 ```lisp
-;; 1. Start SBCL with Swank server (in one terminal)
+;; In a terminal or Emacs: start SBCL, then:
 (ql:quickload :swank)
 (swank:create-server :port 4005)
 ;; => Swank started on port 4005
+;; Keep this process running. Load your code here; the debugger will run here.
+```
 
-;; 2. Connect CL-TRON-MCP (in another terminal)
+**Step 2: Start the MCP server** (Cursor/Kilocode/Opencode starts it via `start-mcp.sh` or your MCP config). The MCP runs in a separate process.
+
+**Step 3: Connect the MCP to your session** (via MCP tool `repl_connect` or `swank_connect` with port 4005, or configure the client to connect on startup). Then the agent can use `repl_eval`, `repl_backtrace`, `repl_inspect`, etc., and see all Swank output and debugger state.
+
+From Lisp (e.g. in another REPL) you can also connect the MCP server to Swank manually:
+
+```lisp
+;; 2. In the MCP server process (or a REPL that loaded cl-tron-mcp):
 (ql:quickload :cl-tron-mcp)
-
-;; Connect to Swank
 (cl-tron-mcp/swank:swank-connect :port 4005)
 ;; => (:SUCCESS T :HOST "127.0.0.1" :PORT 4005)
 

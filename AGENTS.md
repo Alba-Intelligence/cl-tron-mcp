@@ -12,13 +12,13 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
           └────────── REFINE ───────────┘
 ```
 
-**Tool Categories (81 tools total):**
+**Tool Categories (92 tools total):**
 
 | Category    | Purpose                  | Key Tools                                                  |
 | ----------- | ----------------------- | ---------------------------------------------------------- |
 | Inspector   | Object introspection     | `inspect_object`, `inspect_class`, `inspect_function`        |
 | Debugger    | Debugging operations    | `debugger_frames`, `debugger_restarts`, `breakpoint_set`    |
-| REPL        | Code evaluation         | `repl_eval`                                                |
+| REPL        | Code evaluation         | `repl_eval`, `repl_frame_locals`                           |
 | Hot Reload  | Live code modification  | `code_compile_string`, `reload_system`                     |
 | Profiler    | Performance analysis    | `profile_start`, `profile_stop`                            |
 | Tracer      | Function tracing        | `trace_function`, `trace_list`                             |
@@ -27,12 +27,13 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
 | Logging     | Package logging         | `log_configure`, `log_info`                                |
 | XRef        | Cross-reference         | `who_calls`, `who_references`, `list_callees`              |
 | Security    | Approval whitelist      | `whitelist_add`, `whitelist_status`                        |
-| Swank       | Slime integration       | `swank_connect`, `swank_eval`, `swank_threads`             |
+| Swank       | Slime integration       | `swank_connect`, `swank_eval`, `swank_backtrace`, `swank_step` |
 | nrepl       | Sly/CIDER integration   | `nrepl_connect`, `nrepl_eval`, `nrepl_sessions`           |
-| Unified     | Auto-detect REPL       | `repl_connect`, `repl_eval`, `repl_threads`                |
+| Unified     | Auto-detect REPL        | `repl_connect`, `repl_eval`, `repl_step`, `repl_continue`  |
 
 ## Cross-References
 
+@docs/architecture.md
 @prompts/debugging-workflows.md
 @prompts/hot-reload-development.md
 @prompts/profiling-analysis.md
@@ -64,6 +65,26 @@ When the server is launched by MCP clients (Cursor, Kilocode, Opencode) over std
 ### Reports
 
 - **Result and diagnostic reports** (e.g. from diagnostic runs, test result summaries) must be stored in **`reports/`**, not in `tmp/`. See Project Structure.
+
+## Recommended Workflow: One Long-Running Lisp Session
+
+For the MCP to interact with Swank (or nrepl) the same way a user in Slime would—see output, debugger state, step, move frames, invoke restarts, inspect, compile—use a **single long-running Lisp session** that the user (or automation) starts and keeps running.
+
+### Two processes
+
+1. **Lisp session (Swank or nrepl)**  
+   The user starts one SBCL (or other Lisp) with Swank (or nrepl) and leaves it running. All code loading and execution (by the user or by the MCP) happens in this process. The debugger runs here; Slime/Sly/Emacs can attach to the same session.
+
+2. **MCP server**  
+   Started by the MCP client (Cursor, Kilocode, Opencode) via `start-mcp.sh` or equivalent. It runs in a separate process and connects to the Lisp session as a **Swank (or nrepl) client**. The MCP then uses Swank facilities (eval, backtrace, restarts, stepping, inspect, etc.) over the protocol—the same way Slime does.
+
+### Agent workflow
+
+1. User starts the Lisp session with Swank (e.g. `(swank:create-server :port 4005)`) or nrepl (e.g. `(sly:nrepl-start :port 7888)`).
+2. User (or client) starts the MCP server; the agent connects to the Lisp session via `repl_connect` / `swank_connect` / `nrepl_connect` (or the client config is set so the MCP connects on startup).
+3. The agent uses `repl_eval`, `repl_backtrace`, `repl_inspect`, and related tools to load code, run it, see output and debugger state, step, move frames, invoke restarts, and fix code—all through the connected session. No second REPL; one session, MCP as a client of it.
+
+See **docs/architecture.md** and **README.md** (Swank Integration / Recommended setup) for step-by-step setup and tool usage.
 
 ## Project Structure & Module Organization
 
@@ -480,11 +501,15 @@ Expected response:
 
 ### Typical Development Session
 
-1. **Explore**: Use tools to understand current state
-2. **Experiment**: Test in REPL with `repl_eval`
-3. **Persist**: Edit files with `code_compile_string`
-4. **Verify**: Run tests and verify functionality
-5. **Hot-Reload**: Apply changes without restart using `reload_system`
+When the MCP is connected to a long-running Lisp session (Swank/nrepl):
+
+1. **Explore**: Use tools to understand current state (`repl_eval`, `repl_backtrace`, `repl_inspect`, etc.).
+2. **Experiment**: Test in the connected REPL with `repl_eval`.
+3. **Persist**: Edit files and compile with `code_compile_string` or `repl_compile`.
+4. **Verify**: Run tests in the session (e.g. `repl_eval` with `(asdf:test-system :cl-tron-mcp)`).
+5. **Debug**: Use Swank facilities via MCP tools—backtrace, restarts, step, frame up/down, inspect—the same way a user would in Slime.
+
+Without a connected REPL, tools that require it (e.g. `repl_eval`) return "Not connected to any REPL"; use `repl_connect` or `swank_connect` / `nrepl_connect` first. See Recommended Workflow above and docs/architecture.md.
 
 ### Tool Usage Order
 
@@ -605,20 +630,45 @@ clgrep   lisp-read   inspect   code_      compile   tests
 - `nrepl_doc` - Get documentation for a symbol
 - `nrepl_completions` - Get symbol completions
 
-### Unified REPL Tools (12) - Auto-Detect
+### Unified REPL Tools (23) - Auto-Detect
 
+**Connection:**
 - `repl_connect` - Connect to any REPL (auto-detects Swank/nrepl)
 - `repl_disconnect` - Disconnect from the current REPL
 - `repl_status` - Check REPL connection status and type
+
+**Evaluation:**
 - `repl_eval` - Evaluate Lisp code via the connected REPL (requires approval)
 - `repl_compile` - Compile Lisp code via the connected REPL (requires approval)
-- `repl_threads` - List all threads via the connected REPL
-- `repl_abort` - Abort/interrupt evaluation via the connected REPL
+
+**Debugging:**
 - `repl_backtrace` - Get backtrace via the connected REPL
+- `repl_frame_locals` - Get local variables for a frame
+- `repl_get_restarts` - Get available restarts
+- `repl_invoke_restart` - Invoke a restart by index
+- `repl_step` - Step into next expression
+- `repl_next` - Step over next expression
+- `repl_out` - Step out of current frame
+- `repl_continue` - Continue execution from debugger
+
+**Breakpoints:**
+- `repl_set_breakpoint` - Set a breakpoint on a function (requires approval)
+- `repl_remove_breakpoint` - Remove a breakpoint by ID
+- `repl_list_breakpoints` - List all breakpoints
+- `repl_toggle_breakpoint` - Toggle breakpoint enabled state
+
+**Inspection:**
 - `repl_inspect` - Inspect an object via the connected REPL
 - `repl_describe` - Describe a symbol via the connected REPL
 - `repl_completions` - Get symbol completions via the connected REPL
 - `repl_doc` - Get documentation for a symbol via the connected REPL
+
+**Threads:**
+- `repl_threads` - List all threads via the connected REPL
+- `repl_abort` - Abort/interrupt evaluation via the connected REPL
+
+**Help:**
+- `repl_help` - Get help on available unified REPL tools
 
 ## Troubleshooting
 
@@ -660,6 +710,6 @@ clgrep   lisp-read   inspect   code_      compile   tests
 - **Tests**: Rove in `tests/`, mirror source structure
 - **Security**: User approval required for modifying operations
 - **Docs**: See `@prompts/` and `docs/tools/` for detailed guides
-- **Tools**: 81 tools implemented across 14 categories
+- **Tools**: 92 tools implemented across 14 categories
 - **Transport**: Stdio (primary), HTTP (has issues), WebSocket (placeholder)
 - **MCP Clients**: Verified working with OpenCode, Cursor, VS Code

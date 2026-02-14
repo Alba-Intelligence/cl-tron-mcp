@@ -2,34 +2,64 @@
 
 (defpackage :cl-tron-mcp/swank
   (:use :cl)
+  (:nicknames :cl-tron-mcp/swank/client)
   (:export
    ;; Connection
-   #:connect-swank
-   #:disconnect-swank
-   #:swank-connected-p
-   ;; Internal message passing (for testing)
-   #:send-swank-message
-   ;; MCP Wrappers
    #:swank-connect
    #:swank-disconnect
    #:swank-status
+   #:swank-connected-p
    ;; Evaluation
-   #:swank-eval-internal
+   #:swank-eval
    #:mcp-swank-eval
-   #:swank-compile-internal
+   #:swank-compile
    #:mcp-swank-compile
-   ;; Threads
-   #:mcp-swank-threads
-   #:mcp-swank-abort
-   #:mcp-swank-interrupt
-   ;; Debugging
+   ;; Backtrace/Debugging
+   #:swank-backtrace
    #:mcp-swank-backtrace
+   #:swank-frame-locals
    #:mcp-swank-frame-locals
+   #:swank-eval-in-frame
+   #:swank-get-restarts
+   #:swank-invoke-restart
+   ;; Stepping
+   #:swank-step
+   #:swank-next
+   #:swank-out
+   #:swank-continue
+   ;; Breakpoints
+   #:swank-set-breakpoint
+   #:mcp-swank-set-breakpoint
+   #:swank-remove-breakpoint
+   #:mcp-swank-remove-breakpoint
+   #:swank-list-breakpoints
+   #:mcp-swank-list-breakpoints
+   #:swank-toggle-breakpoint
+   #:mcp-swank-toggle-breakpoint
+   ;; Threads
+   #:swank-threads
+   #:mcp-swank-threads
+   #:swank-abort-thread
+   #:mcp-swank-abort
+   #:swank-interrupt
+   #:mcp-swank-interrupt
    ;; Inspector
+   #:swank-inspect-object
    #:mcp-swank-inspect
+   #:swank-inspect-nth-part
+   ;; Description/Documentation
+   #:swank-describe
    #:mcp-swank-describe
-   ;; Documentation
+   #:swank-autodoc
    #:mcp-swank-autodoc
+   #:swank-completions
    #:mcp-swank-completions
-   ;; Help
-   #:swank-help))
+   ;; Events
+   #:pop-debugger-event
+   #:swank-event-processor
+   #:handle-swank-event
+   ;; Logging
+   #:log-info
+   #:log-debug
+   #:log-warn
+   #:log-error))
