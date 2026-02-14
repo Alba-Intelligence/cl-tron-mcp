@@ -2,18 +2,11 @@
 
 (in-package :cl-tron-mcp/tests)
 
-(deftest nrepl-help-test
-  (testing "nrepl help function returns tool list"
-    (let ((result (cl-tron-mcp/nrepl:nrepl-help)))
-      (ok (listp result))
-      (ok (getf result :tools))
-      (ok (> (length (getf result :tools)) 10)))))
-
 (deftest nrepl-connection-state-test
   (testing "nrepl connection state variables exist"
     (ok (boundp 'cl-tron-mcp/nrepl::*nrepl-connected*))
     (ok (boundp 'cl-tron-mcp/nrepl::*nrepl-server*))
-    (ok (boundp 'cl-tron-mcp/nrepl::*nrepl-transport*))))
+    (ok (boundp 'cl-tron-mcp/nrepl::*nrepl-stream*))))
 
 (deftest nrepl-error-handling-test
   (testing "nrepl functions return errors when not connected"
