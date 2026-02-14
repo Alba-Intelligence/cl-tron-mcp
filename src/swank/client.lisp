@@ -582,27 +582,71 @@ Returns restarts from the cached debugger event."
           (list :error t :message "No debugger event available")))))
 
 (defun swank-step (&key (frame-index 0))
-  "Step into next expression. Uses debugger thread if in debugger."
-  (let ((thread (or *debugger-thread* t)))
-    (let ((form `(,(swank-sym "SLDB-STEP-INTO") ,frame-index)))
-      (send-request form :package "CL-USER" :thread thread))))
+  "Step into next expression.
+When in a step-form-condition debugger, invokes STEP-INTO restart.
+Returns immediately - caller should check debugger-state to see if still stepping."
+  (declare (ignore frame-index))
+  (let ((thread (or *debugger-thread* t))
+        (level *debugger-level*))
+    ;; Find STEP-INTO restart and invoke it directly
+    (let ((restarts (swank-get-restarts)))
+      (let ((step-into-pos (position "STEP-INTO" (getf restarts :restarts)
+                                      :key #'first :test #'string=)))
+        (if step-into-pos
+            ;; In stepper - invoke the STEP-INTO restart
+            ;; Use the level from the debug event
+            (let ((form `(,(swank-sym "INVOKE-NTH-RESTART-FOR-EMACS") ,level ,(1+ step-into-pos))))
+              (send-request form :package "CL-USER" :thread thread))
+            ;; Not in stepper - return error
+            (list :error t :message "Not in stepper - enter with (step ...) first"))))))
 
 (defun swank-next (&key (frame-index 0))
-  "Step over next expression. Uses debugger thread if in debugger."
-  (let ((thread (or *debugger-thread* t)))
-    (let ((form `(,(swank-sym "SLDB-STEP-NEXT") ,frame-index)))
-      (send-request form :package "CL-USER" :thread thread))))
+  "Step over next expression.
+When in a step-form-condition debugger, invokes STEP-NEXT restart.
+Returns immediately - caller should check debugger-state to see if still stepping."
+  (declare (ignore frame-index))
+  (let ((thread (or *debugger-thread* t))
+        (level *debugger-level*))
+    (let ((restarts (swank-get-restarts)))
+      (let ((step-next-pos (position "STEP-NEXT" (getf restarts :restarts)
+                                      :key #'first :test #'string=)))
+        (if step-next-pos
+            (let ((form `(,(swank-sym "INVOKE-NTH-RESTART-FOR-EMACS") ,level ,(1+ step-next-pos))))
+              (send-request form :package "CL-USER" :thread thread))
+            (list :error t :message "Not in stepper - enter with (step ...) first"))))))
 
 (defun swank-out (&key (frame-index 0))
-  "Step out of current frame. Uses debugger thread if in debugger."
-  (let ((thread (or *debugger-thread* t)))
-    (let ((form `(,(swank-sym "SLDB-STEP-OUT") ,frame-index)))
-      (send-request form :package "CL-USER" :thread thread))))
+  "Step out of current frame.
+When in a step-form-condition debugger, invokes STEP-OUT restart.
+Returns immediately - caller should check debugger-state to see if still stepping."
+  (declare (ignore frame-index))
+  (let ((thread (or *debugger-thread* t))
+        (level *debugger-level*))
+    (let ((restarts (swank-get-restarts)))
+      (let ((step-out-pos (position "STEP-OUT" (getf restarts :restarts)
+                                     :key #'first :test #'string=)))
+        (if step-out-pos
+            (let ((form `(,(swank-sym "INVOKE-NTH-RESTART-FOR-EMACS") ,level ,(1+ step-out-pos))))
+              (send-request form :package "CL-USER" :thread thread))
+            (list :error t :message "Not in stepper - enter with (step ...) first"))))))
 
 (defun swank-continue ()
   "Continue execution from debugger. Uses debugger thread if in debugger."
   (let ((thread (or *debugger-thread* t)))
     (send-request `(,(swank-sym "SLDB-CONTINUE")) :package "CL-USER" :thread thread)))
+
+(defun swank-step-continue ()
+  "Continue normal execution from stepper (invokes STEP-CONTINUE restart).
+Use this to exit stepping mode and run normally."
+  (let ((thread (or *debugger-thread* t))
+        (level *debugger-level*))
+    (let ((restarts (swank-get-restarts)))
+      (let ((step-continue-pos (position "STEP-CONTINUE" (getf restarts :restarts)
+                                          :key #'first :test #'string=)))
+        (if step-continue-pos
+            (let ((form `(,(swank-sym "INVOKE-NTH-RESTART-FOR-EMACS") ,level ,(1+ step-continue-pos))))
+              (send-request form :package "CL-USER" :thread thread))
+            (swank-continue))))))
 
 (defun swank-debugger-state ()
   "Get current debugger state.

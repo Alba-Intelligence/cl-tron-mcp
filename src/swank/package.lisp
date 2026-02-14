@@ -32,6 +32,7 @@
    #:swank-next
    #:swank-out
    #:swank-continue
+   #:swank-step-continue
    #:swank-debugger-state
    ;; Breakpoints
    #:swank-set-breakpoint
