@@ -45,8 +45,12 @@
       (tool-entry-handler entry))))
 
 (defun call-tool (name arguments)
-  "Call tool by name with arguments plist."
+  "Call tool by name with arguments plist.
+The plist keys are JSON-style (e.g., :|port|) and converted to proper keywords (:PORT)."
   (let ((handler (get-tool-handler name)))
     (unless handler
       (error "Unknown tool: ~a" name))
-    (funcall handler arguments)))
+    (let ((args-list (loop for (key value) on arguments by #'cddr
+                           for keyword = (intern (string-upcase (string key)) :keyword)
+                           append (list keyword value))))
+      (apply handler args-list))))

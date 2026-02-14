@@ -189,9 +189,9 @@ Returns the parsed S-expression in PACKAGE."
     (cond
       ((null c) nil)
       ((digit-char-p c)
-       (read integer stream))
+       (read stream))
       ((alpha-char-p c)
-       (read symbol stream))
+       (read stream))
       (t
        (read-char stream)
        nil))))

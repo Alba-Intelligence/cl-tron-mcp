@@ -70,7 +70,7 @@ Returns the symbol or signals an error if not found."
 ;;; Connection Management
 ;;; ============================================================
 
-(defun swank-connect (&key (host "127.0.0.1") (port 4005) (timeout 30))
+(defun swank-connect (&key (host "127.0.0.1") (port 4005) (timeout 10))
   "Connect to a running SBCL with Swank loaded.
 On the SBCL side: (ql:quickload :swank) (swank:create-server :port 4005)
 
@@ -79,8 +79,8 @@ Returns: Connection status or error."
     (return-from swank-connect
       (list :error t :message "Already connected to Swank server")))
   (handler-case
-      (let ((socket (usocket:socket-connect host port
-                                            :timeout (* timeout 1000))))
+      (let ((socket (usocket:socket-connect host port :timeout timeout
+                                            :element-type '(unsigned-byte 8))))
         (setf *swank-socket* socket
               *swank-io* (usocket:socket-stream socket)
               *swank-connected* t
@@ -96,7 +96,7 @@ Returns: Connection status or error."
               (bordeaux-threads:make-thread
                #'swank-event-processor
                :name "swank-event-processor"))
-        (log-info "Connected to Swank at ~a:~a" host port)
+        (log-info (format nil "Connected to Swank at ~a:~a" host port))
         (list :success t
               :host host :port port
               :message (format nil "Connected to Swank at ~a:~a" host port)))
@@ -188,6 +188,9 @@ Returns: Connection status or error."
         (return-from wait-for-response (list :error t :message (format nil "Request ~a not found" id))))
       (let ((start (get-unix-time)))
         (loop while (not (swank-request-completed-p req))
+              for elapsed = (- (get-unix-time) start)
+              when (> elapsed timeout)
+                do (return-from wait-for-response (list :error t :message "Request timeout"))
               do (bordeaux-threads:condition-wait
                    (swank-request-condition req) *request-lock*)
               finally (return
@@ -265,7 +268,7 @@ THREAD indicates which thread to use (t, :repl-thread, or integer)."
       (list :error t :message "Not connected to Swank server")))
   (let* ((id (make-request-id))
          (req (make-swank-request :id id
-                                  :condition (bordeaux-threads:make-lock)
+                                  :condition (bordeaux-threads:make-condition-variable)
                                   :response nil
                                   :completed-p nil)))
     (bordeaux-threads:with-lock-held (*request-lock*)
@@ -344,14 +347,18 @@ Events could be forwarded to MCP clients as notifications in the future."
 ;;; RPC Operations (MCP Tool Handlers)
 ;;; ============================================================
 
-(defun swank-eval (code &key (package "CL-USER"))
+(defun swank-eval (&key code (package "CL-USER"))
   "Evaluate Lisp code via Swank RPC.
 Code should be a string. Package is package name."
+  (unless code
+    (return-from swank-eval (list :error t :message "code is required")))
   (let ((form (read-from-string code)))
     (send-request form :package package :thread t)))
 
-(defun swank-compile (code &key (package "CL-USER") (filename "repl"))
+(defun swank-compile (&key code (package "CL-USER") (filename "repl"))
   "Compile Lisp code via Swank."
+  (unless code
+    (return-from swank-compile (list :error t :message "code is required")))
   (let ((form `(,(swank-sym "COMPILE-STRING-FOR-EMACS") ,code
                                                  :buffer ,filename
                                                  :position 0
@@ -364,17 +371,19 @@ Code should be a string. Package is package name."
   (let ((form `(,(swank-sym "BACKTRACE") ,start ,end)))
     (send-request form :package "CL-USER" :thread t)))
 
-(defun swank-frame-locals (frame-index &optional (thread :repl-thread))
+(defun swank-frame-locals (&key (frame-index 0) (thread :repl-thread))
   "Get local variables for FRAME-INDEX."
   (let ((form `(,(swank-sym "FRAME-LOCALS-AND-CATCH-TAGS") ,frame-index)))
     (send-request form :package "CL-USER" :thread thread)))
 
-(defun swank-eval-in-frame (code frame-index &key (package "CL-USER"))
+(defun swank-eval-in-frame (&key code (frame-index 0) (package "CL-USER"))
   "Evaluate CODE (string) in FRAME-INDEX context."
+  (unless code
+    (return-from swank-eval-in-frame (list :error t :message "code is required")))
   (let ((form `(,(swank-sym "EVAL-STRING-IN-FRAME") ,code ,frame-index ,package)))
     (send-request form :package package :thread t)))
 
-(defun swank-invoke-restart (restart-index)
+(defun swank-invoke-restart (&key (restart-index 1))
   "Invoke the Nth restart (1-based index)."
   (let ((form `(,(swank-sym "INVOKE-NTH-RESTART") ,restart-index)))
     (send-request form :package "CL-USER" :thread t)))
@@ -384,17 +393,17 @@ Code should be a string. Package is package name."
   (let ((form `(,(swank-sym "COMPUTE-RESTARTS-FOR-EMACS") ,frame-index)))
     (send-request form :package "CL-USER" :thread t)))
 
-(defun swank-step (frame-index)
+(defun swank-step (&key (frame-index 0))
   "Step into next expression."
   (let ((form `(,(swank-sym "SLDB-STEP-INTO") ,frame-index)))
     (send-request form :package "CL-USER" :thread t)))
 
-(defun swank-next (frame-index)
+(defun swank-next (&key (frame-index 0))
   "Step over next expression."
   (let ((form `(,(swank-sym "SLDB-STEP-NEXT") ,frame-index)))
     (send-request form :package "CL-USER" :thread t)))
 
-(defun swank-out (frame-index)
+(defun swank-out (&key (frame-index 0))
   "Step out of current frame."
   (let ((form `(,(swank-sym "SLDB-STEP-OUT") ,frame-index)))
     (send-request form :package "CL-USER" :thread t)))
@@ -433,7 +442,7 @@ Code should be a string. Package is package name."
   "List all threads in Swank-connected SBCL."
   (send-request (swank-sym "THREAD-LIST") :package "CL-USER" :thread t))
 
-(defun swank-abort-thread (&optional (thread-id :repl-thread))
+(defun swank-abort-thread (&key (thread-id :repl-thread))
   "Abort THREAD-ID (default: current REPL thread)."
   (let ((form `(,(swank-sym "ABORT-THREAD") ,thread-id)))
     (send-request form :package "CL-USER" :thread t)))
@@ -442,27 +451,35 @@ Code should be a string. Package is package name."
   "Interrupt current evaluation."
   (send-request (swank-sym "INTERRUPT") :package "CL-USER" :thread t))
 
-(defun swank-inspect-object (expression)
+(defun swank-inspect-object (&key expression)
   "Inspect an object via Swank.
 EXPRESSION should be a string that evaluates to an object."
+  (unless expression
+    (return-from swank-inspect-object (list :error t :message "expression is required")))
   (let ((obj (read-from-string expression)))
     (send-request `(,(swank-sym "INIT-INSPECTOR") ,obj) :package "CL-USER" :thread t)))
 
-(defun swank-inspect-nth-part (part-id)
+(defun swank-inspect-nth-part (&key (part-id 0))
   "Inspect the nth part of the current inspector."
   (send-request `(,(swank-sym "INSPECT-NTH-PART") ,part-id) :package "CL-USER" :thread t))
 
-(defun swank-describe (expression)
+(defun swank-describe (&key symbol)
   "Describe an object via Swank."
-  (let ((obj (read-from-string expression)))
+  (unless symbol
+    (return-from swank-describe (list :error t :message "symbol is required")))
+  (let ((obj (read-from-string symbol)))
     (send-request `(,(swank-sym "DESCRIBE") ,obj) :package "CL-USER" :thread t)))
 
-(defun swank-autodoc (symbol)
+(defun swank-autodoc (&key symbol)
   "Get documentation for SYMBOL (string)."
+  (unless symbol
+    (return-from swank-autodoc (list :error t :message "symbol is required")))
   (send-request `(,(swank-sym "AUTODOC") ,symbol) :package "CL-USER" :thread t))
 
-(defun swank-completions (prefix &optional (package "CL-USER"))
+(defun swank-completions (&key prefix (package "CL-USER"))
   "Get symbol completions for PREFIX in PACKAGE."
+  (unless prefix
+    (return-from swank-completions (list :error t :message "prefix is required")))
   (send-request `(,(swank-sym "SIMPLE-COMPLETIONS") ,prefix ,package) :package "CL-USER" :thread t))
 
 ;;; ============================================================
@@ -482,13 +499,13 @@ EXPRESSION should be a string that evaluates to an object."
 ;;; Public API for MCP Tools
 ;;; ============================================================
 
-(defun mcp-swank-eval (code &key (package "CL-USER"))
+(defun mcp-swank-eval (&key code (package "CL-USER"))
   "MCP tool handler: Evaluate Lisp code via Swank."
-  (swank-eval code :package package))
+  (swank-eval :code code :package package))
 
-(defun mcp-swank-compile (code &key (package "CL-USER") (filename "repl"))
+(defun mcp-swank-compile (&key code (package "CL-USER") (filename "repl"))
   "MCP tool handler: Compile Lisp code via Swank."
-  (swank-compile code :package package :filename filename))
+  (swank-compile :code code :package package :filename filename))
 
 (defun mcp-swank-threads ()
   "MCP tool handler: List all threads in Swank-connected SBCL."
