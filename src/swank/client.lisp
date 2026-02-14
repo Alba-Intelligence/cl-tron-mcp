@@ -426,8 +426,10 @@ Uses swank:compile-string-for-emacs with simple arguments."
     (send-request form :package package :thread t)))
 
 (defun swank-backtrace (&key (start 0) (end 20))
-  "Get backtrace from Swank."
-  (let ((form `(,(swank-sym "BACKTRACE") ,start ,end)))
+  "Get backtrace from Swank.
+Uses sb-debug:list-backtrace since swank:backtrace requires debugger context."
+  (let ((form `(,(swank-sym "EVAL-AND-GRAB-OUTPUT")
+                 (format nil "(sb-debug:list-backtrace :start ~a :count ~a)" ,start ,(- end start)))))
     (send-request form :package "CL-USER" :thread t)))
 
 (defun swank-frame-locals (&key (frame-index 0) (thread :repl-thread))
@@ -544,10 +546,13 @@ EXPRESSION should be a string that evaluates to an object."
   (send-request `(,(swank-sym "DESCRIBE-SYMBOL") ,symbol) :package "CL-USER" :thread t))
 
 (defun swank-autodoc (&key symbol)
-  "Get documentation for SYMBOL (string)."
+  "Get arglist/documentation for SYMBOL (string).
+Uses eval-and-grab-output to call swank/backend:arglist."
   (unless symbol
     (return-from swank-autodoc (list :error t :message "symbol is required")))
-  (send-request `(,(swank-sym "AUTODOC") ,symbol) :package "CL-USER" :thread t))
+  (let ((form `(,(swank-sym "EVAL-AND-GRAB-OUTPUT")
+                 (format nil "(swank/backend:arglist (quote ~a))" ,symbol))))
+    (send-request form :package "CL-USER" :thread t)))
 
 (defun swank-completions (&key prefix (package "CL-USER"))
   "Get symbol completions for PREFIX in PACKAGE."
