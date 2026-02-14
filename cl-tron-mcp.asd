@@ -75,4 +75,5 @@
                (:file "tests/security-test")
                (:file "tests/transport-test")
                (:file "tests/swank-test")
-               (:file "tests/nrepl-test")))
+               (:file "tests/nrepl-test")
+               (:file "tests/swank-integration-test")))
