@@ -68,6 +68,8 @@ the Swank server can resolve."
 ;;; Request tracking (for synchronous RPC calls)
 (defvar *pending-requests* (make-hash-table :test 'eql))
 (defvar *request-lock* (bordeaux-threads:make-lock "swank-requests"))
+(defvar *current-request-id* nil
+  "ID of the most recent request sent (used to match :debug events).")
 (defvar *next-request-id* 1)
 
 ;;; Event queue for asynchronous messages (:debug, :write-string, etc.)
@@ -248,14 +250,28 @@ Returns the parsed S-expression."
          (destructuring-bind (result id) args
            (fulfill-request id (list :result result))))
         (:debug
-         ;; Format: (:debug thread level condition restarts frames extra)
-         ;; extra is usually just (level) or similar
-         (destructuring-bind (thread level condition restarts frames &optional extra) args
-           (declare (ignore extra))
-           ;; Track debugger state
-           (setf *debugger-thread* thread
-                 *debugger-level* level)
-           (enqueue-debugger-event condition restarts frames)))
+          ;; Format: (:debug thread level condition restarts frames extra)
+          ;; extra is usually just (level) or similar
+          (destructuring-bind (thread level condition restarts frames &optional extra) args
+            (declare (ignore extra))
+            ;; Track debugger state
+            (setf *debugger-thread* thread
+                  *debugger-level* level)
+            (enqueue-debugger-event condition restarts frames)
+            ;; Fulfill pending request with debugger state
+            (bordeaux-threads:with-lock-held (*request-lock*)
+              (when *current-request-id*
+                (let ((req (gethash *current-request-id* *pending-requests*)))
+                  (when req
+                    (setf (swank-request-response req)
+                          (list :result (list :debug t
+                                              :thread thread
+                                              :level level
+                                              :condition condition
+                                              :restarts restarts
+                                              :frames frames))
+                          (swank-request-completed-p req) t)
+                    (bordeaux-threads:condition-notify (swank-request-condition req))))))))
         (:write-string
          (destructuring-bind (string &optional target thread-id) args
            (handle-output string target)))
@@ -311,14 +327,17 @@ THREAD indicates which thread to use (t, :repl-thread, or integer)."
                                   :response nil
                                   :completed-p nil)))
     (bordeaux-threads:with-lock-held (*request-lock*)
-      (setf (gethash id *pending-requests*) req))
+      (setf (gethash id *pending-requests*) req
+            *current-request-id* id))
     (handler-case
         (progn
           (write-message `(:emacs-rex ,form ,package ,thread ,id))
           (wait-for-response id :timeout 30))
       (error (e)
         (bordeaux-threads:with-lock-held (*request-lock*)
-          (remhash id *pending-requests*))
+          (remhash id *pending-requests*)
+          (when (eql *current-request-id* id)
+            (setf *current-request-id* nil)))
         (list :error t :message (princ-to-string e))))))
 
 (defun handle-output (string target)
@@ -444,20 +463,26 @@ Uses sb-debug:list-backtrace since swank:backtrace requires debugger context."
   (let ((form `(,(swank-sym "EVAL-STRING-IN-FRAME") ,code ,frame-index ,package)))
     (send-request form :package package :thread t)))
 
-(defun swank-invoke-restart (&key (restart-index 1))
+(defun swank-invoke-restart (&key (restart_index 1))
   "Invoke the Nth restart (1-based index).
 When in debugger, uses the debugger thread and level."
   (let ((thread (or *debugger-thread* t))
         (level *debugger-level*))
-    (let ((form `(,(swank-sym "INVOKE-NTH-RESTART-FOR-EMACS") ,level ,restart-index)))
+    (let ((form `(,(swank-sym "INVOKE-NTH-RESTART-FOR-EMACS") ,level ,restart_index)))
       (send-request form :package "CL-USER" :thread thread))))
 
 (defun swank-get-restarts (&optional (frame-index 0))
-  "Get available restarts for FRAME-INDEX (default 0 = current/top frame).
-When in debugger, uses the debugger thread."
-  (let ((thread (or *debugger-thread* t)))
-    (let ((form `(,(swank-sym "SLDB-RESTARTS") ,frame-index)))
-      (send-request form :package "CL-USER" :thread thread))))
+  "Get available restarts for the current debugger condition.
+Returns restarts from the cached debugger event."
+  (declare (ignore frame-index))
+  (bordeaux-threads:with-lock-held (*event-mutex*)
+    (let ((debug-event (find :debug *event-queue*
+                             :key #'swank-event-type :from-end t)))
+      (if debug-event
+          (list :restarts (getf (swank-event-data debug-event) :restarts)
+                :thread *debugger-thread*
+                :level *debugger-level*)
+          (list :error t :message "No debugger event available")))))
 
 (defun swank-step (&key (frame-index 0))
   "Step into next expression. Uses debugger thread if in debugger."

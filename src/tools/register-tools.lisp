@@ -459,6 +459,62 @@
     :requires-approval nil)
     (register-tool-handler "swank_completions" (function cl-tron-mcp/swank:mcp-swank-completions))
 
+  (register-tool
+   "swank_get_restarts"
+   "Get available restarts when in debugger. Use after an error triggers the debugger."
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+   (register-tool-handler "swank_get_restarts" (function cl-tron-mcp/swank:swank-get-restarts))
+
+  (register-tool
+   "swank_invoke_restart"
+   "Invoke a restart by index when in debugger. Use after swank_get_restarts to see available restarts."
+   :input-schema (list :restart_index "integer")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+   (register-tool-handler "swank_invoke_restart" (function cl-tron-mcp/swank:swank-invoke-restart))
+
+  (register-tool
+   "swank_continue"
+   "Continue execution from debugger."
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+   (register-tool-handler "swank_continue" (function cl-tron-mcp/swank:swank-continue))
+
+  (register-tool
+   "swank_step"
+   "Step into next expression in debugger."
+   :input-schema (list :frame "integer")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+   (register-tool-handler "swank_step" (function cl-tron-mcp/swank:swank-step))
+
+  (register-tool
+   "swank_next"
+   "Step over next expression in debugger."
+   :input-schema (list :frame "integer")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+   (register-tool-handler "swank_next" (function cl-tron-mcp/swank:swank-next))
+
+  (register-tool
+   "swank_out"
+   "Step out of current frame in debugger."
+   :input-schema (list :frame "integer")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+   (register-tool-handler "swank_out" (function cl-tron-mcp/swank:swank-out))
+
+  (register-tool
+   "swank_debugger_state"
+   "Get current debugger state (thread, level, in-debugger-p)."
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+   (register-tool-handler "swank_debugger_state" (function cl-tron-mcp/swank:swank-debugger-state))
+
 ;;; nrepl tools (Sly, CIDER compatibility)
  (register-tool
   "nrepl_connect"
