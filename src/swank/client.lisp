@@ -6,18 +6,6 @@
 
 (in-package #:cl-tron-mcp/swank)
 
-;;; Helper to resolve Swank symbols at runtime
-(defun swank-sym (name)
-  "Find symbol NAME in the SWANK package at runtime.
-Returns the symbol or signals an error if not found."
-  (let ((pkg (find-package :swank)))
-    (unless pkg
-      (error "SWANK package not loaded. Connect to a Swank server first."))
-    (let ((sym (find-symbol (string-upcase name) pkg)))
-      (unless sym
-        (error "Symbol ~a not found in SWANK package" name))
-      sym)))
-
 ;;; Import logging functions
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (when (find-package :cl-tron-mcp/logging)
@@ -27,6 +15,20 @@ Returns the symbol or signals an error if not found."
                         cl-tron-mcp/logging:log-error))))
 
 ;;; ============================================================
+;;; Create SWANK package placeholder for protocol message construction
+;;; ============================================================
+;;;
+;;; The MCP client doesn't load SWANK, but we need to create symbols
+;;; like SWANK:EVAL-AND-GRAB-OUTPUT that will print correctly when
+;;; serialized in protocol messages. We create a placeholder SWANK
+;;; package for this purpose - the actual symbol resolution happens
+;;; on the server side where SWANK is properly loaded.
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (unless (find-package :swank)
+    (make-package :swank :use '())))
+
+;;; ============================================================
 ;;; Package-local Swank protocol package
 ;;; ============================================================
 
@@ -34,6 +36,15 @@ Returns the symbol or signals an error if not found."
 (unless *swank-io-package*
   (setf *swank-io-package*
         (make-package :swank-io-package :use '())))
+
+;;; Helper to create Swank symbol references for protocol messages
+(defun swank-sym (name)
+  "Create a symbol in the SWANK package for protocol messages.
+This works because we created a placeholder SWANK package above.
+The symbol will print as swank:NAME in protocol messages, which
+the Swank server can resolve."
+  (declare (type string name))
+  (intern (string-upcase name) :swank))
 
 ;;; ============================================================
 ;;; Connection State
@@ -147,8 +158,9 @@ Returns: Connection status or error."
 ;;; ============================================================
 
 (defun read-packet ()
-  "Read a single Swank packet from *swank-io*."
-  (cl-tron-mcp/swank-protocol:read-packet *swank-io*))
+  "Read and parse a single Swank packet from *swank-io*.
+Returns the parsed S-expression."
+  (cl-tron-mcp/swank-protocol:read-message *swank-io* *swank-io-package*))
 
 (defun write-message (message)
   "Write MESSAGE to Swank server using proper protocol."
@@ -207,11 +219,16 @@ Returns: Connection status or error."
   (log-debug "Swank reader thread started")
   (loop while *swank-running*
         do (handler-case
-               (let ((message (read-packet)))
-                 (log-debug "Received: ~s" message)
+               (let* ((raw-message (cl-tron-mcp/swank-protocol:read-packet *swank-io*))
+                      (message (handler-case
+                                   (cl-tron-mcp/swank-protocol:read-form raw-message *swank-io-package*)
+                                 (error (e)
+                                   (log-error (format nil "Failed to parse message ~S: ~a" raw-message e))
+                                   (return)))))
+                 (log-debug (format nil "Received: ~s" message))
                  (dispatch-incoming-message message))
              (error (e)
-               (log-error "Swank reader error: ~a" e)
+               (log-error (format nil "Swank reader error: ~a" e))
                (return)))
         finally (log-debug "Swank reader thread exiting")))
 
@@ -221,11 +238,12 @@ Returns: Connection status or error."
     (destructuring-bind (tag &rest args) message
       (ecase tag
         (:return
-         (destructuring-bind (thread result id) args
-           (fulfill-request id (list :thread thread :result result))))
+         ;; Response format: (:return (:ok result) id) or (:return (:abort error) id)
+         (destructuring-bind (result id) args
+           (fulfill-request id (list :result result))))
         (:debug
-         (destructuring-bind (thread level condition restarts frames) args
-           (enqueue-debugger-event condition restarts frames)))
+          (destructuring-bind (thread level condition restarts frames) args
+            (enqueue-debugger-event condition restarts frames)))
         (:write-string
          (destructuring-bind (string &optional target thread-id) args
            (handle-output string target)))
@@ -338,10 +356,10 @@ Events could be forwarded to MCP clients as notifications in the future."
   "Process a Swank event (for now, just log)."
   (ecase (swank-event-type event)
     (:debug
-     (log-info "Debugger event: ~a" (getf (swank-event-data event) :condition)))
+     (log-info (format nil "Debugger event: ~a" (getf (swank-event-data event) :condition))))
     (:output
      (let ((data (swank-event-data event)))
-       (log-debug "Output: ~a" (getf data :string))))))
+       (log-debug (format nil "Output: ~a" (getf data :string)))))))
 
 ;;; ============================================================
 ;;; RPC Operations (MCP Tool Handlers)
@@ -349,10 +367,15 @@ Events could be forwarded to MCP clients as notifications in the future."
 
 (defun swank-eval (&key code (package "CL-USER"))
   "Evaluate Lisp code via Swank RPC.
-Code should be a string. Package is package name."
+Code should be a string. Package is package name.
+Uses swank:eval-and-grab-output which reads the string in the target package,
+so symbols like + are resolved correctly."
   (unless code
     (return-from swank-eval (list :error t :message "code is required")))
-  (let ((form (read-from-string code)))
+  ;; Use swank:eval-and-grab-output - it takes a string that gets READ
+  ;; in the target package, so symbols like + are resolved correctly.
+  ;; We use swank-sym to resolve at runtime.
+  (let ((form `(,(swank-sym "EVAL-AND-GRAB-OUTPUT") ,code)))
     (send-request form :package package :thread t)))
 
 (defun swank-compile (&key code (package "CL-USER") (filename "repl"))

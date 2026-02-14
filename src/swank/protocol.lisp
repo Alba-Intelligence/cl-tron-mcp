@@ -6,6 +6,7 @@
    #:read-packet
    #:write-message
    #:read-message
+   #:read-form
    #:utf8-to-string
    #:string-to-utf8
    #:prin1-to-string-for-emacs
