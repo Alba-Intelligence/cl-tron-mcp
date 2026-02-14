@@ -8,7 +8,7 @@
 ;;; Inspector tools
 (register-tool
  "inspect_object"
- "Inspect an object by ID"
+ "Inspect an object by its ID. Use when you need to examine the slots and structure of a CLOS instance or other object. Returns type, slots, and nested object IDs for further inspection."
  :input-schema (list :objectId "string" :maxDepth "integer")
  :output-schema (list :type "object")
  :requires-approval nil)
@@ -16,7 +16,7 @@
 
 (register-tool
  "inspect_slot"
- "Get or set a slot value on an object"
+ "Get or set a slot value on an object. Use to read or modify individual slots of a CLOS instance. Set value by providing the value parameter."
  :input-schema (list :objectId "string" :slotName "string" :value "string")
  :output-schema (list :type "object")
  :requires-approval nil)
@@ -24,7 +24,7 @@
 
 (register-tool
  "inspect_class"
- "Inspect a CLOS class definition"
+ "Inspect a CLOS class definition. Shows superclasses, slots, and methods. Use to understand class structure before working with instances."
  :input-schema (list :className "string")
  :output-schema (list :type "object")
  :requires-approval nil)
@@ -32,7 +32,7 @@
 
 (register-tool
  "inspect_function"
- "Inspect a function definition"
+ "Inspect a function definition. Shows lambda list, documentation, and source location. Use to understand how a function should be called."
  :input-schema (list :symbolName "string")
  :output-schema (list :type "object")
  :requires-approval nil)
@@ -40,7 +40,7 @@
 
 (register-tool
  "inspect_package"
- "Inspect a package and list its contents"
+ "Inspect a package and list its exported symbols. Use to discover available functions and variables in a package."
  :input-schema (list :packageName "string")
  :output-schema (list :type "object")
  :requires-approval nil)
@@ -49,7 +49,7 @@
 ;;; REPL tools
 (register-tool
  "repl_eval"
- "Evaluate Lisp code in REPL context"
+ "Evaluate Lisp code in REPL context. Use for testing, debugging, and modifying running code. Requires connection to Swank/nrepl. Code runs in the persistent Lisp session."
  :input-schema (list :code "string" :package "string")
  :output-schema (list :type "object")
  :requires-approval t)
@@ -58,7 +58,7 @@
 ;;; Monitor tools
  (register-tool
   "health_check"
-  "Basic health check for the MCP server"
+  "Basic health check for the MCP server. Use to verify Tron is running and responsive. Returns server status and version."
   :input-schema nil
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -66,7 +66,7 @@
 
  (register-tool
   "runtime_stats"
-  "Get runtime statistics including memory and thread info"
+  "Get runtime statistics including memory usage, thread count, and GC info. Use to monitor system health and diagnose memory issues."
   :input-schema nil
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -74,7 +74,7 @@
 
  (register-tool
   "gc_run"
-  "Force garbage collection"
+  "Force garbage collection. Use to free memory or test GC behavior. Optionally specify generation (0-6 for SBCL)."
   :input-schema (list :generation "integer")
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -82,7 +82,7 @@
 
  (register-tool
   "system_info"
-  "Get comprehensive system information"
+  "Get comprehensive system information including Lisp implementation, OS, and runtime details. Use for debugging environment issues."
   :input-schema nil
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -91,7 +91,7 @@
 ;;; Debugger tools
 (register-tool
  "debugger_frames"
- "Get debugger stack frames"
+ "Get debugger stack frames when an error has occurred. Use after swank_eval returns an error to see the call stack. Shows function names and source locations."
  :input-schema nil
  :output-schema (list :type "object")
  :requires-approval nil)
@@ -99,7 +99,7 @@
 
 (register-tool
  "debugger_restarts"
-  "List available debugger restarts"
+  "List available debugger restarts. Use to see recovery options after an error. Common restarts: ABORT, RETRY, USE-VALUE, CONTINUE."
   :input-schema nil
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -107,7 +107,7 @@
 
 (register-tool
  "breakpoint_set"
- "Set a breakpoint on a function"
+ "Set a breakpoint on a function. Execution will pause when the function is called. Requires approval. Use for proactive debugging."
  :input-schema (list :functionName "string" :condition "string" :hitCount "integer")
  :output-schema (list :type "object")
  :requires-approval t)
@@ -115,7 +115,7 @@
 
 (register-tool
  "breakpoint_remove"
- "Remove a breakpoint by ID"
+ "Remove a breakpoint by its ID. Use to clear breakpoints after debugging is complete."
  :input-schema (list :breakpointId "integer")
  :output-schema (list :type "object")
  :requires-approval nil)
@@ -123,7 +123,7 @@
 
 (register-tool
  "breakpoint_list"
- "List all active breakpoints"
+ "List all active breakpoints. Use to see what breakpoints are currently set."
  :input-schema nil
  :output-schema (list :type "object")
  :requires-approval nil)
@@ -131,16 +131,16 @@
 
 (register-tool
  "step_frame"
-  "Step execution in a frame"
-  :input-schema (list :frame "integer" :mode "string")
-  :output-schema (list :type "object")
+ "Step execution in a debugger frame. Modes: into (step into calls), over (step over calls), out (step out of current function). Use after hitting a breakpoint."
+ :input-schema (list :frame "integer" :mode "string")
+ :output-schema (list :type "object")
  :requires-approval nil)
 (register-tool-handler "step_frame" (function cl-tron-mcp/debugger:step-frame))
 
 ;;; Hot-reload tools
 (register-tool
  "code_compile_string"
- "Compile and load Lisp code string into the image"
+ "Compile and load Lisp code string into the running image. Use to hot-fix bugs or add functionality without restart. Requires approval. Code persists only in memory - update source files separately."
  :input-schema (list :code "string" :filename "string")
  :output-schema (list :type "object")
  :requires-approval t)
@@ -148,7 +148,7 @@
 
 (register-tool
  "reload_system"
- "Reload ASDF system with dependencies"
+ "Reload an ASDF system with dependencies. Use to pick up source file changes. Force option reloads even if not changed. Requires approval."
  :input-schema (list :systemName "string" :force "boolean")
  :output-schema (list :type "object")
  :requires-approval t)
@@ -157,7 +157,7 @@
 ;;; Profiler tools
 (register-tool
  "profile_start"
- "Start deterministic profiling"
+ "Start deterministic profiling. All function calls will be timed. Use to find performance bottlenecks. Remember to call profile_stop when done."
  :input-schema nil
  :output-schema (list :type "object")
  :requires-approval t)
@@ -165,7 +165,7 @@
 
 (register-tool
  "profile_stop"
- "Stop profiling and return report"
+ "Stop profiling and return report. Call after running the code you want to profile. Returns timing data for all functions called during profiling."
  :input-schema nil
  :output-schema (list :type "object")
  :requires-approval t)
@@ -173,7 +173,7 @@
 
  (register-tool
   "profile_report"
-  "Get profiling report"
+  "Get profiling report in specified format. Formats: flat (simple list), graph (call tree), cumulative (total time per function). Use after profile_start/stop."
   :input-schema (list :format (list :enum (list "flat" "graph" "cumulative")))
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -182,15 +182,15 @@
  ;;; Tracer tools
 (register-tool
  "trace_function"
- "Add trace to a function"
+ "Add trace to a function. Every call will print arguments and return value. Use to understand execution flow. Requires approval."
  :input-schema (list :functionName "string")
  :output-schema (list :type "object")
  :requires-approval t)
- (register-tool-handler "trace_function" (function cl-tron-mcp/tracer:trace-function))
+(register-tool-handler "trace_function" (function cl-tron-mcp/tracer:trace-function))
 
  (register-tool
   "trace_remove"
-  "Remove trace from a function"
+  "Remove trace from a function. Use when done debugging to stop trace output."
   :input-schema (list :functionName "string")
   :output-schema (list :type "object")
   :requires-approval t)
@@ -198,16 +198,16 @@
 
  (register-tool
   "trace_list"
- "List all traced functions"
- :input-schema nil
- :output-schema (list :type "object")
- :requires-approval nil)
+  "List all currently traced functions. Use to see what traces are active."
+  :input-schema nil
+  :output-schema (list :type "object")
+  :requires-approval nil)
 (register-tool-handler "trace_list" (function cl-tron-mcp/tracer:trace-list))
 
 ;;; SBCL tools
  (register-tool
   "thread_list"
-   "List all threads with their status"
+   "List all threads with their status (running, waiting, etc). Use to monitor multi-threaded applications and debug concurrency issues."
    :input-schema nil
    :output-schema (list :type "object")
    :requires-approval nil)
@@ -215,7 +215,7 @@
 
  (register-tool
   "thread_inspect"
-  "Get detailed information about a thread"
+  "Get detailed information about a specific thread including name, state, and stack usage. Use to understand thread behavior."
   :input-schema (list :threadId "string")
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -223,7 +223,7 @@
 
  (register-tool
   "thread_backtrace"
-  "Get backtrace for a specific thread"
+  "Get backtrace for a specific thread. Use to see what a thread is currently doing or where it's blocked."
   :input-schema (list :threadId "string")
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -232,7 +232,7 @@
  ;;; Logging tools
  (register-tool
   "log_configure"
-  "Configure logging level for a package"
+  "Configure logging level for a package. Levels: trace, debug, info, warn, error, fatal. Use to control log verbosity."
   :input-schema (list :level (list :enum (list "trace" "debug" "info" "warn" "error" "fatal")) :package "string" :appender "string")
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -240,7 +240,7 @@
 
  (register-tool
   "log_info"
-  "Log an info message"
+  "Log an info message. Use for general information about program execution."
   :input-schema (list :message "string" :package "string")
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -248,7 +248,7 @@
 
  (register-tool
   "log_debug"
-  "Log a debug message"
+  "Log a debug message. Use for detailed debugging information."
   :input-schema (list :message "string" :package "string")
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -256,7 +256,7 @@
 
  (register-tool
   "log_warn"
-  "Log a warning message"
+  "Log a warning message. Use for non-fatal issues that should be noted."
   :input-schema (list :message "string" :package "string")
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -264,7 +264,7 @@
 
  (register-tool
   "log_error"
-  "Log an error message"
+  "Log an error message. Use for errors that don't crash the program."
   :input-schema (list :message "string" :package "string")
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -273,7 +273,7 @@
  ;;; Cross-reference tools
  (register-tool
   "who_calls"
-  "Find functions that call the given symbol"
+  "Find functions that call the given symbol. Use to understand dependencies before modifying a function."
   :input-schema (list :symbolName "string")
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -281,15 +281,15 @@
 
  (register-tool
   "who_references"
-  "Find references to the given symbol"
+  "Find references to the given symbol (variable references). Use to see where a variable is used."
   :input-schema (list :symbolName "string")
-  :output-schema (list :type "object")
-  :requires-approval nil)
+ :output-schema (list :type "object")
+ :requires-approval nil)
  (register-tool-handler "who_references" (function cl-tron-mcp/xref:who-references))
 
  (register-tool
   "who_binds"
-  "Find bindings of the given symbol"
+  "Find bindings of the given symbol (let bindings, function parameters). Use to see where a variable is bound."
   :input-schema (list :symbolName "string")
   :output-schema (list :type "object")
   :requires-approval nil)
@@ -297,7 +297,7 @@
 
  (register-tool
    "who_sets"
-   "Find setq/makunbound of the given symbol"
+   "Find setq/makunbound of the given symbol. Use to see where a variable is modified."
    :input-schema (list :symbolName "string")
    :output-schema (list :type "object")
    :requires-approval nil)

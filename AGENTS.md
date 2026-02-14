@@ -2,6 +2,63 @@
 
 This document provides guidelines for AI agents working on the SBCL Debugging MCP project - a Model Context Protocol server that enables deep debugging, introspection, profiling, and hot code reloading for SBCL Common Lisp applications.
 
+## Quick Start for AI Agents
+
+**What is Tron?** An MCP server that connects to a running SBCL Lisp session and provides debugging, code evaluation, inspection, profiling, and hot-reload capabilities.
+
+### Essential Pattern: One Long-Running Session
+
+```
+┌─────────────────┐         ┌─────────────────┐
+│  SBCL + Swank   │◄───────►│   Tron (MCP)    │
+│  (Port 4005)    │         │   (stdio)       │
+│                 │         │                 │
+│  Your code      │         │   AI Agent      │
+│  Debugger state │         │   evaluates     │
+│  Threads        │         │   inspects      │
+└─────────────────┘         └─────────────────┘
+```
+
+**Never restart the SBCL session.** Tron connects as a client; all state lives in SBCL.
+
+### First Steps (Do This Now)
+
+1. **Check if Swank is running**: `ss -tlnp | grep 4005`
+2. **If not, start it**:
+   ```lisp
+   (ql:quickload :swank)
+   (swank:create-server :port 4005 :dont-close t)
+   ```
+3. **Connect Tron**: Use `swank_connect` or `repl_connect` tool
+4. **Verify**: Use `swank_eval` with `"(+ 1 2)"` → should return `"3"`
+
+### Common Workflows
+
+| Task | Tools | Pattern |
+|------|-------|---------|
+| **Evaluate code** | `swank_eval` | Send code string, get result |
+| **Debug error** | `swank_eval` → error → `swank_backtrace` → `swank_invoke_restart` | Trigger error, see frames, fix |
+| **Inspect object** | `inspect_object`, `inspect_class` | Get object ID, inspect slots |
+| **Profile code** | `profile_start` → run code → `profile_stop` → `profile_report` | Measure, analyze |
+| **Hot-fix bug** | `swank_compile` or `swank_eval` with `defun` | Redefine function in running session |
+| **Find callers** | `who_calls` | Cross-reference analysis |
+
+### When You See an Error
+
+1. Don't panic - the debugger is active
+2. Use `swank_backtrace` to see stack frames
+3. Use `swank_get_restarts` to see options
+4. Either fix the code and `swank_eval` again, or `swank_invoke_restart` to abort
+5. The session persists - state is not lost
+
+### Key Insights
+
+- **All tools use `&key` args with underscore names**: `symbol_name`, not `symbol-name`
+- **Results are plists**: Access with `(getf result :key)`
+- **Swank ≠ nrepl**: Swank (Slime) uses sexp protocol; nrepl uses bencode
+- **Port 4005 = Swank**, **Port 8675 = nrepl** (cl-nrepl)
+- **Use `tmp/` folder**, never `/tmp`
+
 ## Quick Reference
 
 **Core Development Loop:**
@@ -12,7 +69,7 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
           └────────── REFINE ───────────┘
 ```
 
-**Tool Categories (92 tools total):**
+**Tool Categories (99 tools total):**
 
 | Category    | Purpose                  | Key Tools                                                  |
 | ----------- | ----------------------- | ---------------------------------------------------------- |
@@ -27,8 +84,8 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
 | Logging     | Package logging         | `log_configure`, `log_info`                                |
 | XRef        | Cross-reference         | `who_calls`, `who_references`, `list_callees`              |
 | Security    | Approval whitelist      | `whitelist_add`, `whitelist_status`                        |
-| Swank       | Slime integration       | `swank_connect`, `swank_eval`, `swank_backtrace`, `swank_step` |
-| nrepl       | Sly/CIDER integration   | `nrepl_connect`, `nrepl_eval`, `nrepl_sessions`           |
+| Swank       | Slime integration (21)  | `swank_connect`, `swank_eval`, `swank_backtrace`, `swank_step` |
+| nrepl       | cl-nrepl integration    | `nrepl_connect`, `nrepl_eval`, `nrepl_sessions`           |
 | Unified     | Auto-detect REPL        | `repl_connect`, `repl_eval`, `repl_step`, `repl_continue`  |
 
 ## Cross-References
