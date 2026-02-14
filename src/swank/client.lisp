@@ -36,14 +36,6 @@
 
 (in-package #:cl-tron-mcp/swank)
 
-;;; Import logging functions
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (when (find-package :cl-tron-mcp/logging)
-    (shadowing-import '(cl-tron-mcp/logging:log-info
-                        cl-tron-mcp/logging:log-debug
-                        cl-tron-mcp/logging:log-warn
-                        cl-tron-mcp/logging:log-error))))
-
 ;;; ============================================================
 ;;; Create SWANK package placeholder for protocol message construction
 ;;; ============================================================
@@ -222,6 +214,14 @@ Returns: Connection status or error."
 ;;; ============================================================
 ;;; Message Protocol (using cl-tron-mcp/swank-protocol)
 ;;; ============================================================
+;;;
+;;; Swank uses a simple framing protocol:
+;;; - 6-character hex length prefix (e.g., "00001a")
+;;; - UTF-8 encoded S-expression payload
+;;;
+;;; The actual protocol implementation is in protocol.lisp which handles
+;;; reading/writing with proper encoding. We use a special io-package
+;;; for reading responses to avoid interning arbitrary symbols.
 
 (defun read-packet ()
   "Read and parse a single Swank packet from *swank-io*.
@@ -237,6 +237,16 @@ Returns the parsed S-expression."
 ;;; ============================================================
 ;;; Request-Response Correlation
 ;;; ============================================================
+;;;
+;;; Swank uses RPC-style communication with request IDs. Each :emacs-rex
+;;; message includes a unique ID that will be echoed in the :return response.
+;;;
+;;; Flow:
+;;; 1. Client sends (:emacs-rex form package thread id)
+;;; 2. Server responds with (:return (:ok result) id) or (:return (:abort) id)
+;;; 3. Server may send async events like :debug, :write-string
+;;;
+;;; We use condition variables to wait for responses synchronously.
 
 (defun make-request-id ()
   (bordeaux-threads:with-lock-held (*request-lock*)
@@ -279,6 +289,16 @@ Returns the parsed S-expression."
 ;;; ============================================================
 ;;; Reader Thread & Message Dispatch
 ;;; ============================================================
+;;;
+;;; The reader thread runs continuously while connected, reading incoming
+;;; messages and dispatching them to appropriate handlers:
+;;;
+;;; - :return - Response to a request, fulfill the pending request
+;;; - :debug - Debugger entered, track state and fulfill pending request
+;;; - :write-string - Output from evaluated code
+;;; - :debug-activate/:debug-return - Debugger lifecycle events
+;;; - :new-package/:new-features - Environment changes
+;;; - :ping - Keepalive, respond with :emacs-pong
 
 (defun swank-reader-loop ()
   "Background thread: continuously read incoming Swank messages."
@@ -407,6 +427,14 @@ STRING is the output text, TARGET indicates where it should go."
 ;;; ============================================================
 ;;; Event Queue (for async :debug, :write-string)
 ;;; ============================================================
+;;;
+;;; Async events from Swank are queued for later processing. This allows:
+;;; 1. Debugger state to be retrieved via swank-get-restarts
+;;; 2. Output to be captured and displayed
+;;; 3. Future support for MCP notifications to clients
+;;;
+;;; Events are processed by a background thread but remain available
+;;; for tools that need them (e.g., pop-debugger-event for restarts).
 
 (defstruct swank-event
   type
@@ -477,6 +505,17 @@ Output events are just logged."
 ;;; ============================================================
 ;;; RPC Operations (MCP Tool Handlers)
 ;;; ============================================================
+;;;
+;;; These functions implement the Swank RPC operations that MCP tools call.
+;;; They all use send-request which handles the protocol details.
+;;;
+;;; Key patterns:
+;;; - Use swank-sym to create symbols that resolve on the server
+;;; - Pass string args when using eval-and-grab-output (IO package limit)
+;;; - Track debugger state for restarts/stepping operations
+;;;
+;;; Some operations (stepping, breakpoints) require specific debugger
+;;; context which may not always be available.
 
 (defun swank-eval (&key code (package "CL-USER"))
   "Evaluate Lisp code via Swank RPC.
@@ -573,6 +612,13 @@ Returns (values thread-id level in-debugger-p)."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Breakpoint RPCs
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Breakpoint support in Swank is limited. The standard Swank backend
+;;; provides sldb-break-at-start but it requires the debugger to be active.
+;;; These functions provide a basic interface but may not work in all cases.
+;;;
+;;; For production debugging, consider using SBCL's native breakpoints
+;;; via swank-eval with (break "message") or using the trace facility.
 
 (defun swank-set-breakpoint (&key function condition hit-count thread)
   "Set a breakpoint via Swank."
@@ -659,6 +705,15 @@ Uses eval-and-grab-output to call swank/backend:arglist."
 ;;; ============================================================
 ;;; Public API for MCP Tools
 ;;; ============================================================
+;;;
+;;; These are the MCP tool handler functions that are registered in
+;;; register-tools.lisp. They provide a clean interface over the RPC
+;;; operations above.
+;;;
+;;; All handlers use &key arguments because MCP JSON params are converted
+;;; to keyword arguments (e.g., "thread_id" -> :THREAD-ID -> thread_id).
+;;; Note the underscore naming in the function parameter to match the
+;;; converted keyword.
 
 (defun mcp-swank-eval (&key code (package "CL-USER"))
   "MCP tool handler: Evaluate Lisp code via Swank."
@@ -707,6 +762,8 @@ Uses eval-and-grab-output to call swank/backend:arglist."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Breakpoint MCP Tool Handlers
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; These wrap the breakpoint RPCs for MCP tool registration.
 
 (defun mcp-swank-set-breakpoint (&key function condition hit-count thread)
   "MCP tool handler: Set a breakpoint via Swank."

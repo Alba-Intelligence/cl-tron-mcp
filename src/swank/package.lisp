@@ -3,6 +3,11 @@
 (defpackage :cl-tron-mcp/swank
   (:use :cl)
   (:nicknames :cl-tron-mcp/swank/client)
+  (:shadowing-import-from :cl-tron-mcp/logging
+    #:log-info
+    #:log-debug
+    #:log-warn
+    #:log-error)
   (:export
    ;; Connection
    #:swank-connect
@@ -22,12 +27,12 @@
    #:swank-eval-in-frame
    #:swank-get-restarts
    #:swank-invoke-restart
-    ;; Stepping
-    #:swank-step
-    #:swank-next
-    #:swank-out
-    #:swank-continue
-    #:swank-debugger-state
+   ;; Stepping
+   #:swank-step
+   #:swank-next
+   #:swank-out
+   #:swank-continue
+   #:swank-debugger-state
    ;; Breakpoints
    #:swank-set-breakpoint
    #:mcp-swank-set-breakpoint
@@ -58,9 +63,4 @@
    ;; Events
    #:pop-debugger-event
    #:swank-event-processor
-   #:handle-swank-event
-   ;; Logging
-   #:log-info
-   #:log-debug
-   #:log-warn
-   #:log-error))
+   #:handle-swank-event))
