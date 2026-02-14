@@ -236,14 +236,17 @@ Returns the parsed S-expression."
   "Route incoming Swank message to appropriate handler."
   (when message
     (destructuring-bind (tag &rest args) message
-      (ecase tag
+      (case tag
         (:return
          ;; Response format: (:return (:ok result) id) or (:return (:abort error) id)
          (destructuring-bind (result id) args
            (fulfill-request id (list :result result))))
         (:debug
-          (destructuring-bind (thread level condition restarts frames) args
-            (enqueue-debugger-event condition restarts frames)))
+         ;; Format: (:debug thread level condition restarts frames extra)
+         ;; extra is usually just (level) or similar
+         (destructuring-bind (thread level condition restarts frames &optional extra) args
+           (declare (ignore extra))
+           (enqueue-debugger-event condition restarts frames)))
         (:write-string
          (destructuring-bind (string &optional target thread-id) args
            (handle-output string target)))
@@ -264,13 +267,19 @@ Returns the parsed S-expression."
            ))
         (:new-package
          (destructuring-bind (name prompt-string) args
-           (log-info "Swank package changed to ~a" name)))
+           (log-info (format nil "Swank package changed to ~a" name))))
+        (:new-features
+         ;; Sent after compile/load - just ignore
+         )
+        (:indentation-update
+         ;; Sent after compile - just ignore
+         )
         (:ping
          (destructuring-bind (thread-id tag) args
            (declare (ignore thread-id))
            (write-message `(:emacs-pong ,tag))))
         (t
-         (log-warn "Unhandled Swank message: ~s" message))))))
+         (log-warn (format nil "Unhandled Swank message: ~s" message)))))))
 
 ;;; ============================================================
 ;;; Request Sending
@@ -332,15 +341,20 @@ THREAD indicates which thread to use (t, :repl-thread, or integer)."
     (bordeaux-threads:condition-notify *event-condition*)))
 
 (defun dequeue-event (&optional (timeout 0.1))
-  "Dequeue and return next event, or NIL if timeout."
+  "Dequeue and return next non-debug event, or NIL if timeout.
+Debug events are left in the queue for pop-debugger-event."
   (declare (ignore timeout))
   (bordeaux-threads:with-lock-held (*event-mutex*)
     (loop while (and (zerop (length *event-queue*))
                      *event-processor-running*)
           do (bordeaux-threads:condition-wait
                *event-condition* *event-mutex*))
-    (unless (zerop (length *event-queue*))
-      (vector-pop *event-queue*))))
+    ;; Find and remove a non-debug event
+    (loop for i from 0 below (length *event-queue*)
+          for event = (aref *event-queue* i)
+          unless (eq (swank-event-type event) :debug)
+          do (setf *event-queue* (delete event *event-queue* :test #'eq))
+             (return event))))
 
 (defun swank-event-processor ()
   "Background thread: processes async events (currently just consumes them).
@@ -353,10 +367,14 @@ Events could be forwarded to MCP clients as notifications in the future."
   (log-debug "Swank event processor exiting"))
 
 (defun handle-swank-event (event)
-  "Process a Swank event (for now, just log)."
+  "Process a Swank event.
+Debug events are kept in the queue for pop-debugger-event.
+Output events are just logged."
   (ecase (swank-event-type event)
     (:debug
-     (log-info (format nil "Debugger event: ~a" (getf (swank-event-data event) :condition))))
+     ;; Don't consume - leave in queue for pop-debugger-event
+     ;; Just log for visibility
+     (log-info (format nil "Debugger event queued: ~a" (getf (swank-event-data event) :condition))))
     (:output
      (let ((data (swank-event-data event)))
        (log-debug (format nil "Output: ~a" (getf data :string)))))))
@@ -379,14 +397,14 @@ so symbols like + are resolved correctly."
     (send-request form :package package :thread t)))
 
 (defun swank-compile (&key code (package "CL-USER") (filename "repl"))
-  "Compile Lisp code via Swank."
+  "Compile Lisp code via Swank.
+CODE should be a string containing Lisp code.
+Uses swank:compile-string-for-emacs with simple arguments."
   (unless code
     (return-from swank-compile (list :error t :message "code is required")))
-  (let ((form `(,(swank-sym "COMPILE-STRING-FOR-EMACS") ,code
-                                                 :buffer ,filename
-                                                 :position 0
-                                                 :filename ,filename
-                                                 :policy nil)))
+  ;; swank:compile-string-for-emacs takes (string buffer position filename policy)
+  ;; position can be nil, policy can be nil
+  (let ((form `(,(swank-sym "COMPILE-STRING-FOR-EMACS") ,code ,filename nil ,filename nil)))
     (send-request form :package package :thread t)))
 
 (defun swank-backtrace (&key (start 0) (end 20))
@@ -594,9 +612,11 @@ Returns (values condition restarts frames) or NIL if none."
   (bordeaux-threads:with-lock-held (*event-mutex*)
     (loop for i from (1- (length *event-queue*)) downto 0
           when (eq (swank-event-type (aref *event-queue* i)) :debug)
-          do (let ((event (aref *event-queue* i))
-                   (data (swank-event-data (aref *event-queue* i))))
-               (deletef (aref *event-queue* i) *event-queue*)
+          do (let* ((event (aref *event-queue* i))
+                    (data (swank-event-data event)))
+               ;; Remove the event from the vector
+               (setf *event-queue* 
+                     (delete (aref *event-queue* i) *event-queue* :test #'eq))
                (return (values (getf data :condition)
                                (getf data :restarts)
                                (getf data :frames)))))))
