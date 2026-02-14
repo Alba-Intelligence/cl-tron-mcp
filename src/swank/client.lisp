@@ -433,7 +433,7 @@ so symbols like + are resolved correctly."
 
 (defun swank-continue ()
   "Continue execution from debugger."
-  (send-request (swank-sym "SLDB-CONTINUE") :package "CL-USER" :thread t))
+  (send-request `(,(swank-sym "SLDB-CONTINUE")) :package "CL-USER" :thread t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Breakpoint RPCs
@@ -452,7 +452,7 @@ so symbols like + are resolved correctly."
 
 (defun swank-list-breakpoints ()
   "List all breakpoints via Swank."
-  (send-request (swank-sym "BREAK-LIST") :package "CL-USER" :thread t))
+  (send-request `(,(swank-sym "BREAK-LIST")) :package "CL-USER" :thread t))
 
 (defun swank-toggle-breakpoint (&key breakpoint-id)
   "Toggle breakpoint enabled state via Swank."
@@ -463,7 +463,7 @@ so symbols like + are resolved correctly."
 
 (defun swank-threads ()
   "List all threads in Swank-connected SBCL."
-  (send-request (swank-sym "THREAD-LIST") :package "CL-USER" :thread t))
+  (send-request `(,(swank-sym "LIST-THREADS")) :package "CL-USER" :thread t))
 
 (defun swank-abort-thread (&key (thread-id :repl-thread))
   "Abort THREAD-ID (default: current REPL thread)."
@@ -472,7 +472,7 @@ so symbols like + are resolved correctly."
 
 (defun swank-interrupt ()
   "Interrupt current evaluation."
-  (send-request (swank-sym "INTERRUPT") :package "CL-USER" :thread t))
+  (send-request `(,(swank-sym "INTERRUPT")) :package "CL-USER" :thread t))
 
 (defun swank-inspect-object (&key expression)
   "Inspect an object via Swank.
