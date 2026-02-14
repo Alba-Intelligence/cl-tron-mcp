@@ -1,1034 +1,290 @@
 # CL-TRON-MCP
 
-A Model Context Protocol (MCP) server for SBCL Common Lisp that enables deep debugging, introspection, profiling, and hot code reloading for SBCL applications.
+**AI-Powered Debugging for Common Lisp**
 
-## Overview
+A Model Context Protocol (MCP) server that gives AI assistants deep access to running SBCL Common Lisp applications—debugger, inspector, profiler, and hot code reload.
 
-CL-TRON-MCP provides a comprehensive debugging and introspection toolkit for SBCL Common Lisp applications through the Model Context Protocol. It enables AI assistants and development tools to interact with running Lisp images for debugging, code analysis, and live modification.
+```
+┌─────────────────┐         ┌─────────────────┐
+│  SBCL + Swank   │◄───────►│   Tron (MCP)    │
+│  (Port 4005)    │         │   (stdio)       │
+│                 │         │                 │
+│  Your code      │         │   AI Agent      │
+│  Debugger       │◄───────►│   debugs        │
+│  Threads        │         │   inspects      │
+│  State lives    │         │   fixes         │
+└─────────────────┘         └─────────────────┘
+```
 
-### Key Features
+## The Demo
 
-- **Inspector Tools**: Introspect objects, slots, CLOS classes, functions, and packages
-- **Debugger Tools**: Access stack frames, restarts, breakpoints, and stepping control
-- **REPL Integration**: Evaluate Lisp code in the running image context
-- **Hot Reload**: Compile and load code strings, reload ASDF systems
-- **Profiler**: Deterministic profiling with report generation
-- **Tracer**: Function tracing with conditional support
-- **Thread Management**: List, inspect, and get backtraces for threads
-- **Monitor**: Health checks, memory statistics, and system information
-- **Logging**: log4cl integration for package-level and server-activity logging (stdout kept clean for stdio MCP)
-- **Cross-Reference**: Find function callers, callees, and symbol references
-- **Approval Whitelist**: Automate with pattern-based approval bypass
-- **Unified REPL Interface**: Single API for Swank (Slime) and nrepl (Sly, CIDER) - auto-detects protocol
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ $ ai "Debug factorial-example.lisp and fix it"                              │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-### Statistics
+  🔧 Connecting to Swank on port 4005... ✓
+  
+  🔧 Running (factorial 7)...
+      ⚠️  ERROR: The value NIL is not of type NUMBER
+      📍 Backtrace: (FACTORIAL 2) ← (FACTORIAL 3) ← (FACTORIAL 4)...
+  
+  🔧 Inspecting frame 0...
+      N = 2
+  
+  🐛 Bug found: Line 4 has (1) called as function, returns NIL
+     (if (> n 1) (* n (factorial (- n 1)) (1)))
+                                          ^^^
+                                          Should be: 1 (base case)
+  
+  🔧 Hot-reloading fixed function...
+     (if (> n 1) (* n (factorial (- n 1))) 1)
+                                          └─ moved here
+  
+  🔧 Verifying...
+      (factorial 7)  → 5040      ✓
+      (factorial 10) → 3628800   ✓
+  
+  ✅ Done! Session preserved. Update your source file to persist the fix.
 
-- **99 tools** across 14 categories
-- Rove test suite with integration tests
-- Full MCP protocol support (stdio, HTTP, WebSocket)
-- Verified working with OpenCode, Cursor, and VS Code
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Total time: 19 seconds | Tools used: 8 | Restarts: 0 (hot-reload)         │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
-### Requirements
+**No restart. No lost state. The Lisp session keeps running.**
 
-- SBCL 2.0.0 or later
-- Quicklisp
-- ASDF 3.0 or later
+## Quick Start
 
-### Recommended Setup: One Long-Running Lisp Session
+### 1. Start a Swank Server
 
-For the MCP to interact with Swank (or nrepl) the same way a user in Slime would—see output, debugger state, step, move frames, invoke restarts, inspect, compile—use **one long-running Lisp session** that you start and keep running:
+```lisp
+;; In SBCL
+(ql:quickload :swank)
+(swank:create-server :port 4005 :dont-close t)
+```
 
-1. **Start the Lisp session** with Swank (e.g. `(swank:create-server :port 4005)`) or nrepl (e.g. `(sly:nrepl-start :port 7888)`). All code loading and execution (by you or by the MCP) happens in this process; the debugger runs here; Slime/Sly can attach to the same session.
-2. **Start the MCP server** (e.g. Cursor starts it via `start-mcp.sh`). The MCP runs in a separate process and connects to your Lisp session as a Swank (or nrepl) client.
-3. **Use MCP tools** (`repl_eval`, `repl_backtrace`, `repl_inspect`, etc.) so the agent can load code, run it, see output and debugger state, step, move frames, invoke restarts, and fix code—all through the connected session.
+### 2. Configure Your AI Client
 
-See [Architecture](docs/architecture.md) and the Swank / nrepl Integration sections below for step-by-step setup.
+**Cursor** (`~/.cursor/mcp.json`):
+```json
+{
+  "mcpServers": {
+    "cl-tron-mcp": {
+      "command": ["/path/to/cl-tron-mcp/start-mcp.sh"]
+    }
+  }
+}
+```
+
+**Claude Code** (`~/.config/claude-code/mcp.json`):
+```json
+{
+  "mcpServers": {
+    "cl-tron-mcp": {
+      "command": ["sbcl", "--non-interactive", "--noinform",
+        "--eval", "(ql:quickload :cl-tron-mcp :silent t)",
+        "--eval", "(cl-tron-mcp/core:start-server :transport :stdio)"]
+    }
+  }
+}
+```
+
+### 3. Start Debugging
+
+Ask your AI: *"Connect to Swank on port 4005 and help me debug my code"*
+
+## Features
+
+| Category | What It Does | Tools |
+|----------|--------------|-------|
+| **Debug** | Backtrace, restarts, stepping, breakpoints | `swank_backtrace`, `swank_invoke_restart`, `swank_step` |
+| **Inspect** | Objects, classes, functions, packages | `inspect_object`, `inspect_class`, `inspect_function` |
+| **Evaluate** | Run code in the live session | `swank_eval`, `repl_eval` |
+| **Hot-Reload** | Fix bugs without restart | `swank_eval` with `defun`, `code_compile_string` |
+| **Profile** | Find performance bottlenecks | `profile_start`, `profile_stop`, `profile_report` |
+| **Trace** | See function call flow | `trace_function`, `trace_list` |
+| **XRef** | Find callers and callees | `who_calls`, `list_callees` |
+
+**99 tools total** across 14 categories.
+
+## Why Tron?
+
+### The Problem
+
+Traditional debugging with AI:
+- AI suggests fixes → you apply → restart → test → repeat
+- Lost state on every restart
+- No visibility into running system
+- Manual copy-paste between AI and REPL
+
+### The Solution
+
+With Tron:
+- AI connects directly to your running Lisp
+- Inspects live state (variables, threads, stack)
+- Hot-reloads fixes instantly
+- Session persists—no lost state
+
+### The Architecture
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        Your Machine                               │
+│                                                                   │
+│  ┌─────────────┐     ┌─────────────┐     ┌─────────────────────┐ │
+│  │   SBCL      │     │    Tron     │     │    AI Client        │ │
+│  │   +Swank    │◄───►│    MCP      │◄───►│  (Cursor/Claude)    │ │
+│  │             │     │   Server    │     │                     │ │
+│  │ Your code   │     │  (stdio)    │     │  You ask questions  │ │
+│  │ Debugger    │     │  99 tools   │     │  AI debugs directly │ │
+│  │ State───────┼─────┼─────────────┼─────┼─────────────────────┤ │
+│  └─────────────┘     └─────────────┘     └─────────────────────┘ │
+│        ▲                                        │                 │
+│        │                                        │                 │
+│        └────────────────────────────────────────┘                 │
+│              Same session, no restart                             │
+└──────────────────────────────────────────────────────────────────┘
+```
 
 ## Installation
 
-### Quicklisp (Recommended)
+### Quicklisp
 
 ```lisp
-;; Install via Quicklisp (if not already installed)
 (ql:quickload :cl-tron-mcp)
-
-;; Verify installation
-(cl-tron-mcp/core:health-check)
-;; => (:STATUS :HEALTHY :TOOLS 55 ...)
 ```
 
 ### From Source
 
 ```bash
-# Clone the repository
 git clone https://github.com/yourusername/cl-tron-mcp.git
 cd cl-tron-mcp
-
-# Set up Quicklisp to find the local project
-# Add to your ~/quicklisp/local-projects/ or use QL-PACKAGE-LOCAL-PROJECTS
-
-# Load in SBCL
-sbcl --eval '(ql:quickload :cl-tron-mcp)'
+# Link to quicklisp local-projects or load directly
+sbcl --eval '(load "cl-tron-mcp.asd")' --eval '(ql:quickload :cl-tron-mcp)'
 ```
 
-### Dependencies
+## Tool Highlights
 
-CL-TRON-MCP automatically pulls dependencies via Quicklisp:
+### Debugging Workflow
 
-- `closer-mop` - CLOS MOP support
-- `bordeaux-threads` - Portable threading
-- `local-time` - Timestamp handling
-- `rove` - Testing framework
-- `jonathan` - JSON handling
-- `usocket` - Socket support for HTTP transport
+```lisp
+;; AI triggers error
+(swank-eval :code "(my-buggy-function 7)")
+;; => ERROR with backtrace
 
-## MCP Client Integration
+;; AI inspects the error
+(swank-backtrace)
+;; => Frames showing where it failed
 
-CL-TRON-MCP works with any MCP-compatible client including **Opencode**, **Cursor**, **Claude Code**, and **VS Code**.
+;; AI fixes and hot-reloads
+(swank-eval :code "(defun my-buggy-function (x) (corrected x))")
 
-### Python Client Library
-
-```python
-from cl_tron_client import CLTronClient
-
-with CLTronClient() as client:
-    # Inspect a function
-    result = client.inspect_function("CL:CAR")
-    print(result)
-    
-    # Evaluate Lisp code
-    result = client.repl_eval("(+ 10 20)")
-    print(result)  # {"result": "30"}
+;; AI aborts the error and verifies
+(swank-invoke-restart :restart_index 2)  ; ABORT
+(swank-eval :code "(my-buggy-function 7)")
+;; => Correct result
 ```
 
-Install the client:
-```bash
-pip install cl-tron-mcp  # Coming soon
-# Or use directly:
-python cl_tron_client.py
+### Profiling Workflow
+
+```lisp
+(profile-start)
+;; Run your code
+(swank-eval :code "(process-large-dataset *data*)")
+(profile-stop)
+(profile-report :format "flat")
+;; => See which functions are slow
 ```
 
-### Opencode Integration
+### Cross-Reference
 
-1. **Configure OpenCode** (`~/.config/opencode/opencode.json`):
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "cl-tron-mcp": {
-      "type": "local",
-      "command": ["/path/to/cl-tron-mcp/start-mcp.sh"],
-      "enabled": true
-    }
-  }
-}
+```lisp
+;; Find who calls a function
+(who-calls :symbol_name "my-package:process")
+;; => List of callers
+
+;; Find what a function calls
+(list-callees :symbol_name "my-package:process")
+;; => List of callees
 ```
 
-2. **Start the MCP server**:
-   ```bash
-   # Using the start script (stdio transport)
-   ./start-mcp.sh
+## MCP Client Setup
 
-   # Or directly
-   sbcl --non-interactive \
-     --eval '(ql:quickload :cl-tron-mcp :silent t)' \
-     --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
-   ```
+### Cursor IDE
 
-### Cursor Integration
+1. Install MCP extension
+2. Copy `.cursor/mcp.json` to `~/.cursor/mcp.json`
+3. Restart Cursor
+4. Open a Lisp project and ask the AI to debug
 
-1. Install the MCP extension for Cursor
-2. Copy `.cursor/mcp.json` to your Cursor settings or use the local workspace config:
+### VS Code
 
-```bash
-# Copy to your Cursor settings
-cp .cursor/mcp.json ~/.cursor/mcp.json
-```
-
-Or use the direct config (`.cursor/mcp-direct.json`):
-```json
-{
-  "mcpServers": {
-    "cl-tron-mcp": {
-      "command": ["sbcl", "--non-interactive", "--eval", "(ql:quickload :cl-tron-mcp :silent t)", "--eval", "(cl-tron-mcp/core:start-server :transport :stdio)"],
-      "disabled": false,
-      "env": {}
-    }
-  }
-}
-```
-
-### VS Code Integration
-
-1. Install the MCP extension for VS Code
-2. Copy `.vscode/mcp.json` to your VS Code settings or use the local workspace config:
-
-```bash
-# Copy to your VS Code settings
-cp .vscode/mcp.json ~/.vscode/mcp.json
-```
-
-Or configure directly in `.vscode/mcp.json`:
-```json
-{
-  "mcpServers": {
-    "cl-tron-mcp": {
-      "command": ["bash", "-c", "cd /home/emmanuel/quicklisp/local-projects/cl-tron-mcp && sbcl --non-interactive --eval '(ql:quickload :cl-tron-mcp :silent t)' --eval '(cl-tron-mcp/core:start-server :transport :stdio)'"],
-      "disabled": false,
-      "env": {}
-    }
-  }
-}
-```
+1. Install MCP extension
+2. Copy `.vscode/mcp.json` to `~/.vscode/mcp.json`
+3. Use the AI assistant with Tron tools
 
 ### Claude Code CLI
 
 ```bash
-# Start MCP server
-sbcl --non-interactive \
-  --eval '(ql:quickload :cl-tron-mcp :silent t)' \
-  --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
-
-# Claude Code can connect via MCP protocol
+# Add to ~/.config/claude-code/mcp.json
+{
+  "mcpServers": {
+    "cl-tron-mcp": {
+      "command": ["/path/to/cl-tron-mcp/start-mcp.sh"]
+    }
+  }
+}
 ```
 
-## Usage
+## Requirements
 
-### Quick Start
+- **SBCL** 2.0.0 or later
+- **Quicklisp**
+- **Swank** (for Slime integration) or **cl-nrepl** (for nrepl)
 
-#### Lisp REPL
+## Documentation
+
+- **[AGENTS.md](AGENTS.md)** - Quick start for AI agents
+- **[docs/architecture.md](docs/architecture.md)** - How it works
+- **[prompts/workflow-examples.md](prompts/workflow-examples.md)** - Step-by-step examples
+- **[tutorial/](tutorial/)** - Tutorials and examples
+
+## Testing
 
 ```lisp
-;; Load the system
-(ql:quickload :cl-tron-mcp)
-
-;; Run the tutorial
-(load "tutorial-run.lisp")
-
-;; Or start the server
-(cl-tron-mcp/core:start-server :transport :stdio)
-```
-
-#### Python Client
-
-```python
-# Demo
-python cl_tron_client.py
-
-# Or import in your code
-from cl_tron_client import CLTronClient
-
-with CLTronClient() as client:
-    # List all available tools
-    print(client.tools.keys())
-    
-    # Inspect a function
-    result = client.inspect_function("CL:CAR")
-    
-    # Evaluate Lisp
-    result = client.repl_eval("(+ 1 2 3)")
-```
-
-### Starting the Server
-
-#### Stdio Transport (Primary)
-
-```lisp
-;; Start MCP server with stdio transport
-(cl-tron-mcp/core:start-server :transport :stdio)
-```
-
-**Stdio requirements (for MCP clients):** When the server is launched by an MCP client (Cursor, Kilocode, Opencode), stdout must contain only newline-delimited JSON-RPC messages. The server uses log4cl for all activity logging (to stderr) and does not write banners or logs to stdout. When starting SBCL via `start-mcp.sh` for stdio, the script uses `--noinform` to suppress the SBCL banner and redirects its own echo output to stderr so the client sees only JSON. Compilation and load progress are silenced (`*compile-verbose*` / `*load-verbose*` nil) so first-run build output does not appear on stdout. If the client still fails on first start, precompile once in a REPL: `(ql:quickload :cl-tron-mcp)` then restart the MCP server.
-
-#### HTTP Transport
-
-HTTP transport is implemented using `usocket` (no external dependencies needed):
-
-```lisp
-;; Start MCP server on port 8080
-(cl-tron-mcp/core:start-server :transport :http :port 8080)
-```
-
-**Note:** HTTP transport has some issues with thread handling. Stdio transport is recommended for production use.
-
-HTTP Endpoints:
-- `GET /` - List available tools
-- `POST /rpc` - Send MCP JSON-RPC message
-- `GET /health` - Health check
-
-Example:
-```bash
-curl http://127.0.0.1:8080/health
-curl -X POST -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' \
-  http://127.0.0.1:8080/rpc
-```
-
-#### WebSocket Transport
-
-```lisp
-;; Start MCP server with WebSocket on port 8081
-(cl-tron-mcp/core:start-server :transport :websocket :port 8081)
-```
-
-Note: WebSocket transport is a placeholder. Full implementation requires additional dependencies.
-
-#### Swank Integration (Recommended for agent workflow)
-
-Use **one long-running Lisp session** with Swank so the MCP (and Slime) can attach and interact with the same session—eval, debugger, backtrace, restarts, stepping, inspect. The MCP connects as a Swank client, like Slime.
-
-**Step 1: Start the Lisp session with Swank** (leave it running):
-
-```lisp
-;; In a terminal or Emacs: start SBCL, then:
-(ql:quickload :swank)
-(swank:create-server :port 4005)
-;; => Swank started on port 4005
-;; Keep this process running. Load your code here; the debugger will run here.
-```
-
-**Step 2: Start the MCP server** (Cursor/Kilocode/Opencode starts it via `start-mcp.sh` or your MCP config). The MCP runs in a separate process.
-
-**Step 3: Connect the MCP to your session** (via MCP tool `repl_connect` or `swank_connect` with port 4005, or configure the client to connect on startup). Then the agent can use `repl_eval`, `repl_backtrace`, `repl_inspect`, etc., and see all Swank output and debugger state.
-
-From Lisp (e.g. in another REPL) you can also connect the MCP server to Swank manually:
-
-```lisp
-;; 2. In the MCP server process (or a REPL that loaded cl-tron-mcp):
-(ql:quickload :cl-tron-mcp)
-(cl-tron-mcp/swank:swank-connect :port 4005)
-;; => (:SUCCESS T :HOST "127.0.0.1" :PORT 4005)
-
-;; Evaluate code via Swank
-(cl-tron-mcp/swank:swank-eval :code "(+ 10 20)" :package "CL-USER")
-;; => (:VALUE "30" ...)
-
-;; Get backtrace on error
-(cl-tron-mcp/swank:swank-backtrace)
-
-;; Inspect objects
-(cl-tron-mcp/swank:swank-inspect :expression "*package*")
-
-;; Get documentation
-(cl-tron-mcp/swank:swank-autodoc :symbol "mapcar")
-
-;; Disconnect when done
-(cl-tron-mcp/swank:swank-disconnect)
-```
-
-**Available Swank Tools (21 total):**
-
-| Tool | Description |
-|------|-------------|
-| `swank_connect` | Connect to Swank server |
-| `swank_disconnect` | Disconnect from Swank |
-| `swank_status` | Check connection status |
-| `swank_eval` | Evaluate Lisp code |
-| `swank_compile` | Compile Lisp code |
-| `swank_threads` | List all threads |
-| `swank_abort` | Abort a thread |
-| `swank_interrupt` | Interrupt evaluation |
-| `swank_backtrace` | Get backtrace |
-| `swank_inspect` | Inspect objects |
-| `swank_describe` | Describe symbols |
-| `swank_autodoc` | Get documentation |
-| `swank_completions` | Symbol completion |
-| `swank_get_restarts` | Get available restarts (when in debugger) |
-| `swank_invoke_restart` | Invoke a restart by index |
-| `swank_continue` | Continue from debugger |
-| `swank_step` | Step into next expression |
-| `swank_next` | Step over next expression |
-| `swank_out` | Step out of current frame |
-| `swank_debugger_state` | Get current debugger state |
-
-**Debugger Workflow:**
-
-When code triggers an error, `swank_eval` returns a debug state with condition, restarts, and frames:
-
-```lisp
-;; Trigger an error
-(swank-eval :code "(error \"test\")")
-;; => (:DEBUG T :THREAD 123 :LEVEL 1 :CONDITION "test [Condition...]" 
-;;     :RESTARTS ((RETRY ...) (*ABORT ...) (ABORT ...))
-;;     :FRAMES ((0 ...) (1 ...) ...))
-
-;; Get available restarts
-(swank-get-restarts)
-;; => (:RESTARTS ((RETRY ...) (*ABORT ...) (ABORT ...)) :THREAD 123 :LEVEL 1)
-
-;; Invoke a restart (3 = ABORT in this example)
-(swank-invoke-restart :restart_index 3)
-;; => (:RESULT (OK NIL))
-
-;; Now normal evaluation works
-(swank-eval :code "(+ 1 2)")
-;; => (:RESULT (OK (3)))
-```
-
-This enables the same workflow as SLIME/SLY in Emacs, but via MCP for AI agents.
-
-#### nrepl Integration (Sly, CIDER)
-
-Connect CL-TRON-MCP to a running SBCL with nrepl (cl-nrepl by Steve Losh) for debugging:
-
-```lisp
-;; 1. Start SBCL with cl-nrepl
-(pushnew #p"/path/to/cl-nrepl/" asdf:*central-registry* :test #'equal)
-(ql:quickload :nrepl)
-(nrepl:start-server :port 8675)
-;; => nrepl started on port 8675
-
-;; 2. Connect CL-TRON-MCP (in another terminal)
-(ql:quickload :cl-tron-mcp)
-
-;; Connect to nrepl
-(cl-tron-mcp/nrepl:nrepl-connect :port 8675)
-;; => (:SUCCESS T :HOST "127.0.0.1" :PORT 8675 ...)
-
-;; Evaluate code via nrepl
-(cl-tron-mcp/nrepl:nrepl-eval :code "(+ 10 20)" :package "CL-USER")
-;; => (:VALUE "30" ...)
-
-;; Get backtrace on error
-(cl-tron-mcp/nrepl:nrepl-backtrace)
-
-;; Inspect objects
-(cl-tron-mcp/nrepl:nrepl-inspect :expression "*package*")
-
-;; Get documentation
-(cl-tron-mcp/nrepl:nrepl-doc :symbol "mapcar")
-
-;; Disconnect when done
-(cl-tron-mcp/nrepl:nrepl-disconnect)
-```
-
-**Note:** Slynk/Sly uses Swank protocol, not nrepl. Use `swank_connect` on port 7888 for Slynk servers.
-
-**Available nrepl Tools (14 total):**
-
-| Tool | Description |
-|------|-------------|
-| `nrepl_connect` | Connect to nrepl server |
-| `nrepl_disconnect` | Disconnect from nrepl |
-| `nrepl_status` | Check connection status |
-| `nrepl_eval` | Evaluate Lisp code |
-| `nrepl_compile` | Compile Lisp code |
-| `nrepl_sessions` | List nrepl sessions |
-| `nrepl_close_session` | Close a session |
-| `nrepl_threads` | List all threads |
-| `nrepl_interrupt` | Interrupt evaluation |
-| `nrepl_backtrace` | Get backtrace |
-| `nrepl_inspect` | Inspect objects |
-| `nrepl_describe` | Describe symbols |
-| `nrepl_doc` | Get documentation |
-| `nrepl_completions` | Symbol completion |
-
- This enables the same workflow as CIDER/SLY in Emacs, but via MCP for AI agents.
-
-#### Unified REPL Interface (Recommended)
-
-CL-TRON-MCP provides a **unified REPL interface** that automatically detects and works with both Swank and nrepl:
-
-```lisp
-;; Auto-detect (tries Swank first, then nrepl)
-(cl-tron-mcp/unified:repl-connect :port 4005)
-;; => (:SUCCESS T :TYPE :SWANK ...)
-
-;; Or explicitly specify
-(cl-tron-mcp/unified:repl-connect :type :nrepl :port 7888)
-
-;; Same API regardless of protocol!
-(cl-tron-mcp/unified:repl-eval :code "(+ 10 20)")
-(cl-tron-mcp/unified:repl-completions :prefix "mak")
-(cl-tron-mcp/unified:repl-threads)
-```
-
-**Benefits:**
-- No need to know which REPL you're using
-- Auto-detection tries Swank (port 4005) first, then nrepl (port 7888)
-- Same tool names work with any REPL
-- Future-proof: works with any Swank or nrepl compatible tool
-
-**Available Unified Tools (12):**
-
-| Tool | Description |
-|------|-------------|
-| `repl_connect` | Connect to any REPL (auto-detect) |
-| `repl_disconnect` | Disconnect from REPL |
-| `repl_status` | Check connection status |
-| `repl_eval` | Evaluate Lisp code |
-| `repl_compile` | Compile Lisp code |
-| `repl_threads` | List all threads |
-| `repl_abort` | Abort/interrupt evaluation |
-| `repl_backtrace` | Get backtrace |
-| `repl_inspect` | Inspect object |
-| `repl_describe` | Describe symbol |
-| `repl_completions` | Get completions |
-| `repl_doc` | Get documentation |
-
-**MCP Tool Usage:**
-
-```json
-{
-  "tool": "repl_connect",
-  "arguments": {"port": 4005}
-}
-
-{
-  "tool": "repl_eval",
-  "arguments": {"code": "(+ 1 2 3)"}
-}
-
-{
-  "tool": "repl_completions",
-  "arguments": {"prefix": "mak"}
-}
-```
-
-**Swank vs nrepl:**
-
-| Feature | Swank | nrepl |
-|---------|-------|-------|
-| Slime | ✓ Native | Via compat |
-| Portacle | ✓ Native | Via compat |
-| Sly | ✗ | ✓ Native |
-| CIDER | ✗ | ✓ Native |
-| Protocol | S-expressions | JSON |
-
-**Choose your REPL:**
-- **Slime/Portacle**: Use `swank_connect` (port 4005)
-- **Sly/CIDER**: Use `nrepl_connect` (port 7888)
-
-### Available Tools
-
-#### Inspector Tools
-
-**inspect_object** - Inspect an object by ID
-
-```json
-{
-  "tool": "inspect_object",
-  "arguments": {
-    "objectId": "obj-123",
-    "maxDepth": 3
-  }
-}
-```
-
-**inspect_slot** - Get or set a slot value on an object
-
-```json
-{
-  "tool": "inspect_slot",
-  "arguments": {
-    "objectId": "obj-123",
-    "slotName": "name",
-    "value": "new-value"
-  }
-}
-```
-
-**inspect_class** - Inspect a CLOS class definition
-
-```json
-{
-  "tool": "inspect_class",
-  "arguments": {
-    "className": "MY-CLASS"
-  }
-}
-```
-
-**inspect_function** - Inspect a function definition
-
-```json
-{
-  "tool": "inspect_function",
-  "arguments": {
-    "symbolName": "MY-FUNCTION"
-  }
-}
-```
-
-**inspect_package** - Inspect a package and list its contents
-
-```json
-{
-  "tool": "inspect_package",
-  "arguments": {
-    "packageName": "MY-PACKAGE"
-  }
-}
-```
-
-#### Debugger Tools
-
-**debugger_frames** - Get debugger stack frames
-
-```json
-{
-  "tool": "debugger_frames",
-  "arguments": {
-    "thread": null,
-    "start": 0,
-    "end": 20
-  }
-}
-```
-
-**debugger_restarts** - List available debugger restarts
-
-```json
-{
-  "tool": "debugger_restarts",
-  "arguments": {}
-}
-```
-
-**breakpoint_set** - Set a breakpoint on a function
-
-```json
-{
-  "tool": "breakpoint_set",
-  "arguments": {
-    "functionName": "MY-FUNCTION",
-    "condition": null,
-    "hitCount": 0
-  }
-}
-```
-
-**breakpoint_remove** - Remove a breakpoint by ID
-
-```json
-{
-  "tool": "breakpoint_remove",
-  "arguments": {
-    "breakpointId": 1
-  }
-}
-```
-
-**breakpoint_list** - List all active breakpoints
-
-```json
-{
-  "tool": "breakpoint_list",
-  "arguments": {}
-}
-```
-
-**step_frame** - Step execution in a frame
-
-```json
-{
-  "tool": "step_frame",
-  "arguments": {
-    "frame": 0,
-    "mode": "into"
-  }
-}
-```
-
-#### REPL Tools
-
-**repl_eval** - Evaluate Lisp code (requires approval)
-
-```json
-{
-  "tool": "repl_eval",
-  "arguments": {
-    "code": "(format t \"Hello, World!~%\")",
-    "package": "CL-USER"
-  }
-}
-```
-
-#### Hot Reload Tools
-
-**code_compile_string** - Compile and load Lisp code (requires approval)
-
-```json
-{
-  "tool": "code_compile_string",
-  "arguments": {
-    "code": "(defun hello () (format t \"Hello!~%))",
-    "filename": "hello.lisp"
-  }
-}
-```
-
-**reload_system** - Reload ASDF system (requires approval)
-
-```json
-{
-  "tool": "reload_system",
-  "arguments": {
-    "systemName": "MY-SYSTEM",
-    "force": true
-  }
-}
-```
-
-#### Profiler Tools
-
-**profile_start** - Start deterministic profiling (requires approval)
-
-```json
-{
-  "tool": "profile_start",
-  "arguments": {}
-}
-```
-
-**profile_stop** - Stop profiling (requires approval)
-
-```json
-{
-  "tool": "profile_stop",
-  "arguments": {}
-}
-```
-
-**profile_report** - Get profiling report
-
-```json
-{
-  "tool": "profile_report",
-  "arguments": {
-    "format": "flat"
-  }
-}
-```
-
-#### Tracer Tools
-
-**trace_function** - Add trace to a function (requires approval)
-
-```json
-{
-  "tool": "trace_function",
-  "arguments": {
-    "functionName": "MY-FUNCTION",
-    "condition": null,
-    "hitCount": null
-  }
-}
-```
-
-**trace_remove** - Remove trace from a function (requires approval)
-
-```json
-{
-  "tool": "trace_remove",
-  "arguments": {
-    "functionName": "MY-FUNCTION"
-  }
-}
-```
-
-**trace_list** - List all traced functions
-
-```json
-{
-  "tool": "trace_list",
-  "arguments": {}
-}
-```
-
-#### Thread Tools
-
-**thread_list** - List all threads with their status
-
-```json
-{
-  "tool": "thread_list",
-  "arguments": {}
-}
-```
-
-**thread_inspect** - Get detailed information about a thread
-
-```json
-{
-  "tool": "thread_inspect",
-  "arguments": {
-    "threadId": "main thread"
-  }
-}
-```
-
-**thread_backtrace** - Get backtrace for a specific thread
-
-```json
-{
-  "tool": "thread_backtrace",
-  "arguments": {
-    "threadId": "main thread"
-  }
-}
-```
-
-#### Monitor Tools
-
-**health_check** - Basic health check for the MCP server
-
-```json
-{
-  "tool": "health_check",
-  "arguments": {}
-}
-```
-
-**runtime_stats** - Get runtime statistics
-
-```json
-{
-  "tool": "runtime_stats",
-  "arguments": {}
-}
-```
-
-**gc_run** - Force garbage collection
-
-```json
-{
-  "tool": "gc_run",
-  "arguments": {
-    "generation": 0
-  }
-}
-```
-
-**system_info** - Get comprehensive system information
-
-```json
-{
-  "tool": "system_info",
-  "arguments": {}
-}
-```
-
-## Development
-
-### Running Tests
-
-```lisp
-;; Run all tests
 (asdf:test-system :cl-tron-mcp)
+```
 
-;; Or via Rove
+Or with Rove:
+```lisp
 (ql:quickload :rove)
 (rove:run :cl-tron-mcp/tests)
 ```
 
-### Project Structure
-
-```
-cl-tron-mcp/
-├── src/
-│   ├── core/              # Core infrastructure
-│   ├── transport/         # Transport layer (stdio, http, websocket)
-│   ├── protocol/          # MCP protocol handler
-│   ├── tools/             # Tool registry
-│   ├── security/          # Approval workflow, audit logging
-│   ├── sbcl/              # SBCL integration
-│   ├── debugger/          # Debugging tools
-│   ├── inspector/         # Introspection tools
-│   ├── repl/              # REPL
-│   ├── hot-reload/        # Code reloading
-│   ├── profiler/          # Profiling
-│   ├── tracer/            # Tracing
-│   └── monitor/           # Monitoring
-├── tests/                 # Rove test suites
-├── cl_tron_client.py      # Python MCP client
-├── cl-tron-mcp.asd       # ASDF system definition
-└── AGENTS.md             # AI agent guidelines
-```
-
-### Building
-
-```lisp
-;; Compile from source
-(asdf:compile-system :cl-tron-mcp)
-
-;; Force recompile
-(asdf:compile-system :cl-tron-mcp :force t)
-```
-
-## Security
-
-Operations that can modify running code require user approval:
-
-- `:eval` - Code execution
-- `:compile-file` - Compilation
-- `:modify-running-code` - Hot swapping
-- `:terminate-thread` - Thread termination
-- `:set-breakpoint` - Breakpoint insertion
-- `:trace-function` - Function tracing
-
-Configure approval timeouts and behavior through the security module.
-
-### Approval Whitelist
-
-Operations can bypass approval for AI agent automation using the whitelist:
-
-```json
-{
-  "tool": "whitelist_add",
-  "arguments": {
-    "operation": "eval",
-    "pattern": "test-*"
-  }
-}
-```
-
-Whitelist management tools:
-- `whitelist_add` - Add pattern to whitelist
-- `whitelist_remove` - Remove pattern from whitelist
-- `whitelist_clear` - Clear whitelist
-- `whitelist_enable` - Enable/disable whitelist
-- `whitelist_status` - Check whitelist status
-
-## Logging Tools
-
-**log_configure** - Configure logging level for a package
-
-```json
-{
-  "tool": "log_configure",
-  "arguments": {
-    "level": "debug",
-    "package": "my-package"
-  }
-}
-```
-
-**log_info**, **log_debug**, **log_warn**, **log_error** - Log messages
-
-```json
-{
-  "tool": "log_info",
-  "arguments": {
-    "message": "Function started",
-    "package": "my-package"
-  }
-}
-```
-
-## Cross-Reference Tools
-
-CL-TRON-MCP uses SBCL's built-in `sb-introspect` library for cross-referencing:
-
-**who_calls** - Find functions that call a symbol
-
-```json
-{
-  "tool": "who_calls",
-  "arguments": {
-    "symbolName": "MY-FUNCTION"
-  }
-}
-```
-
-**list_callees** - List functions called by a symbol
-
-```json
-{
-  "tool": "list_callees",
-  "arguments": {
-    "symbolName": "MY-FUNCTION"
-  }
-}
-```
-
-**who_references** - Find references to a symbol
-**who_binds** - Find bindings of a symbol
-**who_sets** - Find setq/makunbound of a symbol
-
-Note: Dynamically created packages (e.g., created during compilation) may not be indexed by sb-introspect.
-
-## Tutorial
-
-Run the factorial tutorial to verify all tools are working:
-
-```bash
-sbcl --load tutorial-run.lisp
-```
-
-The tutorial demonstrates 10 key features:
-1. **INSPECT-FUNCTION** - Inspect function definitions
-2. **TRACE FUNCTION** - Trace function calls
-3. **WHO-CALLS** - Find function callers
-4. **DEBUGGER FRAMES** - Access stack frames
-5. **REPL EVAL** - Evaluate Lisp code
-6. **LOGGING** - Package-level logging
-7. **SYSTEM INFO** - Runtime information
-8. **RUNTIME STATS** - Memory and thread statistics
-9. **HEALTH CHECK** - Server health verification
-10. **APPROVAL CHECK** - Security verification
-
-See `tutorial/` directory for additional debugging tutorials:
-- `tutorial/README.md` - Tutorial guide
-- `tutorial/debugging-tutorial.lisp` - Lisp code examples
-- `tutorial/tutorial.json` - JSON format scenarios
-- `tutorial/swank-tutorial.lisp` - Swank integration tutorial
-
 ## Troubleshooting
 
-### MCP Client Issues
-
-| Symptom | Cause | Solution |
-| ------- | ----- | -------- |
-| Client shows "failed" after startup | Server using wrong JSON key case | Ensure responses use lowercase keys (`jsonrpc`, `id`, `result`) |
-| Client shows "failed" or parse error (stdio) | Non-JSON on stdout (banner, logs) | Use `start-mcp.sh` (uses `--noinform`, banner to stderr); do not write to stdout except JSON responses |
-| No response to requests | Thread crash or buffering | Use stdio transport; ensure `force-output` is called |
-| "Package not found" error | Quicklisp not loaded | Add `(ql:quickload :cl-tron-mcp)` before starting server |
-
-### Lisp Runtime Issues
-
-| Symptom | Cause | Solution |
-| ------- | ----- | -------- |
-| "Symbol not found" | Package not loaded | `(ql:quickload :cl-tron-mcp)` |
-| "Approval timeout" | User not responding | Increase timeout or proceed without approval |
-| "Transport bind failed" | Port in use | Use different port or kill conflicting process |
-| Tests failing | Stale FASL files | `(asdf:compile-system :cl-tron-mcp :force t)` |
-| "sb-introspect unavailable" | SBCL without sb-introspect | Most SBCL builds include it; reinstall if needed |
-| Debugger features unavailable | SBCL compiled without :sb-dbg | Rebuild SBCL with debugging or use default fallbacks |
-| "not a function" error | Case sensitivity in symbol | Use uppercase: `CL:CAR` not `cl:car` |
-
-### Verifying Server Works
-
-Test the server manually (use `--noinform` so stdout contains only JSON when piped):
-```bash
-echo '{"jsonrpc": "2.0", "method": "initialize", "params": {}, "id": 1}' | \
-  sbcl --non-interactive --noinform \
-    --eval '(ql:quickload :cl-tron-mcp :silent t)' \
-    --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
-```
-Or use the script: `echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | ./start-mcp.sh`
-
-Expected response:
-```json
-{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05",...}}
-```
+| Problem | Solution |
+|---------|----------|
+| "Package not found" | `(ql:quickload :cl-tron-mcp)` first |
+| Client shows "failed" | Use `start-mcp.sh` which handles stdio correctly |
+| "Not connected to REPL" | Run `swank_connect` or `repl_connect` first |
+| Tests fail with stale FASL | `(asdf:compile-system :cl-tron-mcp :force t)` |
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Implement changes following the `AGENTS.md` guidelines
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
+3. Follow guidelines in `AGENTS.md`
+4. Add tests
+5. Submit a pull request
 
 ## License
 
-CL-TRON-MCP is free software provided as is, with absolutely no warranty. It is mostly in the public domain; some portions are provided under BSD-style licenses. See the CREDITS and COPYING files in the distribution for more information.
+MIT-style. See LICENSE file.
 
 ## Resources
 
 - [SBCL Documentation](http://www.sbcl.org/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
-- [CLOS MOP Specification](https://clos-mop.hexstreamsoft.com/)
-- [Bordeaux Threads](https://common-lisp.net/project/bordeaux-threads/)
+- [Swank/Slime](https://slime.common-lisp.dev/)
