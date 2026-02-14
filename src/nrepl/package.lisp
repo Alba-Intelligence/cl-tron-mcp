@@ -4,8 +4,6 @@
 
 (defpackage :cl-tron-mcp/nrepl
   (:use :cl)
-  (:import-from :cl-tron-mcp/core
-                #:*version*)
   (:export
    ;; Connection
    #:nrepl-connect
