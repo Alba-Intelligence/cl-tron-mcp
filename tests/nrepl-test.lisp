@@ -10,9 +10,9 @@
 
 (deftest nrepl-error-handling-test
   (testing "nrepl functions return errors when not connected"
-    (let ((result (cl-tron-mcp/nrepl:nrepl-eval "(+ 1 2)")))
+    (let ((result (cl-tron-mcp/nrepl:nrepl-eval :code "(+ 1 2)")))
       (ok (getf result :error)))
     (let ((result (cl-tron-mcp/nrepl:nrepl-threads)))
       (ok (getf result :error)))
-    (let ((result (cl-tron-mcp/nrepl:nrepl-completions "mak")))
+    (let ((result (cl-tron-mcp/nrepl:nrepl-completions :prefix "mak")))
       (ok (getf result :error)))))
