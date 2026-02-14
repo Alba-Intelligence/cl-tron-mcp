@@ -321,6 +321,12 @@ THREAD indicates which thread to use (t, :repl-thread, or integer)."
           (remhash id *pending-requests*))
         (list :error t :message (princ-to-string e))))))
 
+(defun handle-output (string target)
+  "Handle :write-string output from Swank.
+STRING is the output text, TARGET indicates where it should go."
+  (declare (ignore target))
+  (enqueue-output-event string target))
+
 ;;; ============================================================
 ;;; Event Queue (for async :debug, :write-string)
 ;;; ============================================================
@@ -523,8 +529,9 @@ Returns (values thread-id level in-debugger-p)."
 EXPRESSION should be a string that evaluates to an object."
   (unless expression
     (return-from swank-inspect-object (list :error t :message "expression is required")))
-  (let ((obj (read-from-string expression)))
-    (send-request `(,(swank-sym "INIT-INSPECTOR") ,obj) :package "CL-USER" :thread t)))
+  (let ((form `(,(swank-sym "EVAL-AND-GRAB-OUTPUT")
+                 (,(swank-sym "INSPECT-IN-EMACS") ,expression))))
+    (send-request form :package "CL-USER" :thread t)))
 
 (defun swank-inspect-nth-part (&key (part-id 0))
   "Inspect the nth part of the current inspector."
@@ -534,8 +541,7 @@ EXPRESSION should be a string that evaluates to an object."
   "Describe an object via Swank."
   (unless symbol
     (return-from swank-describe (list :error t :message "symbol is required")))
-  (let ((obj (read-from-string symbol)))
-    (send-request `(,(swank-sym "DESCRIBE") ,obj) :package "CL-USER" :thread t)))
+  (send-request `(,(swank-sym "DESCRIBE-SYMBOL") ,symbol) :package "CL-USER" :thread t))
 
 (defun swank-autodoc (&key symbol)
   "Get documentation for SYMBOL (string)."
