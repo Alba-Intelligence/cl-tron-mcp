@@ -4,7 +4,8 @@
 ;;;; Messages are dictionaries with string keys.
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (ql:quickload :usocket :silent t))
+  (ql:quickload :usocket :silent t)
+  (ql:quickload :bencode :silent t))
 
 (in-package :cl-tron-mcp/nrepl)
 
@@ -28,107 +29,43 @@
   "Message ID counter")
 
 ;;; ============================================================
-;;; Bencode Implementation
+;;; Bencode Helper Functions
 ;;; ============================================================
 ;;;
-;;; nrepl uses bencode for serialization. We implement a minimal
-;;; version here since quicklisp bencode may not be available.
+;;; We use the quicklisp bencode library for serialization.
 
-(defun bencode-encode (object stream)
-  "Encode OBJECT to STREAM using bencode.
-Supports: strings, integers, lists (as arrays), hash-tables/alists (as dicts)."
-  (typecase object
-    (integer
-     (format stream "i~ae" object))
-    (string
-     (format stream "~a:~a" (length object) object))
-    (cons
-     (if (consp (car object))
-         ;; Association list -> dict
-         (let ((len (length object)))
-           (format stream "d~a" len)
-           (dolist (pair object)
-             (bencode-encode (car pair) stream)
-             (bencode-encode (cdr pair) stream))
-           (write-char #\e stream))
-         ;; Regular list -> array
-         (let ((len (length object)))
-           (format stream "l~a" len)
-           (dolist (item object)
-             (bencode-encode item stream))
-           (write-char #\e stream))))
-    (hash-table
-     (format stream "d")
-     (maphash (lambda (k v)
-                (bencode-encode (string k) stream)
-                (bencode-encode v stream))
-              object)
-     (write-char #\e stream))
-    (null
-     (format stream "le"))
-    (t
-     (bencode-encode (princ-to-string object) stream))))
+(defun make-nrepl-message (&rest key-values)
+  "Create a hash-table suitable for bencode encoding.
+KEY-VALUES should be alternating keys and values."
+  (let ((msg (make-hash-table :test #'equal)))
+    (loop for (key value) on key-values by #'cddr
+          do (setf (gethash (string key) msg)
+                   (if (integerp value) value (princ-to-string value))))
+    msg))
 
-(defun bencode-read-integer (stream)
-  "Read integer until 'e' marker."
-  (loop with result = 0
-        for char = (read-char stream)
-        until (char= char #\e)
-        do (setf result (+ (* result 10) (- (char-code char) (char-code #\0))))
-        finally (return result)))
-
-(defun bencode-read-length (stream)
-  "Read integer digits until colon (for string/bytes length)."
-  (loop with result = 0
-        for char = (read-char stream)
-        until (char= char #\:)
-        do (setf result (+ (* result 10) (- (char-code char) (char-code #\0))))
-        finally (return result)))
-
-(defun bencode-read-string (stream length)
-  "Read string of LENGTH bytes."
-  (let ((result (make-string length)))
-    (read-sequence result stream)
-    result))
-
-(defun bencode-read (stream)
-  "Read bencode value from STREAM."
-  (let ((char (read-char stream)))
-    (case char
-      (#\i
-       (bencode-read-integer stream))
-      (#\l
-       (loop for c = (peek-char nil stream nil nil)
-             until (or (null c) (char= c #\e))
-             collect (bencode-read stream)
-             finally (when c (read-char stream))))
-      (#\d
-       (loop for c = (peek-char nil stream nil nil)
-             until (or (null c) (char= c #\e))
-             for key = (bencode-read stream)
-             for value = (bencode-read stream)
-             collect (cons key value)
-             finally (when c (read-char stream))))
-      ((#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
-       (unread-char char stream)
-       (let ((len (bencode-read-length stream)))
-         (bencode-read-string stream len)))
-      (t
-        (error "Invalid bencode: ~a" char)))))
+(defun hash-table-to-plist (ht)
+  "Convert a hash-table to a plist for easier access."
+  (let ((result nil))
+    (maphash (lambda (k v)
+               (push (intern (string-upcase k) :keyword) result)
+               (push v result))
+             ht)
+    (nreverse result)))
 
 ;;; ============================================================
 ;;; Connection Management
 ;;; ============================================================
 
-(defun nrepl-connect (&key (host "127.0.0.1") (port 7888) (timeout 10))
-  "Connect to an nrepl server (Slynk, CIDER, etc.)
+(defun nrepl-connect (&key (host "127.0.0.1") (port 8675) (timeout 10))
+  "Connect to an nrepl server (cl-nrepl, Clojure nrepl, etc.)
 
    Usage:
-     (cl-tron-mcp/nrepl:nrepl-connect :host \"127.0.0.1\" :port 7888)
+     (cl-tron-mcp/nrepl:nrepl-connect :host \"127.0.0.1\" :port 8675)
 
-   On the SBCL side with Slynk:
-     (ql:quickload :slynk)
-     (slynk:create-server :port 7888 :dont-close t)
+   On the SBCL side with cl-nrepl:
+     (pushnew #p\"/path/to/cl-nrepl/\" asdf:*central-registry* :test #'equal)
+     (ql:quickload :nrepl)
+     (nrepl:start-server :port 8675)
 
    Returns: Connection info or error"
   (when *nrepl-connected*
@@ -136,17 +73,16 @@ Supports: strings, integers, lists (as arrays), hash-tables/alists (as dicts)."
       (list :error t :message "Already connected to nrepl server")))
   
   (handler-case
-      (let ((socket (usocket:socket-connect host port :timeout timeout)))
+      (let ((socket (usocket:socket-connect host port :timeout timeout
+                                            :element-type '(unsigned-byte 8))))
         (setq *nrepl-server* socket
               *nrepl-stream* (usocket:socket-stream socket)
               *nrepl-connected* t)
-        ;; Read the greeting (copy of version info dict)
-        (let ((greeting (read-nrepl-message)))
-          (declare (ignore greeting)))
         ;; Create a new session
         (let ((response (nrepl-send-raw "op" "clone")))
-          (when (assoc "new-session" response :test #'string=)
-            (setq *nrepl-session* (cdr (assoc "new-session" response :test #'string=)))))
+          (let ((session (getf response :new-session)))
+            (when session
+              (setq *nrepl-session* session))))
         (list :success t
               :host host
               :port port
@@ -191,18 +127,15 @@ Supports: strings, integers, lists (as arrays), hash-tables/alists (as dicts)."
 (defun read-nrepl-message ()
   "Read a bencode message from nrepl."
   (handler-case
-      (let ((result (bencode-read *nrepl-stream*)))
-        ;; Convert alist to plist for easier access
-        (loop for (key . value) in result
-              collect (intern (string-upcase key) :keyword)
-              collect value))
+      (let ((result (bencode:decode *nrepl-stream*)))
+        (hash-table-to-plist result))
     (error (e)
       (list :error t :message (princ-to-string e)))))
 
-(defun write-nrepl-message (alist)
+(defun write-nrepl-message (msg)
   "Write a bencode message to nrepl.
-ALIST should be a list of (key . value) pairs with string keys."
-  (bencode-encode alist *nrepl-stream*)
+MSG should be a hash-table with string keys."
+  (bencode:encode msg *nrepl-stream*)
   (force-output *nrepl-stream*))
 
 (defun nrepl-send-raw (&rest args)
@@ -213,14 +146,11 @@ ARGS are alternating key-value pairs."
       (list :error t :message "Not connected to nrepl server")))
   
   (let* ((msg-id (nrepl-next-id))
-         (msg (list (cons "id" (princ-to-string msg-id)))))
+         (msg (make-nrepl-message "id" msg-id)))
     (loop for (key value) on args by #'cddr
-          do (push (cons (string key) 
-                         (if (integerp value) 
-                             value 
-                             (princ-to-string value)))
-                   msg))
-    (write-nrepl-message (nreverse msg))
+          do (setf (gethash (string key) msg)
+                   (if (integerp value) value (princ-to-string value))))
+    (write-nrepl-message msg)
     (read-nrepl-message)))
 
 (defun nrepl-send (&rest args)
