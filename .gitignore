@@ -24,4 +24,7 @@ flake.lock
 git_examples
 tmp
 
+# VHS tape files (source for demo GIFs)
+*.tape
+
 
