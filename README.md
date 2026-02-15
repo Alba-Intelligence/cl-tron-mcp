@@ -4,23 +4,94 @@
 
 A Model Context Protocol (MCP) server that gives AI assistants deep access to running SBCL Common Lisp applications—debugger, inspector, profiler, and hot code reload.
 
+## How It Works
+
+### See It In Action
+
+**Basic Debugging Demo:**
+
+![Basic Demo](demo/demo.gif)
+
+The AI connects to your running Lisp, triggers an error, inspects the backtrace, hot-reloads a fix, and verifies it works—all without restarting.
+
+---
+
+**Kilocode CLI Demo:**
+
+![Kilocode Demo](demo/demo-kilocode.gif)
+
+Shows what you'd see when using Kilocode with Tron MCP: the terminal interface, commands, and output.
+
+---
+
+**Raw MCP Protocol:**
+
+![MCP Protocol](demo/demo-mcp-raw.gif)
+
+Shows the actual JSON-RPC messages that AI clients send to Tron internally. This is what Kilocode, Cursor, and Claude Code do under the hood.
+
+---
+
+### Architecture
+
 ```
-┌─────────────────┐         ┌─────────────────┐
-│  SBCL + Swank   │◄───────►│   Tron (MCP)    │
-│  (Port 4005)    │         │   (stdio)       │
-│                 │         │                 │
-│  Your code      │         │   AI Agent      │
-│  Debugger       │◄───────►│   debugs        │
-│  Threads        │         │   inspects      │
-│  State lives    │         │   fixes         │
-└─────────────────┘         └─────────────────┘
+┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
+│  SBCL + Swank   │◄───────►│   Tron (MCP)    │◄───────►│   AI Client     │
+│  (Port 4005)    │         │   (stdio)       │         │ (Kilocode, etc) │
+│                 │         │                 │         │                 │
+│  Your code      │         │   99 tools:     │         │  Sends prompts  │
+│  Debugger       │         │   - swank_eval  │         │  Receives       │
+│  Threads        │         │   - inspect     │         │  results        │
+│  State lives    │         │   - profile     │         │                 │
+└─────────────────┘         └─────────────────┘         └─────────────────┘
+        ▲
+        │
+        └──────────────────────────────────────────────────────┘
+                      Same session, no restart
 ```
 
-## The Demo
+**Key insight:** All state lives in the SBCL process. Tron connects as a client. The session persists across debugging, hot-reloads, and errors.
 
-![Tron Demo](demo/demo.gif)
+📖 **[Full architecture documentation →](docs/architecture.md)**
 
-**No restart. No lost state. The Lisp session keeps running.**
+## Features
+
+| Category | Description | Documentation |
+|----------|-------------|---------------|
+| **Debugger** | Backtrace, restarts, stepping, breakpoints | [docs/tools/debugger.md](docs/tools/debugger.md) |
+| **Inspector** | Objects, slots, classes, functions, packages | [docs/tools/inspector.md](docs/tools/inspector.md) |
+| **Hot Reload** | Compile strings, reload systems | [docs/tools/hot-reload.md](docs/tools/hot-reload.md) |
+| **Profiler** | Start/stop profiling, generate reports | [docs/tools/profiler.md](docs/tools/profiler.md) |
+| **Threads** | List, inspect, get backtraces | [docs/tools/threads.md](docs/tools/threads.md) |
+| **Monitor** | Health checks, runtime stats, GC | [docs/tools/monitor.md](docs/tools/monitor.md) |
+| **Swank** | Slime/Portacle integration (21 tools) | [docs/swank-integration.md](docs/swank-integration.md) |
+
+**99 tools total** across 14 categories.
+
+### Quick Tool Examples
+
+**Debug an error:**
+```lisp
+(swank-eval :code "(my-buggy-function 7)")  ; triggers error
+(swank-backtrace)                            ; see stack frames
+(swank-invoke-restart :restart_index 2)      ; abort
+(swank-eval :code "(defun my-buggy-function ...)")  ; hot-reload fix
+```
+
+**Profile performance:**
+```lisp
+(profile-start)
+(swank-eval :code "(process-data)")
+(profile-stop)
+(profile-report :format "flat")
+```
+
+**Find callers:**
+```lisp
+(who-calls :symbol_name "my-package:process")
+```
+
+📖 **[More workflow examples →](prompts/workflow-examples.md)**
 
 ## Quick Start
 
@@ -33,6 +104,17 @@ A Model Context Protocol (MCP) server that gives AI assistants deep access to ru
 ```
 
 ### 2. Configure Your AI Client
+
+**Kilocode** (`~/.kilocode/cli/config.json`):
+```json
+{
+  "mcpServers": {
+    "cl-tron-mcp": {
+      "command": ["/path/to/cl-tron-mcp/start-mcp.sh"]
+    }
+  }
+}
+```
 
 **Cursor** (`~/.cursor/mcp.json`):
 ```json
@@ -60,60 +142,7 @@ A Model Context Protocol (MCP) server that gives AI assistants deep access to ru
 
 ### 3. Start Debugging
 
-Ask your AI: *"Connect to Swank on port 4005 and help me debug my code"*
-
-## Features
-
-| Category | What It Does | Tools |
-|----------|--------------|-------|
-| **Debug** | Backtrace, restarts, stepping, breakpoints | `swank_backtrace`, `swank_invoke_restart`, `swank_step` |
-| **Inspect** | Objects, classes, functions, packages | `inspect_object`, `inspect_class`, `inspect_function` |
-| **Evaluate** | Run code in the live session | `swank_eval`, `repl_eval` |
-| **Hot-Reload** | Fix bugs without restart | `swank_eval` with `defun`, `code_compile_string` |
-| **Profile** | Find performance bottlenecks | `profile_start`, `profile_stop`, `profile_report` |
-| **Trace** | See function call flow | `trace_function`, `trace_list` |
-| **XRef** | Find callers and callees | `who_calls`, `list_callees` |
-
-**99 tools total** across 14 categories.
-
-## Why Tron?
-
-### The Problem
-
-Traditional debugging with AI:
-- AI suggests fixes → you apply → restart → test → repeat
-- Lost state on every restart
-- No visibility into running system
-- Manual copy-paste between AI and REPL
-
-### The Solution
-
-With Tron:
-- AI connects directly to your running Lisp
-- Inspects live state (variables, threads, stack)
-- Hot-reloads fixes instantly
-- Session persists—no lost state
-
-### The Architecture
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│                        Your Machine                               │
-│                                                                   │
-│  ┌─────────────┐     ┌─────────────┐     ┌─────────────────────┐ │
-│  │   SBCL      │     │    Tron     │     │    AI Client        │ │
-│  │   +Swank    │◄───►│    MCP      │◄───►│  (Cursor/Claude)    │ │
-│  │             │     │   Server    │     │                     │ │
-│  │ Your code   │     │  (stdio)    │     │  You ask questions  │ │
-│  │ Debugger    │     │  99 tools   │     │  AI debugs directly │ │
-│  │ State───────┼─────┼─────────────┼─────┼─────────────────────┤ │
-│  └─────────────┘     └─────────────┘     └─────────────────────┘ │
-│        ▲                                        │                 │
-│        │                                        │                 │
-│        └────────────────────────────────────────┘                 │
-│              Same session, no restart                             │
-└──────────────────────────────────────────────────────────────────┘
-```
+Ask your AI: *"Connect to Swank on port 4005 and debug factorial-example.lisp"*
 
 ## Installation
 
@@ -128,107 +157,65 @@ With Tron:
 ```bash
 git clone https://github.com/yourusername/cl-tron-mcp.git
 cd cl-tron-mcp
-# Link to quicklisp local-projects or load directly
 sbcl --eval '(load "cl-tron-mcp.asd")' --eval '(ql:quickload :cl-tron-mcp)'
 ```
 
-## Tool Highlights
+## Development
 
-### Debugging Workflow
-
-```lisp
-;; AI triggers error
-(swank-eval :code "(my-buggy-function 7)")
-;; => ERROR with backtrace
-
-;; AI inspects the error
-(swank-backtrace)
-;; => Frames showing where it failed
-
-;; AI fixes and hot-reloads
-(swank-eval :code "(defun my-buggy-function (x) (corrected x))")
-
-;; AI aborts the error and verifies
-(swank-invoke-restart :restart_index 2)  ; ABORT
-(swank-eval :code "(my-buggy-function 7)")
-;; => Correct result
-```
-
-### Profiling Workflow
+### Running Tests
 
 ```lisp
-(profile-start)
-;; Run your code
-(swank-eval :code "(process-large-dataset *data*)")
-(profile-stop)
-(profile-report :format "flat")
-;; => See which functions are slow
+(asdf:test-system :cl-tron-mcp)
+
+;; Or with Rove
+(ql:quickload :rove)
+(rove:run :cl-tron-mcp/tests)
 ```
 
-### Cross-Reference
+### Project Structure
 
-```lisp
-;; Find who calls a function
-(who-calls :symbol_name "my-package:process")
-;; => List of callers
-
-;; Find what a function calls
-(list-callees :symbol_name "my-package:process")
-;; => List of callees
+```
+cl-tron-mcp/
+├── src/                    # Source code
+│   ├── core/               # Core infrastructure
+│   ├── swank/              # Swank client
+│   ├── nrepl/              # nrepl client
+│   ├── tools/              # Tool definitions
+│   └── ...
+├── tests/                  # Rove test suites
+├── docs/                   # Documentation
+│   ├── architecture.md     # How it works
+│   ├── swank-integration.md
+│   └── tools/              # Tool docs
+├── prompts/                # Workflow guides
+├── demo/                   # Demo generation
+└── AGENTS.md              # AI agent guidelines
 ```
 
-## MCP Client Setup
+### Documentation
 
-### Cursor IDE
+| Document | Purpose |
+|----------|---------|
+| [AGENTS.md](AGENTS.md) | Quick start for AI agents using Tron |
+| [docs/architecture.md](docs/architecture.md) | System architecture and design |
+| [docs/swank-integration.md](docs/swank-integration.md) | Swank protocol details |
+| [docs/demo-creation.md](docs/demo-creation.md) | How to create demo GIFs |
+| [prompts/workflow-examples.md](prompts/workflow-examples.md) | Step-by-step usage examples |
+| [prompts/debugging-workflows.md](prompts/debugging-workflows.md) | Debugging patterns |
 
-1. Install MCP extension
-2. Copy `.cursor/mcp.json` to `~/.cursor/mcp.json`
-3. Restart Cursor
-4. Open a Lisp project and ask the AI to debug
+### Contributing
 
-### VS Code
-
-1. Install MCP extension
-2. Copy `.vscode/mcp.json` to `~/.vscode/mcp.json`
-3. Use the AI assistant with Tron tools
-
-### Claude Code CLI
-
-```bash
-# Add to ~/.config/claude-code/mcp.json
-{
-  "mcpServers": {
-    "cl-tron-mcp": {
-      "command": ["/path/to/cl-tron-mcp/start-mcp.sh"]
-    }
-  }
-}
-```
+1. Fork the repository
+2. Create a feature branch
+3. Follow guidelines in [AGENTS.md](AGENTS.md)
+4. Add tests
+5. Submit a pull request
 
 ## Requirements
 
 - **SBCL** 2.0.0 or later
 - **Quicklisp**
-- **Swank** (for Slime integration) or **cl-nrepl** (for nrepl)
-
-## Documentation
-
-- **[AGENTS.md](AGENTS.md)** - Quick start for AI agents
-- **[docs/architecture.md](docs/architecture.md)** - How it works
-- **[prompts/workflow-examples.md](prompts/workflow-examples.md)** - Step-by-step examples
-- **[tutorial/](tutorial/)** - Tutorials and examples
-
-## Testing
-
-```lisp
-(asdf:test-system :cl-tron-mcp)
-```
-
-Or with Rove:
-```lisp
-(ql:quickload :rove)
-(rove:run :cl-tron-mcp/tests)
-```
+- **Swank** (for Slime) or **cl-nrepl** (for nrepl)
 
 ## Troubleshooting
 
@@ -238,14 +225,6 @@ Or with Rove:
 | Client shows "failed" | Use `start-mcp.sh` which handles stdio correctly |
 | "Not connected to REPL" | Run `swank_connect` or `repl_connect` first |
 | Tests fail with stale FASL | `(asdf:compile-system :cl-tron-mcp :force t)` |
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Follow guidelines in `AGENTS.md`
-4. Add tests
-5. Submit a pull request
 
 ## License
 
