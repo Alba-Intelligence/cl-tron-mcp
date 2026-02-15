@@ -22,12 +22,6 @@ A Model Context Protocol (MCP) server that gives AI assistants deep access to ru
 
 **No restart. No lost state. The Lisp session keeps running.**
 
-### Step-by-Step
-
-| Connect | Error | Inspect | Fix |
-|:-------:|:-----:|:-------:|:---:|
-| ![Connect](demo/connect.gif) | ![Error](demo/error.gif) | ![Inspect](demo/inspect.gif) | ![Fix](demo/fix.gif) |
-
 ## Quick Start
 
 ### 1. Start a Swank Server

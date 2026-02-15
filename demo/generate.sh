@@ -1,5 +1,10 @@
 #!/bin/bash
-# Generate all demo GIFs using VHS
+# Generate demo GIF using VHS
+#
+# Prerequisites:
+#   - VHS installed: brew install vhs
+#   - Quicklisp available
+#   - No Swank server running on port 4005
 
 set -e
 
@@ -18,31 +23,28 @@ if ! command -v vhs &>/dev/null; then
 	exit 1
 fi
 
+# Check port 4005 is free
+if ss -tlnp 2>/dev/null | grep -q 4005; then
+	echo "Warning: Port 4005 is in use. Killing existing Swank..."
+	pkill -f 'swank:create-server' || true
+	sleep 2
+fi
+
 echo "VHS version: $(vhs --version)"
 echo ""
-
-# Generate individual GIFs
-echo "Generating demo GIFs..."
+echo "Generating demo.gif..."
+echo "  - Starts Swank server"
+echo "  - Connects with Tron"
+echo "  - Runs factorial debugging demo"
 echo ""
 
-for tape in *.tape; do
-	gif="${tape%.tape}.gif"
-	echo "  📹 $tape → $gif"
-	vhs "$tape" 2>/dev/null
-done
+vhs demo.tape
 
 echo ""
 echo "═══════════════════════════════════════════════════════════════════════════════"
-echo "  ✅ Done! Generated GIFs:"
+echo "  ✅ Done!"
 echo "═══════════════════════════════════════════════════════════════════════════════"
-ls -la *.gif
+ls -la demo.gif
 echo ""
 echo "Use in README.md:"
-echo "  ![Connect](demo/01-connect.gif)"
-echo "  ![Error](demo/02-error.gif)"
-echo "  ![Inspect](demo/03-inspect.gif)"
-echo "  ![Fix](demo/04-fix.gif)"
-echo "  ![Summary](demo/05-summary.gif)"
-echo ""
-echo "Or the full demo:"
-echo "  ![Factorial Demo](demo/factorial-demo.gif)"
+echo "  ![Tron Demo](demo/demo.gif)"
