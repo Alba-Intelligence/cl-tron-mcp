@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Generate demo GIF using VHS
 #
 # Prerequisites:
@@ -9,6 +9,10 @@
 set -e
 
 cd "$(dirname "$0")"
+
+# Use local tmp directory instead of /tmp
+export TMPDIR="$(pwd)/tmp"
+mkdir -p "$TMPDIR"
 
 echo "═══════════════════════════════════════════════════════════════════════════════"
 echo "  Tron Demo Generator"
@@ -31,6 +35,7 @@ if ss -tlnp 2>/dev/null | grep -q 4005; then
 fi
 
 echo "VHS version: $(vhs --version)"
+echo "Temp directory: $TMPDIR"
 echo ""
 echo "Generating demo.gif..."
 echo "  - Starts Swank server"
@@ -48,3 +53,6 @@ ls -la demo.gif
 echo ""
 echo "Use in README.md:"
 echo "  ![Tron Demo](demo/demo.gif)"
+
+# Cleanup temp directory
+rm -rf "$TMPDIR"
