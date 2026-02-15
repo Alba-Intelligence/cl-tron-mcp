@@ -57,6 +57,9 @@
               jq # JSON processor
               xxd # Hexadecimal editor
 
+              # Create ASCII GIFs
+              vhs
+
               sbcl
               code-cursor
               vscode
