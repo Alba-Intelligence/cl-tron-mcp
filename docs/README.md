@@ -1,39 +1,68 @@
 # CL-TRON-MCP Documentation
 
-## Overview
-
-- **[Architecture](architecture.md)** — Recommended setup: one long-running Lisp session (Swank or nrepl) that you start; the MCP connects to it and interacts with all Swank facilities (eval, debugger, backtrace, stepping, inspect) the same way a user in Slime would.
-- **[Swank Integration](swank-integration.md)** — Swank protocol implementation: wire protocol, client architecture, RPC operations reference.
-
-## Tool Documentation
+## Getting Started
 
 | Document | Description |
 |----------|-------------|
-| [tools/debugger.md](tools/debugger.md) | Debugger tools: frames, restarts, breakpoints, stepping |
-| [tools/inspector.md](tools/inspector.md) | Inspector tools: objects, slots, classes, functions, packages |
-| [tools/hot-reload.md](tools/hot-reload.md) | Hot reload: compile string, reload system |
-| [tools/profiler.md](tools/profiler.md) | Profiler tools: start, stop, report |
-| [tools/threads.md](tools/threads.md) | Thread tools: list, inspect, backtrace |
-| [tools/monitor.md](tools/monitor.md) | Monitor tools: health, runtime stats, GC, system info |
+| [Architecture](architecture.md) | How Tron works: one long-running Lisp session, MCP as client |
+| [Swank Integration](swank-integration.md) | Swank protocol implementation, wire format, RPC reference |
 
-## Quick Start
+## Tool Documentation
 
-1. Start a Swank server in your Lisp:
-   ```lisp
-   (ql:quickload :swank)
-   (swank:create-server :port 4005)
-   ```
+| Document | Tools Covered |
+|----------|---------------|
+| [tools/debugger.md](tools/debugger.md) | `debugger_frames`, `debugger_restarts`, `breakpoint_*`, `step_frame` |
+| [tools/inspector.md](tools/inspector.md) | `inspect_object`, `inspect_slot`, `inspect_class`, `inspect_function`, `inspect_package` |
+| [tools/hot-reload.md](tools/hot-reload.md) | `code_compile_string`, `reload_system` |
+| [tools/profiler.md](tools/profiler.md) | `profile_start`, `profile_stop`, `profile_report` |
+| [tools/threads.md](tools/threads.md) | `thread_list`, `thread_inspect`, `thread_backtrace` |
+| [tools/monitor.md](tools/monitor.md) | `health_check`, `runtime_stats`, `gc_run`, `system_info` |
 
-2. Connect the MCP:
-   ```json
-   {"name": "repl_connect", "arguments": {"port": 4005}}
-   ```
+## Development Documentation
 
-3. Use the tools:
-   ```json
-   {"name": "repl_eval", "arguments": {"code": "(+ 1 2)"}}
-   {"name": "repl_backtrace"}
-   {"name": "repl_frame_locals", "arguments": {"frame": 0}}
-   ```
+| Document | Description |
+|----------|-------------|
+| [demo-creation.md](demo-creation.md) | How to create and regenerate demo GIFs with VHS |
 
-See also AGENTS.md and README.md in the project root for setup, CRITICAL rules (stdio, log4cl, --noinform), and Swank/nrepl integration.
+## Workflow Guides
+
+Located in `../prompts/`:
+
+| Document | Description |
+|----------|-------------|
+| [workflow-examples.md](../prompts/workflow-examples.md) | Step-by-step examples for common tasks |
+| [debugging-workflows.md](../prompts/debugging-workflows.md) | Debugging patterns and strategies |
+| [hot-reload-development.md](../prompts/hot-reload-development.md) | Hot-reload development workflow |
+| [profiling-analysis.md](../prompts/profiling-analysis.md) | Performance profiling guide |
+| [production-monitoring.md](../prompts/production-monitoring.md) | Production monitoring setup |
+
+## Quick Reference
+
+### Start Swank Server
+```lisp
+(ql:quickload :swank)
+(swank:create-server :port 4005 :dont-close t)
+```
+
+### Connect via MCP
+```json
+{"name": "swank_connect", "arguments": {"port": 4005}}
+```
+
+### Common Tools
+```json
+{"name": "swank_eval", "arguments": {"code": "(+ 1 2)"}}
+{"name": "swank_backtrace"}
+{"name": "swank_frame_locals", "arguments": {"frame": 0}}
+{"name": "swank_invoke_restart", "arguments": {"restart_index": 2}}
+```
+
+### Run Tests
+```lisp
+(asdf:test-system :cl-tron-mcp)
+```
+
+## See Also
+
+- **[AGENTS.md](../AGENTS.md)** - Quick start guide for AI agents
+- **[README.md](../README.md)** - Project overview and installation
