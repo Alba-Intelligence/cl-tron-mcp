@@ -18,41 +18,15 @@ A Model Context Protocol (MCP) server that gives AI assistants deep access to ru
 
 ## The Demo
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ $ ai "Debug factorial-example.lisp and fix it"                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-
-  🔧 Connecting to Swank on port 4005... ✓
-  
-  🔧 Running (factorial 7)...
-      ⚠️  ERROR: The value NIL is not of type NUMBER
-      📍 Backtrace: (FACTORIAL 2) ← (FACTORIAL 3) ← (FACTORIAL 4)...
-  
-  🔧 Inspecting frame 0...
-      N = 2
-  
-  🐛 Bug found: Line 4 has (1) called as function, returns NIL
-     (if (> n 1) (* n (factorial (- n 1)) (1)))
-                                          ^^^
-                                          Should be: 1 (base case)
-  
-  🔧 Hot-reloading fixed function...
-     (if (> n 1) (* n (factorial (- n 1))) 1)
-                                          └─ moved here
-  
-  🔧 Verifying...
-      (factorial 7)  → 5040      ✓
-      (factorial 10) → 3628800   ✓
-  
-  ✅ Done! Session preserved. Update your source file to persist the fix.
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  Total time: 19 seconds | Tools used: 8 | Restarts: 0 (hot-reload)         │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+![Tron Demo](demo/demo.gif)
 
 **No restart. No lost state. The Lisp session keeps running.**
+
+### Step-by-Step
+
+| Connect | Error | Inspect | Fix |
+|:-------:|:-----:|:-------:|:---:|
+| ![Connect](demo/connect.gif) | ![Error](demo/error.gif) | ![Inspect](demo/inspect.gif) | ![Fix](demo/fix.gif) |
 
 ## Quick Start
 
