@@ -3,6 +3,7 @@
 *.x86f
 *.dfsl
 *.cfasl
+test-*
 
 # ASDF build artifacts
 *.lib/

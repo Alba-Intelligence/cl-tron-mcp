@@ -1,5 +1,0 @@
-(push #p"/home/emmanuel/quicklisp/local-projects/cl-tron-mcp/" ql:*local-project-directories*)
-(asdf:load-system :cl-tron-mcp)
-(format t "[TEST] About to start server...~%")
-(cl-tron-mcp/core:start-server :transport :stdio)
-(format t "[TEST] Server returned!~%")
