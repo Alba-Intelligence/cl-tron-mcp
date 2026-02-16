@@ -352,383 +352,404 @@
     :requires-approval nil)
    (register-tool-handler "whitelist_status" (function cl-tron-mcp/security:whitelist-status))
 
- ;;; Swank integration tools
- ;;; Connect CL-TRON-MCP to a running SBCL with Swank loaded
+  ;;; Swank integration tools
+  ;;; Connect CL-TRON-MCP to a running SBCL with Swank loaded
+  ;;;
+  ;;; IMPORTANT: These tools require a running Swank server.
+  ;;; To start Swank in your SBCL session:
+  ;;;   (ql:quickload :swank)
+  ;;;   (swank:create-server :port 4005 :dont-close t)
+  ;;;
+  ;;; Then use swank_connect to connect. All state persists in the SBCL session.
+
+    (register-tool
+     "swank_connect"
+     "Connect to a running SBCL with Swank loaded. PREREQUISITE: Start Swank in SBCL first with (ql:quickload :swank) (swank:create-server :port 4005 :dont-close t). Default port is 4005. Returns connection status."
+     :input-schema (list :host "string" :port "integer")
+     :output-schema (list :type "object")
+     :requires-approval nil)
+    (register-tool-handler "swank_connect" (function cl-tron-mcp/swank:swank-connect))
+
+    (register-tool
+     "swank_disconnect"
+     "Disconnect from the Swank server. The SBCL session continues running - only the MCP connection is closed."
+     :input-schema nil
+     :output-schema (list :type "object")
+     :requires-approval nil)
+    (register-tool-handler "swank_disconnect" (function cl-tron-mcp/swank:swank-disconnect))
+
+    (register-tool
+     "swank_status"
+     "Get the current Swank connection status. Shows if connected, reader thread status, and event processor status. Use to verify connection before using other Swank tools."
+     :input-schema nil
+     :output-schema (list :type "object")
+     :requires-approval nil)
+    (register-tool-handler "swank_status" (function cl-tron-mcp/swank:swank-status))
+
+    (register-tool
+     "swank_eval"
+     "Evaluate Lisp code in the connected SBCL session. REQUIRES: swank_connect first. Code runs in a persistent session - state is preserved across calls. Use for testing, debugging, and hot-patching code."
+     :input-schema (list :code "string" :package "string")
+     :output-schema (list :type "object")
+     :requires-approval t)
+    (register-tool-handler "swank_eval" (function cl-tron-mcp/swank:mcp-swank-eval))
+
+    (register-tool
+     "swank_compile"
+     "Compile and load Lisp code in the connected SBCL. REQUIRES: swank_connect first. Use for hot-reloading function definitions. The filename parameter helps with debugging messages."
+     :input-schema (list :code "string" :package "string" :filename "string")
+     :output-schema (list :type "object")
+     :requires-approval t)
+    (register-tool-handler "swank_compile" (function cl-tron-mcp/swank:mcp-swank-compile))
+
+    (register-tool
+     "swank_threads"
+     "List all threads in the connected SBCL. REQUIRES: swank_connect first. Shows thread names, status, and IDs for use with other thread tools."
+     :input-schema nil
+     :output-schema (list :type "object")
+     :requires-approval nil)
+    (register-tool-handler "swank_threads" (function cl-tron-mcp/swank:mcp-swank-threads))
+
+    (register-tool
+     "swank_abort"
+     "Abort a specific thread in the connected SBCL. REQUIRES: swank_connect first. Useful when a thread is stuck or in an error condition."
+     :input-schema (list :threadId "string")
+     :output-schema (list :type "object")
+     :requires-approval t)
+    (register-tool-handler "swank_abort" (function cl-tron-mcp/swank:mcp-swank-abort))
+
+    (register-tool
+     "swank_interrupt"
+     "Interrupt the current thread's execution in the connected SBCL. REQUIRES: swank_connect first. Triggers the debugger for long-running computations."
+     :input-schema nil
+     :output-schema (list :type "object")
+     :requires-approval t)
+    (register-tool-handler "swank_interrupt" (function cl-tron-mcp/swank:mcp-swank-interrupt))
+
+    (register-tool
+     "swank_backtrace"
+     "Get the current call stack from the connected SBCL. REQUIRES: swank_connect first. Use after swank_eval triggers an error to see where it occurred. Shows function names and source locations."
+     :input-schema nil
+     :output-schema (list :type "object")
+     :requires-approval nil)
+    (register-tool-handler "swank_backtrace" (function cl-tron-mcp/swank:mcp-swank-backtrace))
+
+    (register-tool
+     "swank_inspect"
+     "Inspect an object in the connected SBCL. REQUIRES: swank_connect first. EXPRESSION is evaluated, so use quoted symbols for variables: '*my-var*' or expressions: '(make-hash-table)'."
+     :input-schema (list :expression "string")
+     :output-schema (list :type "object")
+     :requires-approval nil)
+    (register-tool-handler "swank_inspect" (function cl-tron-mcp/swank:mcp-swank-inspect))
+
+    (register-tool
+     "swank_describe"
+     "Describe a symbol in the connected SBCL. REQUIRES: swank_connect first. Shows documentation, argument list, and source location."
+     :input-schema (list :expression "string")
+     :output-schema (list :type "object")
+     :requires-approval nil)
+    (register-tool-handler "swank_describe" (function cl-tron-mcp/swank:mcp-swank-describe))
+
+    (register-tool
+     "swank_autodoc"
+     "Get argument list and documentation for a symbol. REQUIRES: swank_connect first. Example: 'mapcar' shows (function list &rest more-lists)."
+     :input-schema (list :symbol "string")
+     :output-schema (list :type "object")
+     :requires-approval nil)
+    (register-tool-handler "swank_autodoc" (function cl-tron-mcp/swank:mcp-swank-autodoc))
+
+    (register-tool
+     "swank_completions"
+     "Get symbol completions in the connected SBCL. REQUIRES: swank_connect first. Example: prefix 'mak' returns (make-array make-hash-table make-instance ...)."
+     :input-schema (list :symbol "string" :package "string")
+     :output-schema (list :type "object")
+     :requires-approval nil)
+     (register-tool-handler "swank_completions" (function cl-tron-mcp/swank:mcp-swank-completions))
 
    (register-tool
-    "swank_connect"
-    "Connect to a running SBCL with Swank loaded. On SBCL: (ql:quickload :swank) (swank:create-server :port 4005)"
-    :input-schema (list :host "string" :port "integer")
-    :output-schema (list :type "object")
-    :requires-approval nil)
-   (register-tool-handler "swank_connect" (function cl-tron-mcp/swank:swank-connect))
-
-   (register-tool
-    "swank_disconnect"
-    "Disconnect from the Swank server"
+    "swank_get_restarts"
+    "Get available restarts when in the debugger. REQUIRES: swank_connect first. Use after swank_eval triggers an error. Shows recovery options like ABORT, RETRY, USE-VALUE, CONTINUE."
     :input-schema nil
     :output-schema (list :type "object")
     :requires-approval nil)
-   (register-tool-handler "swank_disconnect" (function cl-tron-mcp/swank:swank-disconnect))
+    (register-tool-handler "swank_get_restarts" (function cl-tron-mcp/swank:swank-get-restarts))
 
    (register-tool
-    "swank_status"
-    "Get the current Swank connection status"
+    "swank_invoke_restart"
+    "Invoke a restart by index to recover from an error. REQUIRES: swank_connect first. Use swank_get_restarts to see available options. Index is 1-based."
+    :input-schema (list :restart_index "integer")
+    :output-schema (list :type "object")
+    :requires-approval nil)
+    (register-tool-handler "swank_invoke_restart" (function cl-tron-mcp/swank:swank-invoke-restart))
+
+   (register-tool
+    "swank_continue"
+    "Continue execution from the debugger. REQUIRES: swank_connect first. Resumes normal execution after an error (if the condition is continuable)."
     :input-schema nil
     :output-schema (list :type "object")
     :requires-approval nil)
-   (register-tool-handler "swank_status" (function cl-tron-mcp/swank:swank-status))
+    (register-tool-handler "swank_continue" (function cl-tron-mcp/swank:swank-continue))
 
    (register-tool
-    "swank_eval"
-    "Evaluate Lisp code via Swank. Use this to execute code in the connected SBCL."
-    :input-schema (list :code "string" :package "string")
+    "swank_step"
+    "Step into the next expression in the debugger. REQUIRES: swank_connect first. Use when in a stepping context (entered via (step ...)). Shows the next form to be evaluated."
+    :input-schema (list :frame "integer")
     :output-schema (list :type "object")
-    :requires-approval t)
-   (register-tool-handler "swank_eval" (function cl-tron-mcp/swank:mcp-swank-eval))
+    :requires-approval nil)
+    (register-tool-handler "swank_step" (function cl-tron-mcp/swank:swank-step))
 
    (register-tool
-    "swank_compile"
-    "Compile Lisp code via Swank"
-    :input-schema (list :code "string" :package "string" :filename "string")
+    "swank_next"
+    "Step over the next expression in the debugger. REQUIRES: swank_connect first. Evaluates the next form without stepping into function calls."
+    :input-schema (list :frame "integer")
     :output-schema (list :type "object")
-    :requires-approval t)
-   (register-tool-handler "swank_compile" (function cl-tron-mcp/swank:mcp-swank-compile))
+    :requires-approval nil)
+    (register-tool-handler "swank_next" (function cl-tron-mcp/swank:swank-next))
 
    (register-tool
-    "swank_threads"
-    "List all threads in the Swank-connected SBCL"
+    "swank_out"
+    "Step out of the current frame in the debugger. REQUIRES: swank_connect first. Finishes the current function and stops at the return point."
+    :input-schema (list :frame "integer")
+    :output-schema (list :type "object")
+    :requires-approval nil)
+    (register-tool-handler "swank_out" (function cl-tron-mcp/swank:swank-out))
+
+   (register-tool
+    "swank_debugger_state"
+    "Get the current debugger state: which thread is in the debugger, the debugger level, and whether debugging is active. REQUIRES: swank_connect first."
     :input-schema nil
     :output-schema (list :type "object")
     :requires-approval nil)
-   (register-tool-handler "swank_threads" (function cl-tron-mcp/swank:mcp-swank-threads))
-
-   (register-tool
-    "swank_abort"
-    "Abort a specific thread, or the current thread if not specified"
-    :input-schema (list :threadId "string")
-    :output-schema (list :type "object")
-    :requires-approval t)
-   (register-tool-handler "swank_abort" (function cl-tron-mcp/swank:mcp-swank-abort))
-
-   (register-tool
-    "swank_interrupt"
-    "Interrupt the current thread's execution"
-    :input-schema nil
-    :output-schema (list :type "object")
-    :requires-approval t)
-   (register-tool-handler "swank_interrupt" (function cl-tron-mcp/swank:mcp-swank-interrupt))
-
-   (register-tool
-    "swank_backtrace"
-    "Get the current backtrace"
-    :input-schema nil
-    :output-schema (list :type "object")
-    :requires-approval nil)
-   (register-tool-handler "swank_backtrace" (function cl-tron-mcp/swank:mcp-swank-backtrace))
-
-   (register-tool
-    "swank_inspect"
-    "Inspect an object via Swank. Example: \"*package*\" or \"(make-hash-table)\""
-    :input-schema (list :expression "string")
-    :output-schema (list :type "object")
-    :requires-approval nil)
-   (register-tool-handler "swank_inspect" (function cl-tron-mcp/swank:mcp-swank-inspect))
-
-   (register-tool
-    "swank_describe"
-    "Describe an object via Swank. Example: \"car\" or \"list\""
-    :input-schema (list :expression "string")
-    :output-schema (list :type "object")
-    :requires-approval nil)
-   (register-tool-handler "swank_describe" (function cl-tron-mcp/swank:mcp-swank-describe))
-
-   (register-tool
-    "swank_autodoc"
-    "Get documentation for a symbol. Example: \"mapcar\" or \"(car list)\""
-    :input-schema (list :symbol "string")
-    :output-schema (list :type "object")
-    :requires-approval nil)
-   (register-tool-handler "swank_autodoc" (function cl-tron-mcp/swank:mcp-swank-autodoc))
-
-   (register-tool
-    "swank_completions"
-    "Get symbol completions via Swank. Example: \"mak\" returns (make-array make-hash-table ...)"
-    :input-schema (list :symbol "string" :package "string")
-    :output-schema (list :type "object")
-    :requires-approval nil)
-    (register-tool-handler "swank_completions" (function cl-tron-mcp/swank:mcp-swank-completions))
-
-  (register-tool
-   "swank_get_restarts"
-   "Get available restarts when in debugger. Use after an error triggers the debugger."
-   :input-schema nil
-   :output-schema (list :type "object")
-   :requires-approval nil)
-   (register-tool-handler "swank_get_restarts" (function cl-tron-mcp/swank:swank-get-restarts))
-
-  (register-tool
-   "swank_invoke_restart"
-   "Invoke a restart by index when in debugger. Use after swank_get_restarts to see available restarts."
-   :input-schema (list :restart_index "integer")
-   :output-schema (list :type "object")
-   :requires-approval nil)
-   (register-tool-handler "swank_invoke_restart" (function cl-tron-mcp/swank:swank-invoke-restart))
-
-  (register-tool
-   "swank_continue"
-   "Continue execution from debugger."
-   :input-schema nil
-   :output-schema (list :type "object")
-   :requires-approval nil)
-   (register-tool-handler "swank_continue" (function cl-tron-mcp/swank:swank-continue))
-
-  (register-tool
-   "swank_step"
-   "Step into next expression in debugger."
-   :input-schema (list :frame "integer")
-   :output-schema (list :type "object")
-   :requires-approval nil)
-   (register-tool-handler "swank_step" (function cl-tron-mcp/swank:swank-step))
-
-  (register-tool
-   "swank_next"
-   "Step over next expression in debugger."
-   :input-schema (list :frame "integer")
-   :output-schema (list :type "object")
-   :requires-approval nil)
-   (register-tool-handler "swank_next" (function cl-tron-mcp/swank:swank-next))
-
-  (register-tool
-   "swank_out"
-   "Step out of current frame in debugger."
-   :input-schema (list :frame "integer")
-   :output-schema (list :type "object")
-   :requires-approval nil)
-   (register-tool-handler "swank_out" (function cl-tron-mcp/swank:swank-out))
-
-  (register-tool
-   "swank_debugger_state"
-   "Get current debugger state (thread, level, in-debugger-p)."
-   :input-schema nil
-   :output-schema (list :type "object")
-   :requires-approval nil)
-   (register-tool-handler "swank_debugger_state" (function cl-tron-mcp/swank:swank-debugger-state))
+    (register-tool-handler "swank_debugger_state" (function cl-tron-mcp/swank:swank-debugger-state))
 
 ;;; nrepl tools (Sly, CIDER compatibility)
- (register-tool
-  "nrepl_connect"
-  "Connect to an nrepl server (Sly, CIDER)"
-  :input-schema (list :host "string" :port "integer")
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "nrepl_connect" (function cl-tron-mcp/nrepl:nrepl-connect))
-
- (register-tool
-  "nrepl_disconnect"
-  "Disconnect from nrepl server"
-  :input-schema nil
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "nrepl_disconnect" (function cl-tron-mcp/nrepl:nrepl-disconnect))
-
- (register-tool
-  "nrepl_status"
-  "Check nrepl connection status"
-  :input-schema nil
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "nrepl_status" (function cl-tron-mcp/nrepl:nrepl-status))
-
- (register-tool
-  "nrepl_eval"
-  "Evaluate Lisp code via nrepl"
-  :input-schema (list :code "string" :package "string")
-  :output-schema (list :type "object")
-  :requires-approval t)
- (register-tool-handler "nrepl_eval" (function cl-tron-mcp/nrepl:nrepl-eval))
-
- (register-tool
-  "nrepl_compile"
-  "Compile Lisp code via nrepl"
-  :input-schema (list :code "string" :package "string" :filename "string")
-  :output-schema (list :type "object")
-  :requires-approval t)
- (register-tool-handler "nrepl_compile" (function cl-tron-mcp/nrepl:nrepl-compile))
-
- (register-tool
-  "nrepl_sessions"
-  "List all nrepl sessions"
-  :input-schema nil
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "nrepl_sessions" (function cl-tron-mcp/nrepl:nrepl-sessions))
-
- (register-tool
-  "nrepl_close_session"
-  "Close an nrepl session"
-  :input-schema (list :session "string")
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "nrepl_close_session" (function cl-tron-mcp/nrepl:nrepl-close-session))
-
- (register-tool
-  "nrepl_threads"
-  "List all threads via nrepl"
-  :input-schema nil
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "nrepl_threads" (function cl-tron-mcp/nrepl:nrepl-threads))
-
- (register-tool
-  "nrepl_interrupt"
-  "Interrupt evaluation via nrepl"
-  :input-schema nil
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "nrepl_interrupt" (function cl-tron-mcp/nrepl:nrepl-interrupt))
-
- (register-tool
-  "nrepl_backtrace"
-  "Get backtrace via nrepl"
-  :input-schema (list :thread "string")
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "nrepl_backtrace" (function cl-tron-mcp/nrepl:nrepl-backtrace))
-
- (register-tool
-  "nrepl_inspect"
-  "Inspect an object via nrepl"
-  :input-schema (list :expression "string")
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "nrepl_inspect" (function cl-tron-mcp/nrepl:nrepl-inspect))
-
- (register-tool
-  "nrepl_describe"
-  "Describe a symbol via nrepl"
-  :input-schema (list :symbol "string")
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "nrepl_describe" (function cl-tron-mcp/nrepl:nrepl-describe))
-
- (register-tool
-  "nrepl_doc"
-  "Get documentation for a symbol via nrepl"
-  :input-schema (list :symbol "string")
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "nrepl_doc" (function cl-tron-mcp/nrepl:nrepl-doc))
-
- (register-tool
-  "nrepl_completions"
-  "Get symbol completions via nrepl"
-  :input-schema (list :prefix "string")
-  :output-schema (list :type "object")
-  :requires-approval nil)
-  (register-tool-handler "nrepl_completions" (function cl-tron-mcp/nrepl:nrepl-completions))
-
-;;; Unified REPL tools (auto-detects Swank vs nrepl)
- (register-tool
-  "repl_connect"
-  "Connect to any Lisp REPL (auto-detects Swank/nrepl)"
-  :input-schema (list :type "string" :host "string" :port "integer")
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "repl_connect" (function cl-tron-mcp/unified:repl-connect))
-
- (register-tool
-  "repl_disconnect"
-  "Disconnect from the current REPL"
-  :input-schema nil
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "repl_disconnect" (function cl-tron-mcp/unified:repl-disconnect))
-
- (register-tool
-  "repl_status"
-  "Check REPL connection status and type"
-  :input-schema nil
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "repl_status" (function cl-tron-mcp/unified:repl-status))
-
- (register-tool
-  "repl_eval"
-  "Evaluate Lisp code via the connected REPL"
-  :input-schema (list :code "string" :package "string")
-  :output-schema (list :type "object")
-  :requires-approval t)
- (register-tool-handler "repl_eval" (function cl-tron-mcp/unified:repl-eval))
-
- (register-tool
-  "repl_compile"
-  "Compile Lisp code via the connected REPL"
-  :input-schema (list :code "string" :package "string" :filename "string")
-  :output-schema (list :type "object")
-  :requires-approval t)
- (register-tool-handler "repl_compile" (function cl-tron-mcp/unified:repl-compile))
-
- (register-tool
-  "repl_threads"
-  "List all threads via the connected REPL"
-  :input-schema nil
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "repl_threads" (function cl-tron-mcp/unified:repl-threads))
-
- (register-tool
-  "repl_abort"
-  "Abort/interrupt evaluation via the connected REPL"
-  :input-schema nil
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "repl_abort" (function cl-tron-mcp/unified:repl-abort))
-
- (register-tool
-  "repl_backtrace"
-  "Get backtrace via the connected REPL"
-  :input-schema nil
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "repl_backtrace" (function cl-tron-mcp/unified:repl-backtrace))
-
- (register-tool
-  "repl_inspect"
-  "Inspect an object via the connected REPL"
-  :input-schema (list :expression "string")
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "repl_inspect" (function cl-tron-mcp/unified:repl-inspect))
-
- (register-tool
-  "repl_describe"
-  "Describe a symbol via the connected REPL"
-  :input-schema (list :symbol "string")
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "repl_describe" (function cl-tron-mcp/unified:repl-describe))
-
- (register-tool
-  "repl_completions"
-  "Get symbol completions via the connected REPL"
-  :input-schema (list :prefix "string" :package "string")
-  :output-schema (list :type "object")
-  :requires-approval nil)
- (register-tool-handler "repl_completions" (function cl-tron-mcp/unified:repl-completions))
+;;;
+;;; These tools work with nrepl servers (used by Sly and CIDER).
+;;; For nrepl, typically use port 7888 instead of Swank's 4005.
 
   (register-tool
-   "repl_doc"
-   "Get documentation for a symbol via the connected REPL"
+   "nrepl_connect"
+   "Connect to an nrepl server (Sly, CIDER). PREREQUISITE: Start nrepl server in your Lisp first. Default nrepl port is usually 7888."
+   :input-schema (list :host "string" :port "integer")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "nrepl_connect" (function cl-tron-mcp/nrepl:nrepl-connect))
+
+  (register-tool
+   "nrepl_disconnect"
+   "Disconnect from nrepl server. The Lisp session continues running."
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "nrepl_disconnect" (function cl-tron-mcp/nrepl:nrepl-disconnect))
+
+  (register-tool
+   "nrepl_status"
+   "Check nrepl connection status. Use to verify connection before using other nrepl tools."
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "nrepl_status" (function cl-tron-mcp/nrepl:nrepl-status))
+
+  (register-tool
+   "nrepl_eval"
+   "Evaluate Lisp code via nrepl. REQUIRES: nrepl_connect first. Code runs in a persistent session."
+   :input-schema (list :code "string" :package "string")
+   :output-schema (list :type "object")
+   :requires-approval t)
+  (register-tool-handler "nrepl_eval" (function cl-tron-mcp/nrepl:nrepl-eval))
+
+  (register-tool
+   "nrepl_compile"
+   "Compile Lisp code via nrepl. REQUIRES: nrepl_connect first. Use for hot-reloading."
+   :input-schema (list :code "string" :package "string" :filename "string")
+   :output-schema (list :type "object")
+   :requires-approval t)
+  (register-tool-handler "nrepl_compile" (function cl-tron-mcp/nrepl:nrepl-compile))
+
+  (register-tool
+   "nrepl_sessions"
+   "List all nrepl sessions. REQUIRES: nrepl_connect first."
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "nrepl_sessions" (function cl-tron-mcp/nrepl:nrepl-sessions))
+
+  (register-tool
+   "nrepl_close_session"
+   "Close an nrepl session. REQUIRES: nrepl_connect first."
+   :input-schema (list :session "string")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "nrepl_close_session" (function cl-tron-mcp/nrepl:nrepl-close-session))
+
+  (register-tool
+   "nrepl_threads"
+   "List all threads via nrepl. REQUIRES: nrepl_connect first."
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "nrepl_threads" (function cl-tron-mcp/nrepl:nrepl-threads))
+
+  (register-tool
+   "nrepl_interrupt"
+   "Interrupt evaluation via nrepl. REQUIRES: nrepl_connect first. Use when a computation is stuck."
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "nrepl_interrupt" (function cl-tron-mcp/nrepl:nrepl-interrupt))
+
+  (register-tool
+   "nrepl_backtrace"
+   "Get backtrace via nrepl. REQUIRES: nrepl_connect first. Use after an error."
+   :input-schema (list :thread "string")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "nrepl_backtrace" (function cl-tron-mcp/nrepl:nrepl-backtrace))
+
+  (register-tool
+   "nrepl_inspect"
+   "Inspect an object via nrepl. REQUIRES: nrepl_connect first."
+   :input-schema (list :expression "string")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "nrepl_inspect" (function cl-tron-mcp/nrepl:nrepl-inspect))
+
+  (register-tool
+   "nrepl_describe"
+   "Describe a symbol via nrepl. REQUIRES: nrepl_connect first."
    :input-schema (list :symbol "string")
    :output-schema (list :type "object")
    :requires-approval nil)
-  (register-tool-handler "repl_doc" (function cl-tron-mcp/unified:repl-doc))
+  (register-tool-handler "nrepl_describe" (function cl-tron-mcp/nrepl:nrepl-describe))
+
+  (register-tool
+   "nrepl_doc"
+   "Get documentation for a symbol via nrepl. REQUIRES: nrepl_connect first."
+   :input-schema (list :symbol "string")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "nrepl_doc" (function cl-tron-mcp/nrepl:nrepl-doc))
+
+  (register-tool
+   "nrepl_completions"
+   "Get symbol completions via nrepl. REQUIRES: nrepl_connect first."
+   :input-schema (list :prefix "string")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+   (register-tool-handler "nrepl_completions" (function cl-tron-mcp/nrepl:nrepl-completions))
+
+;;; Unified REPL tools (auto-detects Swank vs nrepl)
+;;;
+;;; These tools work with either Swank (Slime/Portacle) or nrepl (Sly/CIDER).
+;;; The connection auto-detects the protocol type.
+;;;
+;;; IMPORTANT: You must connect before using these tools.
+;;;   For Swank: (ql:quickload :swank) (swank:create-server :port 4005)
+;;;   For nrepl: Start nrepl server, then use repl_connect
+
+  (register-tool
+   "repl_connect"
+   "Connect to any Lisp REPL (auto-detects Swank/nrepl). PREREQUISITE: Start Swank or nrepl server in SBCL first. Swank: (ql:quickload :swank) (swank:create-server :port 4005). Default port 4005 is for Swank; nrepl typically uses 7888."
+   :input-schema (list :type "string" :host "string" :port "integer")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_connect" (function cl-tron-mcp/unified:repl-connect))
+
+  (register-tool
+   "repl_disconnect"
+   "Disconnect from the current REPL. The Lisp session continues running - only the MCP connection is closed."
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_disconnect" (function cl-tron-mcp/unified:repl-disconnect))
+
+  (register-tool
+   "repl_status"
+   "Check REPL connection status and type. Shows :connected, :type (swank or nrepl), :host, and :port. Use to verify connection before using other REPL tools."
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_status" (function cl-tron-mcp/unified:repl-status))
+
+  (register-tool
+   "repl_eval"
+   "Evaluate Lisp code in the connected REPL session. REQUIRES: repl_connect first. Code runs in a persistent session - all state (variables, functions, packages) is preserved across calls."
+   :input-schema (list :code "string" :package "string")
+   :output-schema (list :type "object")
+   :requires-approval t)
+  (register-tool-handler "repl_eval" (function cl-tron-mcp/unified:repl-eval))
+
+  (register-tool
+   "repl_compile"
+   "Compile and load Lisp code in the connected REPL. REQUIRES: repl_connect first. Use for hot-reloading function definitions without restarting the session."
+   :input-schema (list :code "string" :package "string" :filename "string")
+   :output-schema (list :type "object")
+   :requires-approval t)
+  (register-tool-handler "repl_compile" (function cl-tron-mcp/unified:repl-compile))
+
+  (register-tool
+   "repl_threads"
+   "List all threads in the connected REPL. REQUIRES: repl_connect first. Shows thread names, status, and IDs for debugging concurrency issues."
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_threads" (function cl-tron-mcp/unified:repl-threads))
+
+  (register-tool
+   "repl_abort"
+   "Abort/interrupt evaluation in the connected REPL. REQUIRES: repl_connect first. Use when a computation is stuck or taking too long."
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_abort" (function cl-tron-mcp/unified:repl-abort))
+
+  (register-tool
+   "repl_backtrace"
+   "Get the call stack from the connected REPL. REQUIRES: repl_connect first. Use after an error to see where it occurred in your code."
+   :input-schema nil
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_backtrace" (function cl-tron-mcp/unified:repl-backtrace))
+
+  (register-tool
+   "repl_inspect"
+   "Inspect an object in the connected REPL. REQUIRES: repl_connect first. EXPRESSION is evaluated - use quoted symbols for variables."
+   :input-schema (list :expression "string")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_inspect" (function cl-tron-mcp/unified:repl-inspect))
+
+  (register-tool
+   "repl_describe"
+   "Describe a symbol in the connected REPL. REQUIRES: repl_connect first. Shows documentation, argument list, and type information."
+   :input-schema (list :symbol "string")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_describe" (function cl-tron-mcp/unified:repl-describe))
+
+  (register-tool
+   "repl_completions"
+   "Get symbol completions in the connected REPL. REQUIRES: repl_connect first. Useful for discovering available functions and variables."
+   :input-schema (list :prefix "string" :package "string")
+   :output-schema (list :type "object")
+   :requires-approval nil)
+  (register-tool-handler "repl_completions" (function cl-tron-mcp/unified:repl-completions))
+
+   (register-tool
+    "repl_doc"
+    "Get documentation for a symbol in the connected REPL. REQUIRES: repl_connect first. Returns docstring and argument list."
+    :input-schema (list :symbol "string")
+    :output-schema (list :type "object")
+    :requires-approval nil)
+   (register-tool-handler "repl_doc" (function cl-tron-mcp/unified:repl-doc))
 
 ;;; Unified REPL debugger tools
+;;; These tools work with the debugger in either Swank or nrepl connections.
+
   (register-tool
    "repl_frame_locals"
-   "Get local variables for a frame via the connected REPL"
+   "Get local variables for a stack frame. REQUIRES: repl_connect and an active debugger session. Use after an error to inspect variable values at the point of failure."
    :input-schema (list :frame "integer" :thread "string")
    :output-schema (list :type "object")
    :requires-approval nil)
@@ -736,7 +757,7 @@
 
   (register-tool
    "repl_step"
-   "Step into next expression in frame via the connected REPL"
+   "Step into the next expression. REQUIRES: repl_connect and an active stepping context (entered via (step ...)). Shows the next form to be evaluated."
    :input-schema (list :frame "integer")
    :output-schema (list :type "object")
    :requires-approval nil)
@@ -744,7 +765,7 @@
 
   (register-tool
    "repl_next"
-   "Step over next expression in frame via the connected REPL"
+   "Step over the next expression. REQUIRES: repl_connect and an active stepping context. Evaluates the next form without stepping into function calls."
    :input-schema (list :frame "integer")
    :output-schema (list :type "object")
    :requires-approval nil)
@@ -752,7 +773,7 @@
 
   (register-tool
    "repl_out"
-   "Step out of current frame via the connected REPL"
+   "Step out of the current frame. REQUIRES: repl_connect and an active stepping context. Finishes the current function and stops at the return point."
    :input-schema (list :frame "integer")
    :output-schema (list :type "object")
    :requires-approval nil)
@@ -760,7 +781,7 @@
 
   (register-tool
    "repl_continue"
-   "Continue execution from debugger via the connected REPL"
+   "Continue execution from the debugger. REQUIRES: repl_connect and an active debugger session. Resumes normal execution."
    :input-schema nil
    :output-schema (list :type "object")
    :requires-approval nil)
@@ -768,7 +789,7 @@
 
   (register-tool
    "repl_get_restarts"
-   "Get available restarts via the connected REPL"
+   "Get available restarts for error recovery. REQUIRES: repl_connect and an active debugger session. Shows options like ABORT, RETRY, USE-VALUE."
    :input-schema (list :frame "integer")
    :output-schema (list :type "object")
    :requires-approval nil)
@@ -776,7 +797,7 @@
 
   (register-tool
    "repl_invoke_restart"
-   "Invoke a restart by index via the connected REPL"
+   "Invoke a restart by index to recover from an error. REQUIRES: repl_connect and an active debugger session. Use repl_get_restarts to see available options. Index is 1-based."
    :input-schema (list :restartIndex "integer")
    :output-schema (list :type "object")
    :requires-approval nil)

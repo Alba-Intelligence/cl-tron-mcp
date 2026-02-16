@@ -6,6 +6,19 @@ This document provides guidelines for AI agents working on the SBCL Debugging MC
 
 **What is Tron?** An MCP server that connects to a running SBCL Lisp session and provides debugging, code evaluation, inspection, profiling, and hot-reload capabilities.
 
+### Discovering How to Use Tron
+
+Tron exposes documentation and guided workflows via MCP standard mechanisms:
+
+| Method | Purpose |
+|--------|---------|
+| `resources/list` | List available documentation files |
+| `resources/read` | Read a documentation file by URI |
+| `prompts/list` | List available guided workflows |
+| `prompts/get` | Get step-by-step instructions for a workflow |
+
+**Recommended:** Start with `prompts/get` for `getting-started` workflow to learn the connection pattern.
+
 ### Essential Pattern: One Long-Running Session
 
 ```
@@ -69,6 +82,26 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
           └────────── REFINE ───────────┘
 ```
 
+**MCP Protocol Methods:**
+
+| Method | Purpose |
+|--------|---------|
+| `resources/list` | List documentation files (AGENTS.md, README.md, docs/*) |
+| `resources/read` | Read a documentation file by URI |
+| `prompts/list` | List guided workflows |
+| `prompts/get` | Get step-by-step workflow instructions |
+| `tools/list` | List available tools |
+| `tools/call` | Invoke a tool |
+
+**Guided Workflows (prompts/get):**
+
+| Prompt | Purpose |
+|--------|---------|
+| `getting-started` | How to connect to Swank and verify setup |
+| `debugging-workflow` | Step-by-step error debugging |
+| `hot-reload-workflow` | Live code modification without restart |
+| `profiling-workflow` | Performance analysis workflow |
+
 **Tool Categories (99 tools total):**
 
 | Category    | Purpose                  | Key Tools                                                  |
@@ -91,6 +124,7 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
 ## Cross-References
 
 @docs/architecture.md
+@docs/mcp-resources-prompts.md
 @prompts/debugging-workflows.md
 @prompts/hot-reload-development.md
 @prompts/profiling-analysis.md

@@ -1,3 +1,16 @@
+# CL-TRON-MCP CI/CD Pipeline
+#
+# This workflow runs on push to main/develop and pull requests to main.
+# It performs:
+#   - Testing on multiple SBCL versions (2.4.x, 2.5.x, 2.6.x)
+#   - Code linting with sb-lint
+#   - Docker image building and testing
+#   - Documentation verification
+#   - Release publishing (on version tags)
+#
+# Uses 40ants/setup-lisp for Common Lisp environment setup.
+# See: https://github.com/40ants/setup-lisp
+
 name: CL-TRON-MCP CI/CD
 
 on:
@@ -17,45 +30,16 @@ jobs:
           - "2.6.0"
           - "2.5.0"
           - "2.4.0"
-        include:
-          - sbcl-version: "2.6.0"
-            quicklisp-branch: "2024-02-14"
-          - sbcl-version: "2.5.0"
-            quicklisp-branch: "2023-12-04"
-          - sbcl-version: "2.4.0"
-            quicklisp-branch: "2023-06-14"
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install SBCL
-        uses: soutaro/setup-sbcl@v1
+      - name: Setup Common Lisp
+        uses: 40ants/setup-lisp@v2
         with:
+          asdf-system: cl-tron-mcp
           sbcl-version: ${{ matrix.sbcl-version }}
-          version: ${{ matrix.sbcl-version }}
-
-      - name: Install Quicklisp
-        run: |
-          curl -O https://beta.quicklisp.org/quicklisp.lisp
-          sbcl --load quicklisp.lisp \
-            --eval "(quicklisp-quickstart:install :path \"$HOME/.quicklisp\")" \
-            --eval "(ql:add-to-init-file \"$HOME/.sbclrc\")"
-          rm quicklisp.lisp
-
-      - name: Cache Quicklisp dist
-        uses: actions/cache@v4
-        with:
-          path: ~/quicklisp/dists
-          key: quicklisp-${{ matrix.quicklisp-branch }}
-
-      - name: Cache SBCL FASLs
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/common-lisp
-            ~/quicklisp/local-projects/**/*.*fasl*
-          key: sbcl-${{ matrix.sbcl-version }}-${{ hashFiles('**/*.lisp') }}
 
       - name: Run tests
         run: |
@@ -69,7 +53,6 @@ jobs:
           sbcl --non-interactive \
             --load tutorial-run.lisp \
             2>&1 | tee tutorial_output.txt
-          # Check for key outputs
           grep -q "TUTORIAL COMPLETE" tutorial_output.txt && echo "Tutorial passed"
 
       - name: Upload tutorial output
@@ -87,18 +70,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install SBCL
-        uses: soutaro/setup-sbcl@v1
+      - name: Setup Common Lisp
+        uses: 40ants/setup-lisp@v2
         with:
-          sbcl-version: "2.6.0"
-
-      - name: Install Quicklisp
-        run: |
-          curl -O https://beta.quicklisp.org/quicklisp.lisp
-          sbcl --load quicklisp.lisp \
-            --eval "(quicklisp-quickstart:install :path \"$HOME/.quicklisp\")" \
-            --eval "(ql:add-to-init-file \"$HOME/.sbclrc\")"
-          rm quicklisp.lisp
+          asdf-system: cl-tron-mcp
 
       - name: Install sb-lint
         run: |
@@ -149,16 +124,13 @@ jobs:
 
       - name: Check README links
         run: |
-          # Basic check for broken relative links
           if grep -q "\[.*\](.*\.md)" README.md; then
             echo "Checking markdown links..."
-            # Would need lychee or similar for full link checking
             echo "Basic check passed"
           fi
 
       - name: Verify tutorial runs
         run: |
-          # Count expected outputs
           expected_count=10
           actual_count=$(grep -c "INSPECT-FUNCTION\|TRACE FUNCTION\|WHO-CALLS\|DEBUGGER\|REPL\|LOGGING\|SYSTEM INFO\|RUNTIME STATS\|HEALTH CHECK\|APPROVAL CHECK" tutorial-run.lisp || echo "0")
           echo "Expected $expected_count features in tutorial"

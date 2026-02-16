@@ -1,0 +1,270 @@
+# MCP Resources and Prompts
+
+This document describes the MCP Resources and Prompts features added to cl-tron-mcp to improve discoverability for AI agents.
+
+## Overview
+
+### Problem
+
+AI agents using cl-tron-mcp didn't know how to use the tools because:
+1. They didn't know about `swank_connect` / `repl_connect`
+2. They didn't understand the workflow (connect first, then evaluate)
+3. Error messages didn't provide actionable guidance
+
+### Solution
+
+1. **MCP Resources** - Expose documentation files that agents can discover
+2. **MCP Prompts** - Provide guided workflows as slash commands
+3. **Improved Tool Descriptions** - Include prerequisites in tool descriptions
+4. **Better Error Messages** - Include hints for common issues
+
+## MCP Resources
+
+Resources are documentation files exposed via the MCP `resources/list` and `resources/read` protocol methods.
+
+### Protocol Methods
+
+#### resources/list
+
+Returns list of available documentation files.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "resources/list"
+}
+```
+
+Response:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "resources": [
+      {
+        "uri": "file://AGENTS.md",
+        "name": "AGENTS.md",
+        "title": "Documentation: AGENTS.md",
+        "description": "MCP documentation file: AGENTS.md",
+        "mimeType": "text/markdown",
+        "size": 12345
+      }
+    ]
+  }
+}
+```
+
+#### resources/read
+
+Read contents of a specific documentation file.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "resources/read",
+  "params": {
+    "uri": "file://AGENTS.md"
+  }
+}
+```
+
+Response:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "contents": [
+      {
+        "uri": "file://AGENTS.md",
+        "mimeType": "text/markdown",
+        "text": "# SBCL Debugging MCP Repository Guidelines..."
+      }
+    ]
+  }
+}
+```
+
+### Exposed Resources
+
+The following files are exposed as MCP resources:
+
+- `AGENTS.md` - Quick start guide for AI agents
+- `README.md` - Project overview
+- `docs/tools/debugger.md` - Debugger tool documentation
+- `docs/tools/inspector.md` - Inspector tool documentation
+- `docs/tools/hot-reload.md` - Hot reload documentation
+- `docs/tools/profiler.md` - Profiler documentation
+- `docs/tools/threads.md` - Thread management documentation
+- `docs/tools/monitor.md` - Monitor documentation
+- `docs/architecture.md` - System architecture
+- `docs/swank-integration.md` - Swank protocol details
+
+### Security
+
+- Only whitelisted files are exposed
+- Path traversal is prevented
+- No sensitive files (`.env`, `secrets/`, credentials) are exposed
+
+## MCP Prompts
+
+Prompts are guided workflows exposed via the MCP `prompts/list` and `prompts/get` protocol methods. They appear as slash commands in MCP clients.
+
+### Protocol Methods
+
+#### prompts/list
+
+Returns list of available guided workflows.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "prompts/list"
+}
+```
+
+Response:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "prompts": [
+      {
+        "name": "getting-started",
+        "title": "Getting Started with Tron MCP",
+        "description": "Step-by-step guide to connect to Swank and verify..."
+      }
+    ]
+  }
+}
+```
+
+#### prompts/get
+
+Get a specific workflow with step-by-step instructions.
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "prompts/get",
+  "params": {
+    "name": "getting-started"
+  }
+}
+```
+
+Response includes the full prompt text with instructions.
+
+### Available Prompts
+
+#### getting-started
+
+Step-by-step guide to:
+1. Check if Swank is running
+2. Start Swank server if needed
+3. Connect using `swank_connect` or `repl_connect`
+4. Verify connection with `(+ 1 2)`
+5. Understand the persistent session model
+
+#### debugging-workflow
+
+Step-by-step process for:
+1. Triggering an error
+2. Getting the backtrace
+3. Getting available restarts
+4. Fixing the code
+5. Verifying the fix
+
+#### hot-reload-workflow
+
+Guide for:
+1. Identifying bugs
+2. Fixing source files
+3. Reloading code without restart
+4. Verifying fixes
+5. Committing changes
+
+#### profiling-workflow
+
+Performance analysis workflow:
+1. Start profiling
+2. Run code
+3. Stop profiling
+4. Analyze results
+5. Optimize hotspots
+
+## Capability Declaration
+
+The server now declares these capabilities during initialization:
+
+```json
+{
+  "capabilities": {
+    "tools": { "listChanged": true },
+    "resources": { "subscribe": false, "listChanged": true },
+    "prompts": { "listChanged": true }
+  }
+}
+```
+
+## Error Messages with Hints
+
+Error messages now include actionable hints:
+
+**Before:**
+```json
+{
+  "error": true,
+  "message": "Not connected to any REPL"
+}
+```
+
+**After:**
+```json
+{
+  "error": true,
+  "message": "Not connected to any REPL",
+  "hint": "Run repl_connect first. Example: repl_connect :port 4005",
+  "setup": "To start Swank in SBCL: (ql:quickload :swank) (swank:create-server :port 4005 :dont-close t)",
+  "docs": "See prompts/get 'getting-started' for step-by-step instructions"
+}
+```
+
+## Implementation Files
+
+| File | Purpose |
+|------|---------|
+| `src/resources/package.lisp` | Resources package definition |
+| `src/resources/handler.lisp` | Resource listing and reading |
+| `src/prompts/package.lisp` | Prompts package definition |
+| `src/prompts/handler.lisp` | Prompt listing and retrieval |
+| `src/protocol/handlers.lisp` | Protocol handlers for resources/prompts |
+| `src/tools/register-tools.lisp` | Updated tool descriptions |
+| `src/unified/client.lisp` | Error messages with hints |
+
+## Testing
+
+Test resources:
+```bash
+echo '{"jsonrpc":"2.0","method":"resources/list","id":1}' | ./start-mcp.sh
+echo '{"jsonrpc":"2.0","method":"resources/read","params":{"uri":"file://AGENTS.md"},"id":2}' | ./start-mcp.sh
+```
+
+Test prompts:
+```bash
+echo '{"jsonrpc":"2.0","method":"prompts/list","id":1}' | ./start-mcp.sh
+echo '{"jsonrpc":"2.0","method":"prompts/get","params":{"name":"getting-started"},"id":2}' | ./start-mcp.sh
+```
+
+Test error hints:
+```bash
+echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"repl_eval","arguments":{"code":"(+ 1 2)"}},"id":1}' | ./start-mcp.sh
+```
+
+Should return error with hint about connecting first.
