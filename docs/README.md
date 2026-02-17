@@ -6,6 +6,7 @@
 |----------|-------------|
 | [Architecture](architecture.md) | How Tron works: one long-running Lisp session, MCP as client |
 | [Swank Integration](swank-integration.md) | Swank protocol implementation, wire format, RPC reference |
+| [MCP Resources & Prompts](mcp-resources-prompts.md) | Discoverability features for AI agents |
 
 ## Tool Documentation
 

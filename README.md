@@ -199,6 +199,7 @@ cl-tron-mcp/
 | [AGENTS.md](AGENTS.md) | Quick start for AI agents using Tron |
 | [docs/architecture.md](docs/architecture.md) | System architecture and design |
 | [docs/swank-integration.md](docs/swank-integration.md) | Swank protocol details |
+| [docs/mcp-resources-prompts.md](docs/mcp-resources-prompts.md) | MCP discoverability features |
 | [docs/demo-creation.md](docs/demo-creation.md) | How to create demo GIFs |
 | [prompts/workflow-examples.md](prompts/workflow-examples.md) | Step-by-step usage examples |
 | [prompts/debugging-workflows.md](prompts/debugging-workflows.md) | Debugging patterns |
