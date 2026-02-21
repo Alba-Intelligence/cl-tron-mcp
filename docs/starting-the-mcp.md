@@ -27,7 +27,17 @@ Example (Cursor):
 
 Replace `/path/to/cl-tron-mcp` with your path.
 
-2. **Use `start-mcp.sh`** so stdout stays clean (no SBCL banner; script output goes to stderr). If you run SBCL directly, always use **`--noinform`** so the first line the client sees is JSON.
+2. **Use `start-mcp.sh`** so stdout stays clean (no Lisp banner; script output goes to stderr). It supports **SBCL** and **ECL**. Run **`./start-mcp.sh --help`** for full usage.
+
+### Lisp selection
+
+The script chooses the Lisp in this order:
+
+1. **CLI:** `--use-sbcl` or `--use-ecl` — use that Lisp (error if not installed).
+2. **Environment:** `TRON_LISP=sbcl` or `TRON_LISP=ecl` — use that Lisp when no `--use-*` option is given.
+3. **Auto-detect:** try `sbcl`, then `ecl`; error if neither is found.
+
+Examples: `./start-mcp.sh --use-ecl` (force ECL), or set `env.TRON_LISP=ecl` in your MCP client config to prefer ECL when both are installed.
 
 ## One-Time Precompile (Avoid First-Start Timeout)
 
@@ -48,8 +58,8 @@ If the MCP or Tron "doesn't start" or the client says the server failed:
 
 1. **Replace path in config** — Ensure the command uses the correct path to `cl-tron-mcp` (and to `start-mcp.sh`). Use the same path you used for the one-time precompile.
 2. **Precompile once** — Run the one-time precompile command above so the first client start stays under the client's timeout.
-3. **SBCL in PATH** — The client runs the command in its own environment. Ensure `sbcl` is on the PATH when the client starts the server (e.g. if you use a login shell, the client might not source your profile).
-4. **No stdout pollution** — Use `start-mcp.sh` (recommended) or, if you run SBCL directly, include `--noinform`. Any output on stdout before the first JSON line will break the MCP handshake.
+3. **Lisp in PATH** — The client runs the command in its own environment. Ensure `sbcl` (or `ecl`) is on the PATH. To use ECL, pass **`--use-ecl`** in the command (e.g. `["/path/to/cl-tron-mcp/start-mcp.sh", "--use-ecl"]`) or set **`TRON_LISP=ecl`** in the client config `env`.
+4. **No stdout pollution** — Use `start-mcp.sh` (recommended) or, if you run Lisp directly, use SBCL with `--noinform` or ECL with `-q`. Any output on stdout before the first JSON line will break the MCP handshake.
 
 ## See Also
 

@@ -61,7 +61,9 @@
   (sb-ext:octets-to-string octets :external-format :utf-8)
   #+ccl
   (ccl:decode-string-from-octets octets :external-format :utf-8)
-  #+(or ecl abcl)
+  #+ecl
+  (ext:octets-to-string octets :external-format :utf-8)
+  #+abcl
   (error "UTF-8 decoding not implemented for this Lisp")
   #-(or sbcl ccl ecl abcl)
   (error "UTF-8 decoding not supported"))

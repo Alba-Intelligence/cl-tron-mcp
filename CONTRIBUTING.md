@@ -45,11 +45,16 @@ sbcl --non-interactive \
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (SBCL)
 sbcl --non-interactive \
   --eval "(ql:quickload :rove :silent t)" \
   --eval "(ql:quickload :cl-tron-mcp/tests :silent t)" \
   --eval "(rove:run :cl-tron-mcp/tests)"
+
+# Run all tests (ECL). Load Quicklisp first; first run can be slow.
+ecl -q -eval "(load \"$HOME/quicklisp/setup.lisp\")" \
+  -eval "(ql:quickload :cl-tron-mcp/tests :silent t)" \
+  -eval "(asdf:test-system :cl-tron-mcp)"
 
 # Run specific test suite
 sbcl --non-interactive \
@@ -57,6 +62,8 @@ sbcl --non-interactive \
   --eval "(ql:quickload :cl-tron-mcp/tests :silent t)" \
   --eval "(rove:run 'cl-tron-mcp/tests/core-test)"
 ```
+
+Core protocol tests (initialize, tools/list, health_check, thread_list, approval flow, etc.) are expected to pass on both SBCL and ECL. Some tools (profiler report, tracer, monitor runtime stats) use SBCL-only code and return errors or fallbacks when the MCP runs under ECL.
 
 ### Running the Tutorial
 

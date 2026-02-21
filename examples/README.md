@@ -8,4 +8,4 @@ Copy the example that matches your MCP client and **replace `/path/to/cl-tron-mc
 | `opencode-mcp.json.example` | OpenCode | `~/.config/opencode/opencode.json` |
 | `kilocode-mcp.json.example` | Kilocode | `~/.kilocode/cli/config.json` (or equivalent) |
 
-All examples use `start-mcp.sh` so stdout stays clean for the MCP protocol. See [docs/starting-the-mcp.md](../docs/starting-the-mcp.md) for troubleshooting.
+All examples use `start-mcp.sh` so stdout stays clean for the MCP protocol. To force SBCL or ECL, add `--use-sbcl` or `--use-ecl` to the command, or set `TRON_LISP=sbcl` / `TRON_LISP=ecl` in the client config `env`. Run `./start-mcp.sh --help` for full usage. See [docs/starting-the-mcp.md](../docs/starting-the-mcp.md) for troubleshooting.

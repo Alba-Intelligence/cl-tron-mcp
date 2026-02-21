@@ -75,7 +75,7 @@ Tron exposes documentation and guided workflows via MCP standard mechanisms:
 ### Lisp Implementation Support
 
 - **Primary:** Tested with **SBCL**; Swank/nrepl integration and debugger features are developed against SBCL.
-- **Planned:** **ECL** will be supported as an alternative for portability.
+- **ECL:** The MCP server can run under **ECL** as well. Lisp selection in `start-mcp.sh`: **CLI** (`--use-sbcl` / `--use-ecl`) overrides **env** (`TRON_LISP=sbcl` or `ecl`), then **auto-detect** (sbcl, then ecl). Run `./start-mcp.sh --help` for full usage. For stdio, the script uses SBCL `--noinform` or ECL `-q` so stdout stays JSON-only.
 - **Goal:** Any Common Lisp implementation should be able to use the MCP where possible; some implementations may be limited to one protocol (Swank or nrepl) depending on what they support.
 
 ## Quick Reference

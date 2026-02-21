@@ -218,7 +218,7 @@ cl-tron-mcp/
 
 ## Requirements
 
-- **SBCL** 2.0.0 or later
+- **SBCL** 2.0.0 or later, or **ECL** (Embeddable Common Lisp). The MCP server runs with either. `start-mcp.sh` selects the Lisp by: **`--use-sbcl`** / **`--use-ecl`** (CLI), then **`TRON_LISP`** (env), then auto-detect (sbcl, then ecl). Run **`./start-mcp.sh --help`** for full usage.
 - **Quicklisp**
 - **Swank** (for Slime) or **cl-nrepl** (for nrepl)
 
