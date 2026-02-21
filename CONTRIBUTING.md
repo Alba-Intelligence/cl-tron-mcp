@@ -73,6 +73,8 @@ sbcl --non-interactive \
   --eval "(cl-tron-mcp/core:start-server :transport :stdio)"
 ```
 
+If the MCP does not start, see [docs/starting-the-mcp.md](docs/starting-the-mcp.md).
+
 ## Project Structure
 
 ```

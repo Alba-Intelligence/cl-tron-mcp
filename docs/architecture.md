@@ -11,6 +11,7 @@ This document describes the recommended setup so the MCP can interact with a Lis
 - **Typical start:**
   - Swank: `(ql:quickload :swank)` then `(swank:create-server :port 4005)` (default port 4005).
   - nrepl: `(pushnew #p"/path/to/cl-nrepl/" asdf:*central-registry*)` then `(ql:quickload :nrepl)` then `(nrepl:start-server :port 8675)` (default port 8675).
+- **Dedicated port for MCP:** Use a separate Swank (or nrepl) port for MCP (e.g. Swank on 4006) so you keep 4005 for your editor: `(swank:create-server :port 4006 :dont-close t)`.
 
 ### 2. MCP server
 

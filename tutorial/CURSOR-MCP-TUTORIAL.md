@@ -43,11 +43,9 @@ Tools registered: 43
 
 ## Cursor IDE Setup
 
-### Option 1: Using Cursor's MCP Configuration
+### Option 1: Direct SBCL (must use --noinform)
 
-1. Open Cursor Settings (`Cmd+,` or `Ctrl+,`)
-2. Navigate to **MCP (Model Context Protocol)**
-3. Add a new MCP server:
+If you run SBCL directly, **you must use `--noinform`** so the SBCL banner does not appear on stdout and break the MCP handshake:
 
 ```json
 {
@@ -55,6 +53,7 @@ Tools registered: 43
   "command": "sbcl",
   "args": [
     "--non-interactive",
+    "--noinform",
     "--eval", "(ql:quickload :cl-tron-mcp :silent t)",
     "--eval", "(cl-tron-mcp/core:start-server :transport :stdio)"
   ],
@@ -64,12 +63,14 @@ Tools registered: 43
 
 ### Option 2: Using a Shell Script (Recommended)
 
-Create `start-mcp.sh` in the cl-tron directory:
+Using **`start-mcp.sh`** (in the project root) is recommended so stdout stays clean. The script uses `--noinform` and sends all script output to stderr.
+
+Copy from `examples/cursor-mcp.json.example` and set your path, or use:
 
 ```bash
 #!/bin/bash
 cd "$(dirname "$0")"
-exec sbcl --non-interactive \
+exec sbcl --non-interactive --noinform \
   --eval '(ql:quickload :cl-tron-mcp :silent t)' \
   --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
 ```

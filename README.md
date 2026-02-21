@@ -39,7 +39,7 @@ Shows the actual JSON-RPC messages that AI clients send to Tron internally. This
 │  SBCL + Swank   │◄───────►│   Tron (MCP)    │◄───────►│   AI Client     │
 │  (Port 4005)    │         │   (stdio)       │         │ (Kilocode, etc) │
 │                 │         │                 │         │                 │
-│  Your code      │         │   99 tools:     │         │  Sends prompts  │
+│  Your code      │         │  100 tools:     │         │  Sends prompts  │
 │  Debugger       │         │   - swank_eval  │         │  Receives       │
 │  Threads        │         │   - inspect     │         │  results        │
 │  State lives    │         │   - profile     │         │                 │
@@ -66,7 +66,7 @@ Shows the actual JSON-RPC messages that AI clients send to Tron internally. This
 | **Monitor** | Health checks, runtime stats, GC | [docs/tools/monitor.md](docs/tools/monitor.md) |
 | **Swank** | Slime/Portacle integration (21 tools) | [docs/swank-integration.md](docs/swank-integration.md) |
 
-**99 tools total** across 14 categories.
+**100 tools total** across 14 categories.
 
 ### Quick Tool Examples
 
@@ -104,6 +104,8 @@ Shows the actual JSON-RPC messages that AI clients send to Tron internally. This
 ```
 
 ### 2. Configure Your AI Client
+
+Copy the example for your client from **`examples/`** (e.g. `examples/cursor-mcp.json.example`), replace `/path/to/cl-tron-mcp` with your path, and put the config in the location below. See [docs/starting-the-mcp.md](docs/starting-the-mcp.md) if the MCP won't start.
 
 **Kilocode** (`~/.kilocode/cli/config.json`):
 ```json
@@ -200,7 +202,9 @@ cl-tron-mcp/
 | [docs/architecture.md](docs/architecture.md) | System architecture and design |
 | [docs/swank-integration.md](docs/swank-integration.md) | Swank protocol details |
 | [docs/mcp-resources-prompts.md](docs/mcp-resources-prompts.md) | MCP discoverability features |
+| [docs/starting-the-mcp.md](docs/starting-the-mcp.md) | Starting the MCP and troubleshooting |
 | [docs/demo-creation.md](docs/demo-creation.md) | How to create demo GIFs |
+| [tutorial/e2e-mcp-workflow.md](tutorial/e2e-mcp-workflow.md) | End-to-end workflow (connect, eval, error, restart, hot-fix) |
 | [prompts/workflow-examples.md](prompts/workflow-examples.md) | Step-by-step usage examples |
 | [prompts/debugging-workflows.md](prompts/debugging-workflows.md) | Debugging patterns |
 

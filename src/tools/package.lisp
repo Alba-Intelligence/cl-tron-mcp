@@ -8,4 +8,6 @@
    #:register-tool
    #:list-tool-descriptors
    #:call-tool
-   #:get-tool-handler))
+   #:get-tool-handler
+   #:get-tool-descriptor
+   #:tool-requires-user-approval-p))

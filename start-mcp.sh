@@ -87,7 +87,7 @@ if [[ "$TRANSPORT" != "stdio" ]]; then
     echo "  Port: $PORT" >&2
 fi
 echo "" >&2
-echo "Available tools: 80" >&2
+echo "Available tools: 100" >&2
 echo "  - Unified REPL (auto-detects Swank/nrepl)" >&2
 echo "  - Inspector, Debugger, Profiler, Tracer" >&2
 echo "  - Thread management, Monitoring" >&2

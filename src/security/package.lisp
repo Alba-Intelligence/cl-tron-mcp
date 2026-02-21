@@ -8,6 +8,11 @@
    #:check-approval
    #:operation-requires-approval
    #:approval-response
+   #:approval-request-id
+   #:consume-approved-request-id
+   #:generate-approval-request-id
+   #:tool-name-to-operation
+   #:whitelist-check-tool
    #:*audit-log*
    #:log-operation
    #:get-audit-log

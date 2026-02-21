@@ -10,13 +10,15 @@
   handler)
 
 (defun register-tool (name description &key input-schema output-schema requires-approval concurrency)
-  "Register a tool with descriptor and handler."
+  "Register a tool with descriptor and handler.
+   requires-approval t means approvalLevel \"user\" (human must approve); nil means \"none\" (auto-run)."
   (let ((descriptor (make-hash-table :test 'equal)))
     (setf (gethash :name descriptor) name)
     (setf (gethash :description descriptor) description)
     (setf (gethash :inputSchema descriptor) (or input-schema (make-hash-table :test 'equal)))
     (setf (gethash :outputSchema descriptor) (or output-schema (make-hash-table :test 'equal)))
     (setf (gethash :requiresApproval descriptor) (or requires-approval nil))
+    (setf (gethash :approvalLevel descriptor) (if requires-approval "user" "none"))
     (setf (gethash :concurrency descriptor) (or concurrency "sequential"))
     (setf (gethash name *tool-registry*)
           (make-tool-entry :name name
@@ -43,6 +45,17 @@
   (let ((entry (gethash name *tool-registry*)))
     (when entry
       (tool-entry-handler entry))))
+
+(defun get-tool-descriptor (name)
+  "Get tool descriptor (hash table) for tool NAME, or nil if unknown."
+  (let ((entry (gethash name *tool-registry*)))
+    (when entry
+      (tool-entry-descriptor entry))))
+
+(defun tool-requires-user-approval-p (name)
+  "Return t if tool NAME has approval level user (requires human approval)."
+  (let ((desc (get-tool-descriptor name)))
+    (and desc (gethash :requiresApproval desc))))
 
 (defun call-tool (name arguments)
   "Call tool by name with arguments plist.

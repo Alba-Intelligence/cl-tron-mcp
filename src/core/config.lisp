@@ -12,5 +12,5 @@
 
 (set-config :transport :stdio)
 (set-config :port 8080)
-(set-config :approval-timeout 60)
+(set-config :approval-timeout 300)
 (set-config :debug nil)

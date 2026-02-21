@@ -1,6 +1,6 @@
 # Tron Workflow Examples
 
-Concrete examples for common tasks. Each example shows the complete workflow from start to finish.
+Concrete examples for common tasks. Each example uses **unified `repl_*` tools** so you can copy-paste regardless of backend (Swank or nrepl). See [tutorial/e2e-mcp-workflow.md](../tutorial/e2e-mcp-workflow.md) for a minimal "first connection + first eval + first error + first restart" narrative.
 
 ## Example 1: Debug a Runtime Error
 
@@ -8,20 +8,20 @@ Concrete examples for common tasks. Each example shows the complete workflow fro
 
 ### Step 1: Check Connection
 ```
-Tool: swank_status
-Expected: (:CONNECTED T ...) or connect first with swank_connect
+Tool: repl_status
+Expected: connected; or connect first with repl_connect
 ```
 
 ### Step 2: Run the Failing Code
 ```
-Tool: swank_eval
+Tool: repl_eval
 Arguments: { "code": "(my-buggy-function 7)" }
 Result: Error with debugger info
 ```
 
 ### Step 3: Get the Backtrace
 ```
-Tool: swank_backtrace
+Tool: repl_backtrace
 Result: Stack frames showing error location
 ```
 
@@ -33,16 +33,16 @@ Look at frame 0 in the backtrace to see:
 
 ### Step 5: Fix the Bug
 ```
-Tool: swank_eval
+Tool: repl_eval
 Arguments: { "code": "(defun my-buggy-function (n) (corrected code here))" }
 ```
 
 ### Step 6: Abort and Retry
 ```
-Tool: swank_invoke_restart
+Tool: repl_invoke_restart
 Arguments: { "restart_index": 2 }  ; Usually ABORT
 
-Tool: swank_eval  
+Tool: repl_eval
 Arguments: { "code": "(my-buggy-function 7)" }
 Result: Correct output
 ```
@@ -62,7 +62,7 @@ Tool: profile_start
 
 ### Step 2: Run the Slow Code
 ```
-Tool: swank_eval
+Tool: repl_eval
 Arguments: { "code": "(process-large-dataset *data*)" }
 ```
 

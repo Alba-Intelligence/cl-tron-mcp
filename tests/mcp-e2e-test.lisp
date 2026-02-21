@@ -28,6 +28,10 @@
         (ok (getf result :|serverInfo|))
         (ok (string= "cl-tron-mcp" (getf (getf result :|serverInfo|) :|name|)))))))
 
+(deftest mcp-stdio-startup-test
+  (testing "Stdio first line is JSON (optional, slow - run manually)"
+    (ok t "Skipped: run manually to verify stdout purity: echo '{\"jsonrpc\":\"2.0\",\"method\":\"initialize\",\"params\":{},\"id\":1}' | ./start-mcp.sh 2>/dev/null | head -1")))
+
 (deftest mcp-tools-list-test
   (testing "List tools"
     (let* ((response (cl-tron-mcp/protocol:handle-tools-list 1))
@@ -37,7 +41,7 @@
         (ok (getf result :|tools|))
         (let ((tools (getf result :|tools|)))
           (ok (listp tools))
-          (ok (> (length tools) 90) "Should have 99 tools"))))))
+          (ok (>= (length tools) 100) "Should have 100 tools"))))))
 
 (deftest mcp-tool-call-health-check
   (testing "Call health_check tool"
@@ -119,6 +123,94 @@
                    (when result
                      (ok (search "6" (format nil "~a" result))))))
             (cl-tron-mcp/swank:swank-disconnect))))))
+
+;;; Approval flow tests
+
+(deftest mcp-approval-required-test
+  (testing "Protected tool returns approval_required with request_id"
+    (let* ((params (list :|name| "swank_eval" :|arguments| (list :|code| "(+ 1 2)")))
+           (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
+           (parsed (parse-json-response response)))
+      (ok (getf parsed :|result|) "Should have result")
+      (let ((content (getf (getf parsed :|result|) :|content|)))
+        (ok content)
+        (let ((text (getf (first content) :|text|)))
+          (ok (stringp text))
+          (let ((approval-json (ignore-errors (jonathan:parse text))))
+            (ok approval-json "Content text should be JSON")
+            (when approval-json
+              (ok (getf approval-json :|approval_required|) "Should indicate approval required")
+              (ok (getf approval-json :|request_id|) "Should include request_id")
+              (ok (getf approval-json :|message|) "Should include message"))))))))
+
+(deftest mcp-approval-respond-then-tool-test
+  (testing "After approval/respond(approved: true), re-invoke tool with approval_request_id runs tool"
+    (let* ((params1 (list :|name| "swank_eval" :|arguments| (list :|code| "(+ 1 2)")))
+           (resp1 (cl-tron-mcp/protocol:handle-tool-call 1 params1))
+           (parsed1 (parse-json-response resp1))
+           (content (getf (getf parsed1 :|result|) :|content|))
+           (text (getf (first content) :|text|))
+           (approval-json (jonathan:parse text))
+           (req-id (getf approval-json :|request_id|)))
+      (ok req-id)
+      ;; Record approval
+      (let ((respond-params (list :|request_id| req-id :|approved| "true")))
+        (cl-tron-mcp/protocol:handle-request 2 "approval/respond" respond-params))
+      ;; Re-invoke with approval
+      (let* ((params2 (list :|name| "swank_eval"
+                            :|arguments| (list :|code| "(+ 1 2)"
+                                               :|approval_request_id| req-id
+                                               :|approved| "true")))
+             (resp2 (cl-tron-mcp/protocol:handle-tool-call 2 params2))
+             (parsed2 (parse-json-response resp2)))
+        (ok (getf parsed2 :|result|) "Re-invoke with approval should return result (or tool error)")
+        ;; Should not be approval_required again
+        (let ((content2 (getf (getf parsed2 :|result|) :|content|)))
+          (when content2
+            (let ((text2 (getf (first content2) :|text|)))
+              (when (stringp text2)
+                (let ((inner (ignore-errors (jonathan:parse text2))))
+                  (when inner
+                    (ok (not (getf inner :|approval_required|))
+                        "Should not ask for approval again"))))))))))
+
+(deftest mcp-approval-deny-message-test
+  (testing "approval/respond(approved: false) returns message for retry"
+    (let* ((params1 (list :|name| "swank_eval" :|arguments| (list :|code| "1")))
+           (resp1 (cl-tron-mcp/protocol:handle-tool-call 1 params1))
+           (parsed1 (parse-json-response resp1))
+           (content (getf (getf parsed1 :|result|) :|content|))
+           (text (getf (first content) :|text|))
+           (approval-json (jonathan:parse text))
+           (req-id (getf approval-json :|request_id|)))
+      (ok req-id)
+      (let* ((respond-params (list :|request_id| req-id :|approved| "false" :|message| "User said no"))
+             (resp2 (cl-tron-mcp/protocol:handle-request 2 "approval/respond" respond-params))
+             (parsed2 (parse-json-response resp2)))
+        (ok (getf parsed2 :|result|))
+        (ok (getf (getf parsed2 :|result|) :|recorded|))
+        (ok (not (getf (getf parsed2 :|result|) :|approved|)))
+        (ok (getf (getf parsed2 :|result|) :|message|) "Should include message"))))
+
+(deftest mcp-whitelist-skips-approval-test
+  (testing "When whitelist allows operation, protected tool runs without approval_required"
+    (cl-tron-mcp/security:whitelist-enable t)
+    (cl-tron-mcp/security:whitelist-add :eval "*")
+    (unwind-protect
+         (let* ((params (list :|name| "swank_eval" :|arguments| (list :|code| "(+ 1 2)")))
+                (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
+                (parsed (parse-json-response response))
+                (content (getf (getf parsed :|result|) :|content|))
+                (text (when content (getf (first content) :|text|))))
+           (ok (getf parsed :|result|))
+           ;; Result text should not be approval_required JSON
+           (when (stringp text)
+             (let ((inner (ignore-errors (jonathan:parse text))))
+               (when inner
+                 (ok (not (getf inner :|approval_required|))
+                     "Whitelisted tool should not return approval_required")))))
+      (cl-tron-mcp/security:whitelist-clear)
+      (cl-tron-mcp/security:whitelist-enable nil)))
 
 ;;; Error handling tests
 

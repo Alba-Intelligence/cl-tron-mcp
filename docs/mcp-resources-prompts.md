@@ -101,7 +101,9 @@ The following files are exposed as MCP resources:
 - `docs/tools/threads.md` - Thread management documentation
 - `docs/tools/monitor.md` - Monitor documentation
 - `docs/architecture.md` - System architecture
+- `docs/starting-the-mcp.md` - Starting the MCP and troubleshooting
 - `docs/swank-integration.md` - Swank protocol details
+- `tutorial/e2e-mcp-workflow.md` - End-to-end workflow with unified `repl_*` tools
 
 ### Security
 
@@ -198,6 +200,30 @@ Performance analysis workflow:
 3. Stop profiling
 4. Analyze results
 5. Optimize hotspots
+
+## Server-enforced approval
+
+Tools with `approvalLevel: "user"` require human approval before they run. The flow uses a dedicated response shape and method so clients can show UI and re-invoke the tool.
+
+### approval_required response
+
+When a tool with `approvalLevel: "user"` is invoked and the operation is not whitelisted, `tools/call` does not run the tool. Instead it returns a **result** whose `content[0].type` is `"text"` and `content[0].text` is JSON with:
+
+- `approval_required: true`
+- `request_id` (string) – use this when calling `approval/respond`
+- `message` (string) – short text for the user (e.g. "User approval required for tool: repl_eval")
+
+The client should show this to the user and offer Approve / Deny (and optionally Retry later).
+
+### approval/respond method
+
+After the user decides, the client sends:
+
+- **Method:** `approval/respond`
+- **Params:** `request_id` (string), `approved` (boolean), optional `message` (string, e.g. denial reason)
+- **Response:** `result.recorded` (boolean), `result.approved` (boolean); on denial, `result.message` (string)
+
+If the user approved, the client **re-invokes** the same `tools/call` with the same tool name and arguments, plus `approval_request_id` (the same `request_id`) and `approved: true`. The server then runs the tool and returns the normal result. Retry after a denial means calling the same tool again (a new approval request is created). For full flow (300s timeout, two classes user/none, whitelist), see [AGENTS.md](../AGENTS.md#approval-workflow-server-enforced).
 
 ## Capability Declaration
 

@@ -10,13 +10,13 @@
 (defun start-websocket-transport (&key (port 8081))
   "Start WebSocket transport on specified port.
    Requires: usocket, ironclad, babel, base64"
-  (format t "[MCP] WebSocket transport enabled on port ~d~%" port)
-  (format t "[MCP] Note: Full WebSocket implementation pending~%"))
+  (cl-tron-mcp/logging:log-info (format nil "[MCP] WebSocket transport enabled on port ~d" port))
+  (cl-tron-mcp/logging:log-info "[MCP] Note: Full WebSocket implementation pending"))
 
 (defun stop-websocket-transport ()
   "Stop WebSocket transport."
   (setf *websocket-running* nil)
-  (format t "[MCP] WebSocket transport stopped~%"))
+  (cl-tron-mcp/logging:log-info "[MCP] WebSocket transport stopped"))
 
 (defun send-message-via-websocket (message)
   "Send message to all connected WebSocket clients."

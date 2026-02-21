@@ -74,7 +74,9 @@ This is called when the module is loaded."
          
          ;; Architecture and integration
          "docs/architecture.md"
-         "docs/swank-integration.md")))
+         "docs/starting-the-mcp.md"
+         "docs/swank-integration.md"
+         "tutorial/e2e-mcp-workflow.md")))
 
 ;; Initialize on load
 (initialize-default-whitelist)

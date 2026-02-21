@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "cl-tron-mcp": {
+      "command": ["bash", "-c", "cd /path/to/cl-tron-mcp && ./start-mcp.sh"],
+      "disabled": false,
+      "env": {}
+    }
+  }
+}

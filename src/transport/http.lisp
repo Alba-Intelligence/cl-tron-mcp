@@ -111,8 +111,7 @@
       (let* ((parts (split-string request-line #\Space))
              (method (car parts))
              (path (cadr parts)))
-        (format t "[MCP-HTTP] ~a ~a~%" method path)
-        (force-output)
+        (cl-tron-mcp/logging:log-info (format nil "[MCP-HTTP] ~a ~a" method path))
         (cond
           ;; lisply-mcp endpoints
           ((and (string= method "POST") (search "/lisply/lisp-eval" path) body)
@@ -155,17 +154,17 @@
 
 (defun http-server-loop (port)
   (setf *http-running* t)
-  (format t "[MCP] HTTP server starting on http://127.0.0.1:~d~%" port)
+  (cl-tron-mcp/logging:log-info (format nil "[MCP] HTTP server starting on http://127.0.0.1:~d" port))
   (handler-case
       (let ((server-socket (usocket:socket-listen "127.0.0.1" port :reuse-address t)))
-        (format t "[MCP] HTTP server listening on port ~d~%" port)
-        (format t "[MCP] Endpoints:~%")
-        (format t "[MCP]   GET  /               - List available tools~%")
-        (format t "[MCP]   POST /rpc             - Send MCP JSON-RPC message~%")
-        (format t "[MCP]   GET  /health          - Health check~%")
-        (format t "[MCP]   POST /lisply/lisp-eval - Evaluate Lisp code (lisply-mcp protocol)~%")
-        (format t "[MCP]   GET  /lisply/ping-lisp - Ping endpoint (lisply-mcp protocol)~%")
-        (format t "[MCP]   GET  /lisply/tools/list - List tools (lisply-mcp protocol)~%")
+        (cl-tron-mcp/logging:log-info (format nil "[MCP] HTTP server listening on port ~d" port))
+        (cl-tron-mcp/logging:log-info "[MCP] Endpoints:")
+        (cl-tron-mcp/logging:log-info "[MCP]   GET  /               - List available tools")
+        (cl-tron-mcp/logging:log-info "[MCP]   POST /rpc             - Send MCP JSON-RPC message")
+        (cl-tron-mcp/logging:log-info "[MCP]   GET  /health          - Health check")
+        (cl-tron-mcp/logging:log-info "[MCP]   POST /lisply/lisp-eval - Evaluate Lisp code (lisply-mcp protocol)")
+        (cl-tron-mcp/logging:log-info "[MCP]   GET  /lisply/ping-lisp - Ping endpoint (lisply-mcp protocol)")
+        (cl-tron-mcp/logging:log-info "[MCP]   GET  /lisply/tools/list - List tools (lisply-mcp protocol)")
         (setf *http-server* server-socket)
         (loop
           (when (not *http-running*)
@@ -177,12 +176,12 @@
                (lambda () (handle-http-client (usocket:socket-stream client-socket)))
                :name "http-client")))))
     (error (e)
-      (format t "[MCP] HTTP server error: ~a~%" e)))
+      (cl-tron-mcp/logging:log-error (format nil "[MCP] HTTP server error: ~a" e))))
   (setf *http-running* nil))
 
 (defun start-http-transport (&key (port 8080))
   (when *http-server*
-    (format t "[MCP] HTTP server already running on port ~d~%" port)
+    (cl-tron-mcp/logging:log-info (format nil "[MCP] HTTP server already running on port ~d" port))
     (return-from start-http-transport))
   (setf *http-thread*
         (bt:make-thread (lambda () (http-server-loop port))
@@ -193,7 +192,7 @@
   (when *http-server*
     (ignore-errors (usocket:socket-close *http-server*))
     (setf *http-server* nil))
-  (format t "[MCP] HTTP server stopped~%"))
+  (cl-tron-mcp/logging:log-info "[MCP] HTTP server stopped"))
 
 (defun send-message-via-http (message)
   (declare (ignore message))

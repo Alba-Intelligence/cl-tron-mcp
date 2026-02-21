@@ -72,6 +72,12 @@ Tron exposes documentation and guided workflows via MCP standard mechanisms:
 - **Port 4005 = Swank**, **Port 8675 = nrepl** (cl-nrepl)
 - **Use `tmp/` folder**, never `/tmp`
 
+### Lisp Implementation Support
+
+- **Primary:** Tested with **SBCL**; Swank/nrepl integration and debugger features are developed against SBCL.
+- **Planned:** **ECL** will be supported as an alternative for portability.
+- **Goal:** Any Common Lisp implementation should be able to use the MCP where possible; some implementations may be limited to one protocol (Swank or nrepl) depending on what they support.
+
 ## Quick Reference
 
 **Core Development Loop:**
@@ -102,7 +108,7 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
 | `hot-reload-workflow` | Live code modification without restart |
 | `profiling-workflow` | Performance analysis workflow |
 
-**Tool Categories (99 tools total):**
+**Tool Categories (100 tools total):**
 
 | Category    | Purpose                  | Key Tools                                                  |
 | ----------- | ----------------------- | ---------------------------------------------------------- |
@@ -157,6 +163,11 @@ When the server is launched by MCP clients (Cursor, Kilocode, Opencode) over std
 
 - **Result and diagnostic reports** (e.g. from diagnostic runs, test result summaries) must be stored in **`reports/`**, not in `tmp/`. See Project Structure.
 
+### HTTP and WebSocket Transport
+
+- **HTTP:** Implemented; supports POST /rpc. Server log messages use log4cl (stderr) to match stdio purity.
+- **WebSocket:** Placeholder only (no real server or message handling); `start-websocket-transport` prints a notice.
+
 ## Recommended Workflow: One Long-Running Lisp Session
 
 For the MCP to interact with Swank (or nrepl) the same way a user in Slime would—see output, debugger state, step, move frames, invoke restarts, inspect, compile—use a **single long-running Lisp session** that the user (or automation) starts and keeps running.
@@ -177,6 +188,15 @@ For the MCP to interact with Swank (or nrepl) the same way a user in Slime would
 
 See **docs/architecture.md** and **README.md** (Swank Integration / Recommended setup) for step-by-step setup and tool usage.
 
+### Unified vs Swank/nrepl
+
+- After connecting, use **unified `repl_*` tools only** (do not mix `swank_*`/`nrepl_*`) to reduce mental load. Backend selection: prefer the most capable; check what is available on the given port; if only one backend is available on that port, use it.
+- **Dedicated port for MCP:** Use a separate Swank (or nrepl) port for MCP (e.g. Swank on 4006) so the user keeps 4005 for their editor. Example: `(swank:create-server :port 4006 :dont-close t)` for MCP; keep 4005 for Slime.
+
+### Restarts
+
+- Use **`repl_get_restarts`** and **`repl_invoke_restart`** (unified) instead of `swank_get_restarts` / `swank_invoke_restart` in normal workflows.
+
 ## Project Structure & Module Organization
 
 ```
@@ -185,7 +205,7 @@ cl-tron-mcp/
 │   ├── core/                    # Core infrastructure (config, utils, version, server)
 │   ├── transport/              # Transport layer (stdio, http, websocket)
 │   ├── protocol/                # MCP protocol handler (JSON-RPC 2.0)
-│   ├── tools/                   # Tool registry and definitions
+│   ├── tools/                   # Tool registry, definitions, and registration of MCP tools
 │   ├── security/                # Approval workflow, audit logging
 │   ├── sbcl/                    # SBCL-specific integration (eval, compile, threads)
 │   ├── swank/                   # Swank (Slime) integration
@@ -198,8 +218,7 @@ cl-tron-mcp/
 │   ├── tracer/                  # Function tracing
 │   ├── monitor/                 # Production monitoring
 │   ├── logging/                 # log4cl integration
-│   ├── xref/                    # Cross-reference tools
-│   └── tools/                   # Tool registration
+│   └── xref/                    # Cross-reference tools
 │
 ├── tests/                       # Rove test suites
 ├── reports/                     # Result and diagnostic reports (not tmp/)
@@ -332,6 +351,8 @@ Follow the Google Common Lisp Style Guide with project-specific additions:
 ```
 
 ### JSON-RPC Response Format
+
+All JSON-RPC encoding and decoding uses **Jonathan** (Common Lisp JSON library: `jonathan:parse`, `jonathan:to-json`). Use lowercase keys for MCP compatibility.
 
 **Critical**: MCP responses MUST use lowercase JSON keys:
 
@@ -490,19 +511,12 @@ The MCP requires user approval for operations that can modify running code:
 - `nrepl_eval`, `nrepl_compile`
 - `repl_eval`, `repl_compile`
 
-### Approval Workflow
+### Approval Workflow (server-enforced)
 
-```lisp
-;; Request approval for operation
-(let ((request (cl-tron-mcp:request-approval
-                 :modify-running-code
-                 (list :function "compute-data"
-                       :file "src/core.lisp"))))
-  ;; Wait for user response or timeout
-  (when (eq (cl-tron-mcp:approval-response request) :approved)
-    ;; Proceed with operation
-    ))
-```
+- **Timeout:** 300 seconds (user can be busy elsewhere).
+- **Two classes:** Tools with `approvalLevel: "user"` require human approval; `"none"` = auto-run (MCP/agent sufficient).
+- **Flow:** When a protected tool is invoked, the server returns `approval_required` with `request_id` and `message`. The client shows UI; the user approves or denies. The client calls **`approval/respond`** with `request_id` and `approved` (true/false). Then the client **re-invokes** the same tool with `approval_request_id` and `approved: true` to run it. Denial returns a **message** (e.g. "User denied approval. You can retry by invoking the tool again."). **Retry** = call the same tool again (new approval request).
+- **Whitelist:** When the operation is whitelisted, the tool runs without prompting.
 
 ### Audit Logging
 
@@ -801,6 +815,6 @@ clgrep   lisp-read   inspect   code_      compile   tests
 - **Tests**: Rove in `tests/`, mirror source structure
 - **Security**: User approval required for modifying operations
 - **Docs**: See `@prompts/` and `docs/tools/` for detailed guides
-- **Tools**: 92 tools implemented across 14 categories
+- **Tools**: 100 tools implemented across 14 categories
 - **Transport**: Stdio (primary), HTTP (has issues), WebSocket (placeholder)
 - **MCP Clients**: Verified working with OpenCode, Cursor, VS Code

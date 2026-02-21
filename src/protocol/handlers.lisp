@@ -77,6 +77,10 @@ Routes to appropriate handler based on METHOD string."
       ((string= method "prompts/get")
        (handle-prompts-get id params))
       
+      ;; Approval (server-enforced user approval)
+      ((string= method "approval/respond")
+       (handle-approval-respond id params))
+      
       ;; Unknown method
       (t
        (make-error-response id -32601 (format nil "Unknown method: ~a" method))))))
@@ -127,20 +131,92 @@ Returns list of all available tools with their schemas."
            :|id| id
            :|result| (list :|tools| tools)))))
 
+(defun arguments-without-approval-params (arguments)
+  "Return arguments plist without approval_request_id and approved (for passing to tool handler)."
+  (loop for (k v) on arguments by #'cddr
+        when (and (not (eq k :|approval_request_id|)) (not (eq k :|approved|)))
+          append (list k v)))
+
 (defun handle-tool-call (id params)
   "Handle tools/call request.
-Invokes the named tool with provided arguments."
+   If tool requires user approval: whitelist -> run; else return approval_required.
+   If arguments include approval_request_id and approved: true, consume and run tool.
+   Denial or invalid approval returns error with message (retry = same tool again)."
   (let ((tool-name (getf params :|name|))
         (arguments (getf params :|arguments|)))
+    (unless tool-name
+      (return-from handle-tool-call
+        (make-error-response id -32602 "Missing tool name")))
     (handler-case
-        (let ((result (cl-tron-mcp/tools:call-tool tool-name arguments)))
+        (progn
+          ;; Re-invocation with approval from client (Option A)
+          (let ((approval-request-id (getf arguments :|approval_request_id|))
+                (approved (getf arguments :|approved|)))
+            (when (and approval-request-id approved
+                       (or (eq approved t) (string= (string approved) "true")))
+              (cond
+                ((cl-tron-mcp/security:consume-approved-request-id
+                  (string approval-request-id))
+                 (return-from handle-tool-call
+                   (handle-tool-call-run tool-name (arguments-without-approval-params arguments) id)))
+                (t
+                 (return-from handle-tool-call
+                   (make-error-response id -32001
+                     "Approval expired or already used. Invoke the tool again to request a new approval."))))))
+          ;; Tool requires user approval and no whitelist -> return approval_required
+          (when (and (cl-tron-mcp/tools:tool-requires-user-approval-p tool-name)
+                     (not (cl-tron-mcp/security:whitelist-check-tool tool-name arguments)))
+            (let ((request (cl-tron-mcp/security:request-approval
+                            (or (cl-tron-mcp/security:tool-name-to-operation tool-name) :eval)
+                            (list :tool tool-name :arguments arguments))))
+              (return-from handle-tool-call
+                (jonathan:to-json
+                 (list :|jsonrpc| "2.0"
+                       :|id| id
+                       :|result|
+                       (list :|content|
+                             (list (list :|type| "text"
+                                        :|text| (jonathan:to-json
+                                                 (list :|approval_required| t
+                                                       :|request_id| (cl-tron-mcp/security:approval-request-id request)
+                                                       :|message| (format nil "User approval required for tool: ~a" tool-name))))))))))
+          ;; Run tool (no approval needed or whitelisted)
+          (handle-tool-call-run tool-name (or arguments (list)) id))
+      (error (e)
+        (make-error-response id -32000 (princ-to-string e))))))
+
+(defun handle-tool-call-run (tool-name arguments id)
+  "Helper: run tool and return JSON-RPC result."
+  (let ((result (cl-tron-mcp/tools:call-tool tool-name arguments)))
+    (jonathan:to-json
+     (list :|jsonrpc| "2.0"
+           :|id| id
+           :|result|
+           (list :|content|
+                 (list (list :|type| "text"
+                            :|text| (format nil "~a" result))))))))
+
+(defun handle-approval-respond (id params)
+  "Handle approval/respond request. Params: request_id (string), approved (boolean), optional message.
+   Records the user decision; client then re-invokes the tool with approval_request_id and approved: true."
+  (let ((request-id (getf params :|request_id|))
+        (approved (getf params :|approved|))
+        (message (getf params :|message|)))
+    (unless request-id
+      (return-from handle-approval-respond
+        (make-error-response id -32602 "Missing request_id")))
+    (handler-case
+        (let ((response (if (or (eq approved t) (and approved (string= (string approved) "true")))
+                            :approved
+                            :denied)))
+          (cl-tron-mcp/security:approval-response (string request-id) response)
           (jonathan:to-json
            (list :|jsonrpc| "2.0"
                  :|id| id
-                 :|result|
-                 (list :|content|
-                       (list (list :|type| "text"
-                                  :|text| (format nil "~a" result)))))))
+                 :|result| (nconc (list :|recorded| t :|approved| (eq response :approved))
+                                  (when (eq response :denied)
+                                    (list :|message| (or (when message (string message))
+                                                        "User denied approval. You can retry by invoking the tool again."))))))))
       (error (e)
         (make-error-response id -32000 (princ-to-string e))))))
 
