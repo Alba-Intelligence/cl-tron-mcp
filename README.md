@@ -39,7 +39,7 @@ Shows the actual JSON-RPC messages that AI clients send to Tron internally. This
 │  SBCL + Swank   │◄───────►│   Tron (MCP)    │◄───────►│   AI Client     │
 │  (Port 4005)    │         │   (stdio)       │         │ (Kilocode, etc) │
 │                 │         │                 │         │                 │
-│  Your code      │         │  100 tools:     │         │  Sends prompts  │
+│  Your code      │         │  86 tools:      │         │  Sends prompts  │
 │  Debugger       │         │   - swank_eval  │         │  Receives       │
 │  Threads        │         │   - inspect     │         │  results        │
 │  State lives    │         │   - profile     │         │                 │
@@ -66,7 +66,7 @@ Shows the actual JSON-RPC messages that AI clients send to Tron internally. This
 | **Monitor** | Health checks, runtime stats, GC | [docs/tools/monitor.md](docs/tools/monitor.md) |
 | **Swank** | Slime/Portacle integration (21 tools) | [docs/swank-integration.md](docs/swank-integration.md) |
 
-**100 tools total** across 14 categories.
+**86 tools total** across 14 categories.
 
 ### Quick Tool Examples
 
@@ -181,7 +181,6 @@ cl-tron-mcp/
 ├── src/                    # Source code
 │   ├── core/               # Core infrastructure
 │   ├── swank/              # Swank client
-│   ├── nrepl/              # nrepl client
 │   ├── tools/              # Tool definitions
 │   └── ...
 ├── tests/                  # Rove test suites
@@ -220,7 +219,7 @@ cl-tron-mcp/
 
 - **SBCL** 2.0.0 or later, or **ECL** (Embeddable Common Lisp). The MCP server runs with either. `start-mcp.sh` selects the Lisp by: **`--use-sbcl`** / **`--use-ecl`** (CLI), then **`TRON_LISP`** (env), then auto-detect (sbcl, then ecl). Run **`./start-mcp.sh --help`** for full usage.
 - **Quicklisp**
-- **Swank** (for Slime) or **cl-nrepl** (for nrepl)
+- **Swank** (for Slime/Portacle/Sly)
 
 ## Troubleshooting
 

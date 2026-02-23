@@ -4,12 +4,12 @@ This tutorial walks from "nothing running" to "first connection, first eval, fir
 
 ## Prerequisites
 
-- Swank (or nrepl) running in your Lisp session, e.g. `(swank:create-server :port 4005 :dont-close t)` or a dedicated port for MCP (e.g. 4006).
+- Swank running in your Lisp session, e.g. `(swank:create-server :port 4005 :dont-close t)` or a dedicated port for MCP (e.g. 4006).
 - MCP server started by your client (Cursor, OpenCode, Kilocode). See [docs/starting-the-mcp.md](../docs/starting-the-mcp.md) if the MCP won't start.
 
 ## Step 1: Connect
 
-Use the unified interface (auto-detects Swank/nrepl on the given port):
+Use the unified interface (Swank on the given port):
 
 ```
 Tool: repl_connect
@@ -96,5 +96,5 @@ Expected: `"120"` (or equivalent).
 ## Summary
 
 - Use **only** `repl_*` tools after connecting: `repl_connect`, `repl_eval`, `repl_backtrace`, `repl_get_restarts`, `repl_invoke_restart`, `repl_compile`, etc.
-- Do not mix `swank_*` or `nrepl_*` in normal workflows.
+- Use `repl_*` after connecting via `repl_connect` or `swank_connect`; do not mix with raw `swank_*` in normal workflows.
 - See [prompts/workflow-examples.md](../prompts/workflow-examples.md) for more examples and [AGENTS.md](../AGENTS.md) for approval and tool reference.

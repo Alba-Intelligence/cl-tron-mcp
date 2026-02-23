@@ -1,6 +1,6 @@
 # Tron Workflow Examples
 
-Concrete examples for common tasks. Each example uses **unified `repl_*` tools** so you can copy-paste regardless of backend (Swank or nrepl). See [tutorial/e2e-mcp-workflow.md](../tutorial/e2e-mcp-workflow.md) for a minimal "first connection + first eval + first error + first restart" narrative.
+Concrete examples for common tasks. Each example uses **unified `repl_*` tools** with the Swank backend. See [tutorial/e2e-mcp-workflow.md](../tutorial/e2e-mcp-workflow.md) for a minimal "first connection + first eval + first error + first restart" narrative.
 
 ## Example 1: Debug a Runtime Error
 

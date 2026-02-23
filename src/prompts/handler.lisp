@@ -109,7 +109,7 @@ Use the swank_connect tool:
 swank_connect :host \"127.0.0.1\" :port 4005
 ```
 
-Or use the unified interface (auto-detects Swank/nrepl):
+Or use the unified interface (Swank):
 
 ```
 repl_connect :port 4005

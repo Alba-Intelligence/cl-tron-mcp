@@ -49,7 +49,7 @@ Implement the wire protocol utilities:
           (t (error "Short read: length=~D count=~D" length count)))))
 ```
 
-**Why separate file?** Clean separation; can be used by both Swank and nrepl clients later.
+**Why separate file?** Clean separation for the Swank client.
 
 ### 1.2 Connection State & Management (`src/swank/client.lisp` - REWRITE)
 
@@ -281,9 +281,7 @@ Extend `repl-connect` to use Swank when type is `:swank` or auto-detected:
 (defun repl-eval (code &key (package "CL-USER"))
   (unless *repl-connected*
     (return-from repl-eval (list :error t :message "Not connected")))
-  (if (eq *repl-type* :swank)
-      (cl-tron-mcp/swank:swank-eval code :package package)
-      (cl-tron-mcp/nrepl:nrepl-eval code :package package)))
+  (cl-tron-mcp/swank:swank-eval code :package package))
 ```
 
 Add debugger operations to `repl_backtrace`, `repl_inspect`, etc.

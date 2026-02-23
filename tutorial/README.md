@@ -83,10 +83,9 @@ AI Agent:
 | XRef | 5 | Cross-reference analysis |
 | Security | 5 | Approval workflow |
 | Swank | 13 | Swank server integration |
-| nrepl | 14 | nrepl server integration |
-| Unified | 12 | Auto-detecting unified REPL interface |
+| Unified | 12 | Swank unified REPL interface |
 
-**Total: 81 tools**
+**Total: 67 tools** (86 total in MCP; table above is by category)
 
 ## Files
 
@@ -96,4 +95,3 @@ AI Agent:
 - `debugging-tutorial.lisp` - Original debugging examples
 - `tutorial.json` - MCP tool definitions for testing
 - `swank-tutorial.lisp` - Swank integration tutorial
-- `nrepl-tutorial.lisp` - nrepl integration tutorial

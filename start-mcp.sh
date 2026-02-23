@@ -180,6 +180,17 @@ else
     fi
 fi
 
+# ECL does not load Quicklisp from init; load setup.lisp before any ql: use.
+# Pass -eval and the form as two args so the form (with space) is one shell word.
+case "$LISP" in
+*ecl*) ECL_LOAD_QL_FLAG="-eval"
+       ECL_LOAD_QL_EXPR="(load #p\"$QUICKLISP_DIR/setup.lisp\")"
+       ;;
+*)     ECL_LOAD_QL_FLAG=""
+       ECL_LOAD_QL_EXPR=""
+       ;;
+esac
+
 echo "Starting CL-TRON-MCP..." >&2
 echo "  Lisp: $LISP" >&2
 echo "  Transport: $TRANSPORT" >&2
@@ -187,8 +198,8 @@ if [[ "$TRANSPORT" != "stdio" ]]; then
     echo "  Port: $PORT" >&2
 fi
 echo "" >&2
-echo "Available tools: 100" >&2
-echo "  - Unified REPL (auto-detects Swank/nrepl)" >&2
+echo "Available tools: 86" >&2
+echo "  - Unified REPL (Swank)" >&2
 echo "  - Inspector, Debugger, Profiler, Tracer" >&2
 echo "  - Thread management, Monitoring" >&2
 echo "  - Logging, Cross-reference, Security" >&2
@@ -201,33 +212,37 @@ echo "--" >&2
 if [[ "$TRANSPORT" == "stdio" ]]; then
     echo "-- Starting the stdio MCP" >&2
     echo "--" >&2
-    # LISP_QUIET: SBCL --noinform / ECL -q so stdout = JSON-RPC only for MCP clients
+    # LISP_QUIET: SBCL --noinform / ECL -q so stdout = JSON-RPC only for MCP clients.
+    # After start-server returns (client disconnected), quit so we never run the REPL on stdin.
     exec \
         "$LISP" \
         $LISP_QUIET \
+        $ECL_LOAD_QL_FLAG "$ECL_LOAD_QL_EXPR" \
         $LISP_EVAL "(setq *compile-verbose* nil *load-verbose* nil)" \
         $LISP_EVAL "(push #p\"$(pwd)/\" ql:*local-project-directories*)" \
         $LISP_EVAL "(asdf:compile-system :cl-tron-mcp :force t)" \
         $LISP_EVAL "(asdf:load-system :cl-tron-mcp)" \
-        $LISP_EVAL "(cl-tron-mcp/core:start-server :transport :stdio)"
+        $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :stdio) #+sbcl (sb-ext:quit 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
 elif [[ "$TRANSPORT" == "http" ]]; then
     echo "-- Starting the HTTP server on port $PORT" >&2
     echo "--" >&2
     exec \
         "$LISP" \
         $LISP_QUIET \
+        $ECL_LOAD_QL_FLAG "$ECL_LOAD_QL_EXPR" \
         $LISP_EVAL "(push #p\"$(pwd)/\" ql:*local-project-directories*)" \
         $LISP_EVAL "(asdf:compile-system :cl-tron-mcp :force t)" \
         $LISP_EVAL "(asdf:load-system :cl-tron-mcp)" \
-        $LISP_EVAL "(cl-tron-mcp/core:start-server :transport :http :port $PORT)"
+        $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :http :port $PORT) #+sbcl (sb-ext:quit 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
 elif [[ "$TRANSPORT" == "websocket" ]]; then
     echo "-- Starting Websocket server on port $PORT" >&2
     echo "--" >&2
     exec \
         "$LISP" \
         $LISP_QUIET \
+        $ECL_LOAD_QL_FLAG "$ECL_LOAD_QL_EXPR" \
         $LISP_EVAL "(push #p\"$(pwd)/\" ql:*local-project-directories*)" \
         $LISP_EVAL "(asdf:compile-system :cl-tron-mcp :force t)" \
         $LISP_EVAL "(asdf:load-system :cl-tron-mcp)" \
-        $LISP_EVAL "(cl-tron-mcp/core:start-server :transport :websocket :port $PORT)"
+        $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :websocket :port $PORT) #+sbcl (sb-ext:quit 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
 fi

@@ -49,7 +49,7 @@
 ;;; REPL tools
 (register-tool
  "repl_eval"
- "Evaluate Lisp code in REPL context. Use for testing, debugging, and modifying running code. Requires connection to Swank/nrepl. Code runs in the persistent Lisp session."
+ "Evaluate Lisp code in REPL context. Use for testing, debugging, and modifying running code. Requires connection to Swank. Code runs in the persistent Lisp session."
  :input-schema (list :code "string" :package "string")
  :output-schema (list :type "object")
  :requires-approval t)
@@ -522,135 +522,16 @@
     :requires-approval nil)
     (register-tool-handler "swank_debugger_state" (function cl-tron-mcp/swank:swank-debugger-state))
 
-;;; nrepl tools (Sly, CIDER compatibility)
+;;; Unified REPL tools (Swank)
 ;;;
-;;; These tools work with nrepl servers (used by Sly and CIDER).
-;;; For nrepl, typically use port 7888 instead of Swank's 4005.
-
-  (register-tool
-   "nrepl_connect"
-   "Connect to an nrepl server (Sly, CIDER). PREREQUISITE: Start nrepl server in your Lisp first. Default nrepl port is usually 7888."
-   :input-schema (list :host "string" :port "integer")
-   :output-schema (list :type "object")
-   :requires-approval nil)
-  (register-tool-handler "nrepl_connect" (function cl-tron-mcp/nrepl:nrepl-connect))
-
-  (register-tool
-   "nrepl_disconnect"
-   "Disconnect from nrepl server. The Lisp session continues running."
-   :input-schema nil
-   :output-schema (list :type "object")
-   :requires-approval nil)
-  (register-tool-handler "nrepl_disconnect" (function cl-tron-mcp/nrepl:nrepl-disconnect))
-
-  (register-tool
-   "nrepl_status"
-   "Check nrepl connection status. Use to verify connection before using other nrepl tools."
-   :input-schema nil
-   :output-schema (list :type "object")
-   :requires-approval nil)
-  (register-tool-handler "nrepl_status" (function cl-tron-mcp/nrepl:nrepl-status))
-
-  (register-tool
-   "nrepl_eval"
-   "Evaluate Lisp code via nrepl. REQUIRES: nrepl_connect first. Code runs in a persistent session."
-   :input-schema (list :code "string" :package "string")
-   :output-schema (list :type "object")
-   :requires-approval t)
-  (register-tool-handler "nrepl_eval" (function cl-tron-mcp/nrepl:nrepl-eval))
-
-  (register-tool
-   "nrepl_compile"
-   "Compile Lisp code via nrepl. REQUIRES: nrepl_connect first. Use for hot-reloading."
-   :input-schema (list :code "string" :package "string" :filename "string")
-   :output-schema (list :type "object")
-   :requires-approval t)
-  (register-tool-handler "nrepl_compile" (function cl-tron-mcp/nrepl:nrepl-compile))
-
-  (register-tool
-   "nrepl_sessions"
-   "List all nrepl sessions. REQUIRES: nrepl_connect first."
-   :input-schema nil
-   :output-schema (list :type "object")
-   :requires-approval nil)
-  (register-tool-handler "nrepl_sessions" (function cl-tron-mcp/nrepl:nrepl-sessions))
-
-  (register-tool
-   "nrepl_close_session"
-   "Close an nrepl session. REQUIRES: nrepl_connect first."
-   :input-schema (list :session "string")
-   :output-schema (list :type "object")
-   :requires-approval nil)
-  (register-tool-handler "nrepl_close_session" (function cl-tron-mcp/nrepl:nrepl-close-session))
-
-  (register-tool
-   "nrepl_threads"
-   "List all threads via nrepl. REQUIRES: nrepl_connect first."
-   :input-schema nil
-   :output-schema (list :type "object")
-   :requires-approval nil)
-  (register-tool-handler "nrepl_threads" (function cl-tron-mcp/nrepl:nrepl-threads))
-
-  (register-tool
-   "nrepl_interrupt"
-   "Interrupt evaluation via nrepl. REQUIRES: nrepl_connect first. Use when a computation is stuck."
-   :input-schema nil
-   :output-schema (list :type "object")
-   :requires-approval nil)
-  (register-tool-handler "nrepl_interrupt" (function cl-tron-mcp/nrepl:nrepl-interrupt))
-
-  (register-tool
-   "nrepl_backtrace"
-   "Get backtrace via nrepl. REQUIRES: nrepl_connect first. Use after an error."
-   :input-schema (list :thread "string")
-   :output-schema (list :type "object")
-   :requires-approval nil)
-  (register-tool-handler "nrepl_backtrace" (function cl-tron-mcp/nrepl:nrepl-backtrace))
-
-  (register-tool
-   "nrepl_inspect"
-   "Inspect an object via nrepl. REQUIRES: nrepl_connect first."
-   :input-schema (list :expression "string")
-   :output-schema (list :type "object")
-   :requires-approval nil)
-  (register-tool-handler "nrepl_inspect" (function cl-tron-mcp/nrepl:nrepl-inspect))
-
-  (register-tool
-   "nrepl_describe"
-   "Describe a symbol via nrepl. REQUIRES: nrepl_connect first."
-   :input-schema (list :symbol "string")
-   :output-schema (list :type "object")
-   :requires-approval nil)
-  (register-tool-handler "nrepl_describe" (function cl-tron-mcp/nrepl:nrepl-describe))
-
-  (register-tool
-   "nrepl_doc"
-   "Get documentation for a symbol via nrepl. REQUIRES: nrepl_connect first."
-   :input-schema (list :symbol "string")
-   :output-schema (list :type "object")
-   :requires-approval nil)
-  (register-tool-handler "nrepl_doc" (function cl-tron-mcp/nrepl:nrepl-doc))
-
-  (register-tool
-   "nrepl_completions"
-   "Get symbol completions via nrepl. REQUIRES: nrepl_connect first."
-   :input-schema (list :prefix "string")
-   :output-schema (list :type "object")
-   :requires-approval nil)
-   (register-tool-handler "nrepl_completions" (function cl-tron-mcp/nrepl:nrepl-completions))
-
-;;; Unified REPL tools (auto-detects Swank vs nrepl)
-;;;
-;;; These tools work with either Swank (Slime/Portacle) or nrepl (Sly/CIDER).
-;;; The connection auto-detects the protocol type.
+;;; These tools work with Swank (Slime/Portacle/Sly).
 ;;;
 ;;; IMPORTANT: You must connect before using these tools.
-;;;   For Swank: (ql:quickload :swank) (swank:create-server :port 4005)
-;;;   For nrepl: Start nrepl server, then use repl_connect
+;;;   Start Swank: (ql:quickload :swank) (swank:create-server :port 4005)
 
   (register-tool
    "repl_connect"
-   "Connect to any Lisp REPL (auto-detects Swank/nrepl). PREREQUISITE: Start Swank or nrepl server in SBCL first. Swank: (ql:quickload :swank) (swank:create-server :port 4005). Default port 4005 is for Swank; nrepl typically uses 7888."
+   "Connect to Swank REPL. PREREQUISITE: Start Swank in SBCL first: (ql:quickload :swank) (swank:create-server :port 4005). Default port 4005."
    :input-schema (list :type "string" :host "string" :port "integer")
    :output-schema (list :type "object")
    :requires-approval nil)
@@ -666,7 +547,7 @@
 
   (register-tool
    "repl_status"
-   "Check REPL connection status and type. Shows :connected, :type (swank or nrepl), :host, and :port. Use to verify connection before using other REPL tools."
+   "Check REPL connection status and type. Shows :connected, :type (:swank), :host, and :port. Use to verify connection before using other REPL tools."
    :input-schema nil
    :output-schema (list :type "object")
    :requires-approval nil)
@@ -745,7 +626,7 @@
    (register-tool-handler "repl_doc" (function cl-tron-mcp/unified:repl-doc))
 
 ;;; Unified REPL debugger tools
-;;; These tools work with the debugger in either Swank or nrepl connections.
+;;; These tools work with the debugger in Swank connections.
 
   (register-tool
    "repl_frame_locals"

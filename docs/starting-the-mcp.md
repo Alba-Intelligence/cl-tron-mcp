@@ -29,6 +29,8 @@ Replace `/path/to/cl-tron-mcp` with your path.
 
 2. **Use `start-mcp.sh`** so stdout stays clean (no Lisp banner; script output goes to stderr). It supports **SBCL** and **ECL**. Run **`./start-mcp.sh --help`** for full usage.
 
+The server process is **long-running**: it stays alive and reads JSON-RPC from stdin until the client closes the connection. When the client disconnects, the script exits the Lisp process (no REPL on stdin), so stdout stays JSON-only.
+
 ### Lisp selection
 
 The script chooses the Lisp in this order:

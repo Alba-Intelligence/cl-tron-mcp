@@ -68,15 +68,14 @@ Tron exposes documentation and guided workflows via MCP standard mechanisms:
 
 - **All tools use `&key` args with underscore names**: `symbol_name`, not `symbol-name`
 - **Results are plists**: Access with `(getf result :key)`
-- **Swank ≠ nrepl**: Swank (Slime) uses sexp protocol; nrepl uses bencode
-- **Port 4005 = Swank**, **Port 8675 = nrepl** (cl-nrepl)
+- **Port 4005 = Swank** (Slime/Portacle/Sly)
 - **Use `tmp/` folder**, never `/tmp`
 
 ### Lisp Implementation Support
 
-- **Primary:** Tested with **SBCL**; Swank/nrepl integration and debugger features are developed against SBCL.
+- **Primary:** Tested with **SBCL**; Swank integration and debugger features are developed against SBCL.
 - **ECL:** The MCP server can run under **ECL** as well. Lisp selection in `start-mcp.sh`: **CLI** (`--use-sbcl` / `--use-ecl`) overrides **env** (`TRON_LISP=sbcl` or `ecl`), then **auto-detect** (sbcl, then ecl). Run `./start-mcp.sh --help` for full usage. For stdio, the script uses SBCL `--noinform` or ECL `-q` so stdout stays JSON-only.
-- **Goal:** Any Common Lisp implementation should be able to use the MCP where possible; some implementations may be limited to one protocol (Swank or nrepl) depending on what they support.
+- **Goal:** Any Common Lisp implementation should be able to use the MCP where possible; REPL connectivity is via Swank.
 
 ## Quick Reference
 
@@ -108,7 +107,7 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
 | `hot-reload-workflow` | Live code modification without restart |
 | `profiling-workflow` | Performance analysis workflow |
 
-**Tool Categories (100 tools total):**
+**Tool Categories (86 tools total):**
 
 | Category    | Purpose                  | Key Tools                                                  |
 | ----------- | ----------------------- | ---------------------------------------------------------- |
@@ -124,8 +123,7 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
 | XRef        | Cross-reference         | `who_calls`, `who_references`, `list_callees`              |
 | Security    | Approval whitelist      | `whitelist_add`, `whitelist_status`                        |
 | Swank       | Slime integration (21)  | `swank_connect`, `swank_eval`, `swank_backtrace`, `swank_step` |
-| nrepl       | cl-nrepl integration    | `nrepl_connect`, `nrepl_eval`, `nrepl_sessions`           |
-| Unified     | Auto-detect REPL        | `repl_connect`, `repl_eval`, `repl_step`, `repl_continue`  |
+| Unified     | Swank REPL              | `repl_connect`, `repl_eval`, `repl_step`, `repl_continue`  |
 
 ## Cross-References
 
@@ -157,7 +155,7 @@ When the server is launched by MCP clients (Cursor, Kilocode, Opencode) over std
 ### SBCL startup (stdio)
 
 - When launching SBCL for stdio transport (e.g. in `start-mcp.sh`), use **`--noinform`** so the SBCL banner is not printed to stdout. Otherwise the first line the client sees is not JSON and the handshake fails.
-- In `start-mcp.sh`, the stdio branch uses `--noinform` and all pre-exec `echo` output is redirected to stderr (`>&2`) so no script banner appears on stdout.
+- In `start-mcp.sh`, the stdio branch uses `--noinform` and all pre-exec `echo` output is redirected to stderr (`>&2`) so no script banner appears on stdout. When the transport loop exits (client disconnect), the script quits the Lisp process so the REPL never reads from stdin.
 
 ### Reports
 
@@ -170,28 +168,28 @@ When the server is launched by MCP clients (Cursor, Kilocode, Opencode) over std
 
 ## Recommended Workflow: One Long-Running Lisp Session
 
-For the MCP to interact with Swank (or nrepl) the same way a user in Slime would—see output, debugger state, step, move frames, invoke restarts, inspect, compile—use a **single long-running Lisp session** that the user (or automation) starts and keeps running.
+For the MCP to interact with Swank the same way a user in Slime would—see output, debugger state, step, move frames, invoke restarts, inspect, compile—use a **single long-running Lisp session** that the user (or automation) starts and keeps running.
 
 ### Two processes
 
-1. **Lisp session (Swank or nrepl)**  
-   The user starts one SBCL (or other Lisp) with Swank (or nrepl) and leaves it running. All code loading and execution (by the user or by the MCP) happens in this process. The debugger runs here; Slime/Sly/Emacs can attach to the same session.
+1. **Lisp session (Swank)**  
+   The user starts one SBCL (or other Lisp) with Swank and leaves it running. All code loading and execution (by the user or by the MCP) happens in this process. The debugger runs here; Slime/Sly/Emacs can attach to the same session.
 
 2. **MCP server**  
-   Started by the MCP client (Cursor, Kilocode, Opencode) via `start-mcp.sh` or equivalent. It runs in a separate process and connects to the Lisp session as a **Swank (or nrepl) client**. The MCP then uses Swank facilities (eval, backtrace, restarts, stepping, inspect, etc.) over the protocol—the same way Slime does.
+   Started by the MCP client (Cursor, Kilocode, Opencode) via `start-mcp.sh` or equivalent. It runs in a separate process and connects to the Lisp session as a **Swank client**. The MCP then uses Swank facilities (eval, backtrace, restarts, stepping, inspect, etc.) over the protocol—the same way Slime does.
 
 ### Agent workflow
 
-1. User starts the Lisp session with Swank (e.g. `(swank:create-server :port 4005)`) or nrepl (e.g. `(nrepl:start-server :port 8675)` using cl-nrepl).
-2. User (or client) starts the MCP server; the agent connects to the Lisp session via `repl_connect` / `swank_connect` / `nrepl_connect` (or the client config is set so the MCP connects on startup).
+1. User starts the Lisp session with Swank (e.g. `(swank:create-server :port 4005)`).
+2. User (or client) starts the MCP server; the agent connects to the Lisp session via `repl_connect` or `swank_connect` (or the client config is set so the MCP connects on startup).
 3. The agent uses `repl_eval`, `repl_backtrace`, `repl_inspect`, and related tools to load code, run it, see output and debugger state, step, move frames, invoke restarts, and fix code—all through the connected session. No second REPL; one session, MCP as a client of it.
 
 See **docs/architecture.md** and **README.md** (Swank Integration / Recommended setup) for step-by-step setup and tool usage.
 
-### Unified vs Swank/nrepl
+### Unified vs Swank
 
-- After connecting, use **unified `repl_*` tools only** (do not mix `swank_*`/`nrepl_*`) to reduce mental load. Backend selection: prefer the most capable; check what is available on the given port; if only one backend is available on that port, use it.
-- **Dedicated port for MCP:** Use a separate Swank (or nrepl) port for MCP (e.g. Swank on 4006) so the user keeps 4005 for their editor. Example: `(swank:create-server :port 4006 :dont-close t)` for MCP; keep 4005 for Slime.
+- After connecting, use **unified `repl_*` tools only** (do not mix with `swank_*`) to reduce mental load.
+- **Dedicated port for MCP:** Use a separate Swank port for MCP (e.g. Swank on 4006) so the user keeps 4005 for their editor. Example: `(swank:create-server :port 4006 :dont-close t)` for MCP; keep 4005 for Slime.
 
 ### Restarts
 
@@ -209,8 +207,7 @@ cl-tron-mcp/
 │   ├── security/                # Approval workflow, audit logging
 │   ├── sbcl/                    # SBCL-specific integration (eval, compile, threads)
 │   ├── swank/                   # Swank (Slime) integration
-│   ├── nrepl/                   # nrepl (Sly, CIDER) integration
-│   ├── unified/                 # Unified REPL interface (auto-detect)
+│   ├── unified/                 # Unified REPL interface (Swank)
 │   ├── debugger/                # Debugging tools (frames, restarts, breakpoints)
 │   ├── inspector/               # Object introspection tools
 │   ├── hot-reload/              # Live code modification
@@ -508,7 +505,6 @@ The MCP requires user approval for operations that can modify running code:
 - `profile_stop`
 - `trace_function`
 - `swank_eval`, `swank_compile`, `swank_abort`, `swank_interrupt`
-- `nrepl_eval`, `nrepl_compile`
 - `repl_eval`, `repl_compile`
 
 ### Approval Workflow (server-enforced)
@@ -606,7 +602,7 @@ Expected response:
 
 ### Typical Development Session
 
-When the MCP is connected to a long-running Lisp session (Swank/nrepl):
+When the MCP is connected to a long-running Lisp session (Swank):
 
 1. **Explore**: Use tools to understand current state (`repl_eval`, `repl_backtrace`, `repl_inspect`, etc.).
 2. **Experiment**: Test in the connected REPL with `repl_eval`.
@@ -614,7 +610,7 @@ When the MCP is connected to a long-running Lisp session (Swank/nrepl):
 4. **Verify**: Run tests in the session (e.g. `repl_eval` with `(asdf:test-system :cl-tron-mcp)`).
 5. **Debug**: Use Swank facilities via MCP tools—backtrace, restarts, step, frame up/down, inspect—the same way a user would in Slime.
 
-Without a connected REPL, tools that require it (e.g. `repl_eval`) return "Not connected to any REPL"; use `repl_connect` or `swank_connect` / `nrepl_connect` first. See Recommended Workflow above and docs/architecture.md.
+Without a connected REPL, tools that require it (e.g. `repl_eval`) return "Not connected to any REPL"; use `repl_connect` or `swank_connect` first. See Recommended Workflow above and docs/architecture.md.
 
 ### Tool Usage Order
 
@@ -718,27 +714,10 @@ clgrep   lisp-read   inspect   code_      compile   tests
 - `swank_autodoc` - Get documentation for a symbol
 - `swank_completions` - Get symbol completions via Swank
 
-### nrepl Tools (14) - Sly/CIDER Integration
-
-- `nrepl_connect` - Connect to nrepl server
-- `nrepl_disconnect` - Disconnect from nrepl server
-- `nrepl_status` - Check nrepl connection status
-- `nrepl_eval` - Evaluate Lisp code via nrepl (requires approval)
-- `nrepl_compile` - Compile Lisp code via nrepl (requires approval)
-- `nrepl_sessions` - List all nrepl sessions
-- `nrepl_close_session` - Close an nrepl session
-- `nrepl_threads` - List all threads via nrepl
-- `nrepl_interrupt` - Interrupt evaluation via nrepl
-- `nrepl_backtrace` - Get backtrace via nrepl
-- `nrepl_inspect` - Inspect an object via nrepl
-- `nrepl_describe` - Describe a symbol via nrepl
-- `nrepl_doc` - Get documentation for a symbol
-- `nrepl_completions` - Get symbol completions
-
-### Unified REPL Tools (23) - Auto-Detect
+### Unified REPL Tools (23) - Swank
 
 **Connection:**
-- `repl_connect` - Connect to any REPL (auto-detects Swank/nrepl)
+- `repl_connect` - Connect to Swank REPL
 - `repl_disconnect` - Disconnect from the current REPL
 - `repl_status` - Check REPL connection status and type
 
@@ -815,6 +794,6 @@ clgrep   lisp-read   inspect   code_      compile   tests
 - **Tests**: Rove in `tests/`, mirror source structure
 - **Security**: User approval required for modifying operations
 - **Docs**: See `@prompts/` and `docs/tools/` for detailed guides
-- **Tools**: 100 tools implemented across 14 categories
+- **Tools**: 86 tools implemented across 14 categories
 - **Transport**: Stdio (primary), HTTP (has issues), WebSocket (placeholder)
 - **MCP Clients**: Verified working with OpenCode, Cursor, VS Code

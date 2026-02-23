@@ -18,8 +18,11 @@
             :message (princ-to-string e)))))
 
 (defun gc-stats ()
-  "Get GC statistics from SBCL."
-  (list :bytes-consed-between-gcs (sb-ext:bytes-consed-between-gcs)))
+  "Get GC statistics (SBCL). On other Lisps returns nil for bytes-consed-between-gcs."
+  #+sbcl
+  (list :bytes-consed-between-gcs (sb-ext:bytes-consed-between-gcs))
+  #-sbcl
+  (list :bytes-consed-between-gcs nil :message "GC stats not available on this Lisp"))
 
 (defun runtime-stats ()
   "Get comprehensive runtime statistics."
@@ -46,7 +49,8 @@
               threads)))
 
 (defun gc-run (&key (generation 0))
-  "Force garbage collection."
+  "Force garbage collection. SBCL: optional generation. Other Lisps: call generic GC."
+  #+sbcl
   (handler-case
       (progn
         (sb-ext:gc :generation generation)
@@ -55,7 +59,14 @@
               :memory-after (memory-stats)))
     (error (e)
       (list :error t
-            :message (princ-to-string e)))))
+            :message (princ-to-string e))))
+  #-sbcl
+  (handler-case
+      (progn
+        #+ecl (ext:gc)
+        (list :success t :memory-after (memory-stats)))
+    (error (e)
+      (list :error t :message (princ-to-string e)))))
 
 (defun get-unix-time ()
   "Get current Unix timestamp."

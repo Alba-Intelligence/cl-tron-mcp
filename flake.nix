@@ -61,6 +61,7 @@
               vhs
 
               sbcl
+              ecl
               code-cursor
               vscode
             ])

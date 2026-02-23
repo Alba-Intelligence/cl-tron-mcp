@@ -30,18 +30,6 @@
                 #:mcp-swank-remove-breakpoint
                 #:mcp-swank-list-breakpoints
                 #:mcp-swank-toggle-breakpoint)
-  (:import-from :cl-tron-mcp/nrepl
-                #:nrepl-connect
-                #:nrepl-disconnect
-                #:nrepl-status
-                #:nrepl-eval
-                #:nrepl-compile
-                #:nrepl-threads
-                #:nrepl-backtrace
-                #:nrepl-inspect
-                #:nrepl-describe
-                #:nrepl-completions
-                #:nrepl-doc)
   (:export
    ;; Connection
    #:repl-connect
