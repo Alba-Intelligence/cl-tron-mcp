@@ -56,21 +56,22 @@ Shows the actual JSON-RPC messages that AI clients send to Tron internally. This
 
 ## Features
 
-| Category | Description | Documentation |
-|----------|-------------|---------------|
-| **Debugger** | Backtrace, restarts, stepping, breakpoints | [docs/tools/debugger.md](docs/tools/debugger.md) |
-| **Inspector** | Objects, slots, classes, functions, packages | [docs/tools/inspector.md](docs/tools/inspector.md) |
-| **Hot Reload** | Compile strings, reload systems | [docs/tools/hot-reload.md](docs/tools/hot-reload.md) |
-| **Profiler** | Start/stop profiling, generate reports | [docs/tools/profiler.md](docs/tools/profiler.md) |
-| **Threads** | List, inspect, get backtraces | [docs/tools/threads.md](docs/tools/threads.md) |
-| **Monitor** | Health checks, runtime stats, GC | [docs/tools/monitor.md](docs/tools/monitor.md) |
-| **Swank** | Slime/Portacle integration (21 tools) | [docs/swank-integration.md](docs/swank-integration.md) |
+| Category       | Description                                  | Documentation                                          |
+| -------------- | -------------------------------------------- | ------------------------------------------------------ |
+| **Debugger**   | Backtrace, restarts, stepping, breakpoints   | [docs/tools/debugger.md](docs/tools/debugger.md)       |
+| **Inspector**  | Objects, slots, classes, functions, packages | [docs/tools/inspector.md](docs/tools/inspector.md)     |
+| **Hot Reload** | Compile strings, reload systems              | [docs/tools/hot-reload.md](docs/tools/hot-reload.md)   |
+| **Profiler**   | Start/stop profiling, generate reports       | [docs/tools/profiler.md](docs/tools/profiler.md)       |
+| **Threads**    | List, inspect, get backtraces                | [docs/tools/threads.md](docs/tools/threads.md)         |
+| **Monitor**    | Health checks, runtime stats, GC             | [docs/tools/monitor.md](docs/tools/monitor.md)         |
+| **Swank**      | Slime/Portacle integration (21 tools)        | [docs/swank-integration.md](docs/swank-integration.md) |
 
 **86 tools total** across 14 categories.
 
 ### Quick Tool Examples
 
 **Debug an error:**
+
 ```lisp
 (swank-eval :code "(my-buggy-function 7)")  ; triggers error
 (swank-backtrace)                            ; see stack frames
@@ -79,6 +80,7 @@ Shows the actual JSON-RPC messages that AI clients send to Tron internally. This
 ```
 
 **Profile performance:**
+
 ```lisp
 (profile-start)
 (swank-eval :code "(process-data)")
@@ -87,6 +89,7 @@ Shows the actual JSON-RPC messages that AI clients send to Tron internally. This
 ```
 
 **Find callers:**
+
 ```lisp
 (who-calls :symbol_name "my-package:process")
 ```
@@ -106,6 +109,8 @@ No manual “how to use Tron” instructions are required. Standard MCP methods 
 
 ## Quick Start
 
+The server supports **stdio** (default for AI clients) and **HTTP** (Hunchentoot). For HTTP, run `./start-mcp.sh --http [--port 4006]`; default port is 4006. The process stays alive until you stop it (Ctrl+C). Clients send JSON-RPC via POST to `http://127.0.0.1:PORT/rpc`. See [docs/starting-the-mcp.md](docs/starting-the-mcp.md) for details.
+
 ### 1. Start a Swank Server
 
 ```lisp
@@ -120,9 +125,9 @@ You can run the MCP from a **local copy** or from a **clone of the GitHub repo**
 
 #### Getting the server
 
-| Option | What to do |
-|--------|------------|
-| **Local copy** | You already have the repo on disk (e.g. in `~/quicklisp/local-projects/cl-tron-mcp`). Use that path in the config below. |
+| Option          | What to do                                                                                                                                                                                                                                      |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Local copy**  | You already have the repo on disk (e.g. in `~/quicklisp/local-projects/cl-tron-mcp`). Use that path in the config below.                                                                                                                        |
 | **From GitHub** | Clone the repo, then use the path to the cloned directory: `git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git` and `cd cl-tron-mcp`. In config, set the path to where you cloned it (e.g. `$HOME/cl-tron-mcp` or `~/cl-tron-mcp`). |
 
 Replace **`/path/to/cl-tron-mcp`** in the examples below with your actual path (e.g. `~/cl-tron-mcp` or `$HOME/quicklisp/local-projects/cl-tron-mcp`). Copy the example for your client from **`examples/`** if you prefer. See [docs/starting-the-mcp.md](docs/starting-the-mcp.md) if the MCP won't start.
@@ -198,7 +203,7 @@ Example config files: [examples/cursor-mcp.json.example](examples/cursor-mcp.jso
 
 ### 3. Start Debugging
 
-Ask your AI: *"Connect to Swank on port 4005 and debug factorial-example.lisp"*
+Ask your AI: _"Connect to Swank on port 4005 and debug factorial-example.lisp"_
 
 ## Installation
 
@@ -249,17 +254,17 @@ cl-tron-mcp/
 
 ### Documentation
 
-| Document | Purpose |
-|----------|---------|
-| [AGENTS.md](AGENTS.md) | Quick start for AI agents using Tron |
-| [docs/architecture.md](docs/architecture.md) | System architecture and design |
-| [docs/swank-integration.md](docs/swank-integration.md) | Swank protocol details |
-| [docs/mcp-resources-prompts.md](docs/mcp-resources-prompts.md) | MCP discoverability features |
-| [docs/starting-the-mcp.md](docs/starting-the-mcp.md) | Starting the MCP and troubleshooting |
-| [docs/demo-creation.md](docs/demo-creation.md) | How to create demo GIFs |
-| [tutorial/e2e-mcp-workflow.md](tutorial/e2e-mcp-workflow.md) | End-to-end workflow (connect, eval, error, restart, hot-fix) |
-| [prompts/workflow-examples.md](prompts/workflow-examples.md) | Step-by-step usage examples |
-| [prompts/debugging-workflows.md](prompts/debugging-workflows.md) | Debugging patterns |
+| Document                                                         | Purpose                                                      |
+| ---------------------------------------------------------------- | ------------------------------------------------------------ |
+| [AGENTS.md](AGENTS.md)                                           | Quick start for AI agents using Tron                         |
+| [docs/architecture.md](docs/architecture.md)                     | System architecture and design                               |
+| [docs/swank-integration.md](docs/swank-integration.md)           | Swank protocol details                                       |
+| [docs/mcp-resources-prompts.md](docs/mcp-resources-prompts.md)   | MCP discoverability features                                 |
+| [docs/starting-the-mcp.md](docs/starting-the-mcp.md)             | Starting the MCP and troubleshooting                         |
+| [docs/demo-creation.md](docs/demo-creation.md)                   | How to create demo GIFs                                      |
+| [tutorial/e2e-mcp-workflow.md](tutorial/e2e-mcp-workflow.md)     | End-to-end workflow (connect, eval, error, restart, hot-fix) |
+| [prompts/workflow-examples.md](prompts/workflow-examples.md)     | Step-by-step usage examples                                  |
+| [prompts/debugging-workflows.md](prompts/debugging-workflows.md) | Debugging patterns                                           |
 
 ### Contributing
 
@@ -277,12 +282,12 @@ cl-tron-mcp/
 
 ## Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| "Package not found" | `(ql:quickload :cl-tron-mcp)` first |
-| Client shows "failed" | Use `start-mcp.sh` which handles stdio correctly |
-| "Not connected to REPL" | Run `swank_connect` or `repl_connect` first |
-| Tests fail with stale FASL | `(asdf:compile-system :cl-tron-mcp :force t)` |
+| Problem                    | Solution                                         |
+| -------------------------- | ------------------------------------------------ |
+| "Package not found"        | `(ql:quickload :cl-tron-mcp)` first              |
+| Client shows "failed"      | Use `start-mcp.sh` which handles stdio correctly |
+| "Not connected to REPL"    | Run `swank_connect` or `repl_connect` first      |
+| Tests fail with stale FASL | `(asdf:compile-system :cl-tron-mcp :force t)`    |
 
 ## License
 

@@ -9,7 +9,7 @@
 (defvar *current-transport* nil)
 (defvar *transport-thread* nil)
 
-(defun start-server (&key (transport :stdio) (port 8080))
+(defun start-server (&key (transport :stdio) (port ))
   "Start the MCP server with the specified transport.
    TRANSPORT can be :stdio, :http, or :websocket.
    PORT is used for HTTP/WebSocket transports.

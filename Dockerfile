@@ -52,16 +52,16 @@ ENV HOME="/root"
 ENV SBCL_HOME="/usr/local/lib/sbcl"
 
 # Expose HTTP port
-EXPOSE 8080
+EXPOSE
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD curl -f http://localhost:/health || exit 1
 
 # Default command - HTTP transport
 CMD ["sbcl", "--non-interactive", \
      "--eval", "(ql:quickload :cl-tron-mcp :silent t)", \
-     "--eval", "(cl-tron-mcp/core:start-server :transport :http :port 8080)"]
+     "--eval", "(cl-tron-mcp/core:start-server :transport :http :port )"]
 
 # Alternative commands:
 # - Stdio transport: sbcl --non-interactive --eval "(ql:quickload :cl-tron-mcp)" --eval "(cl-tron-mcp/core:start-server :transport :stdio)"

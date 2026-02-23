@@ -19,12 +19,12 @@ After following that path you have everything needed to connect to Swank, evalua
 
 Tron exposes documentation and guided workflows via MCP standard mechanisms:
 
-| Method | Purpose |
-|--------|---------|
-| `resources/list` | List available documentation files |
-| `resources/read` | Read a documentation file by URI |
-| `prompts/list` | List available guided workflows |
-| `prompts/get` | Get step-by-step instructions for a workflow |
+| Method           | Purpose                                      |
+| ---------------- | -------------------------------------------- |
+| `resources/list` | List available documentation files           |
+| `resources/read` | Read a documentation file by URI             |
+| `prompts/list`   | List available guided workflows              |
+| `prompts/get`    | Get step-by-step instructions for a workflow |
 
 **Recommended:** Start with `prompts/get` for `getting-started` workflow to learn the connection pattern.
 
@@ -56,14 +56,14 @@ Tron exposes documentation and guided workflows via MCP standard mechanisms:
 
 ### Common Workflows
 
-| Task | Tools | Pattern |
-|------|-------|---------|
-| **Evaluate code** | `swank_eval` | Send code string, get result |
-| **Debug error** | `swank_eval` → error → `swank_backtrace` → `swank_invoke_restart` | Trigger error, see frames, fix |
-| **Inspect object** | `inspect_object`, `inspect_class` | Get object ID, inspect slots |
-| **Profile code** | `profile_start` → run code → `profile_stop` → `profile_report` | Measure, analyze |
-| **Hot-fix bug** | `swank_compile` or `swank_eval` with `defun` | Redefine function in running session |
-| **Find callers** | `who_calls` | Cross-reference analysis |
+| Task               | Tools                                                             | Pattern                              |
+| ------------------ | ----------------------------------------------------------------- | ------------------------------------ |
+| **Evaluate code**  | `swank_eval`                                                      | Send code string, get result         |
+| **Debug error**    | `swank_eval` → error → `swank_backtrace` → `swank_invoke_restart` | Trigger error, see frames, fix       |
+| **Inspect object** | `inspect_object`, `inspect_class`                                 | Get object ID, inspect slots         |
+| **Profile code**   | `profile_start` → run code → `profile_stop` → `profile_report`    | Measure, analyze                     |
+| **Hot-fix bug**    | `swank_compile` or `swank_eval` with `defun`                      | Redefine function in running session |
+| **Find callers**   | `who_calls`                                                       | Cross-reference analysis             |
 
 ### When You See an Error
 
@@ -98,42 +98,42 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
 
 **MCP Protocol Methods:**
 
-| Method | Purpose |
-|--------|---------|
-| `resources/list` | List documentation files (AGENTS.md, README.md, docs/*) |
-| `resources/read` | Read a documentation file by URI |
-| `prompts/list` | List guided workflows |
-| `prompts/get` | Get step-by-step workflow instructions |
-| `tools/list` | List available tools |
-| `tools/call` | Invoke a tool |
+| Method           | Purpose                                                  |
+| ---------------- | -------------------------------------------------------- |
+| `resources/list` | List documentation files (AGENTS.md, README.md, docs/\*) |
+| `resources/read` | Read a documentation file by URI                         |
+| `prompts/list`   | List guided workflows                                    |
+| `prompts/get`    | Get step-by-step workflow instructions                   |
+| `tools/list`     | List available tools                                     |
+| `tools/call`     | Invoke a tool                                            |
 
 **Guided Workflows (prompts/get):**
 
-| Prompt | Purpose |
-|--------|---------|
-| `discover-mcp` | How to fully use this MCP without user explanation (ordered discovery steps) |
-| `getting-started` | How to connect to Swank and verify setup |
-| `debugging-workflow` | Step-by-step error debugging |
-| `hot-reload-workflow` | Live code modification without restart |
-| `profiling-workflow` | Performance analysis workflow |
+| Prompt                | Purpose                                                                      |
+| --------------------- | ---------------------------------------------------------------------------- |
+| `discover-mcp`        | How to fully use this MCP without user explanation (ordered discovery steps) |
+| `getting-started`     | How to connect to Swank and verify setup                                     |
+| `debugging-workflow`  | Step-by-step error debugging                                                 |
+| `hot-reload-workflow` | Live code modification without restart                                       |
+| `profiling-workflow`  | Performance analysis workflow                                                |
 
 **Tool Categories (86 tools total):**
 
-| Category    | Purpose                  | Key Tools                                                  |
-| ----------- | ----------------------- | ---------------------------------------------------------- |
-| Inspector   | Object introspection     | `inspect_object`, `inspect_class`, `inspect_function`        |
-| Debugger    | Debugging operations    | `debugger_frames`, `debugger_restarts`, `breakpoint_set`    |
-| REPL        | Code evaluation         | `repl_eval`, `repl_frame_locals`                           |
-| Hot Reload  | Live code modification  | `code_compile_string`, `reload_system`                     |
-| Profiler    | Performance analysis    | `profile_start`, `profile_stop`                            |
-| Tracer      | Function tracing        | `trace_function`, `trace_list`                             |
-| Threads     | Thread management       | `thread_list`, `thread_inspect`, `thread_backtrace`        |
-| Monitor     | Production monitoring   | `health_check`, `runtime_stats`                            |
-| Logging     | Package logging         | `log_configure`, `log_info`                                |
-| XRef        | Cross-reference         | `who_calls`, `who_references`, `list_callees`              |
-| Security    | Approval whitelist      | `whitelist_add`, `whitelist_status`                        |
-| Swank       | Slime integration (21)  | `swank_connect`, `swank_eval`, `swank_backtrace`, `swank_step` |
-| Unified     | Swank REPL              | `repl_connect`, `repl_eval`, `repl_step`, `repl_continue`  |
+| Category   | Purpose                | Key Tools                                                      |
+| ---------- | ---------------------- | -------------------------------------------------------------- |
+| Inspector  | Object introspection   | `inspect_object`, `inspect_class`, `inspect_function`          |
+| Debugger   | Debugging operations   | `debugger_frames`, `debugger_restarts`, `breakpoint_set`       |
+| REPL       | Code evaluation        | `repl_eval`, `repl_frame_locals`                               |
+| Hot Reload | Live code modification | `code_compile_string`, `reload_system`                         |
+| Profiler   | Performance analysis   | `profile_start`, `profile_stop`                                |
+| Tracer     | Function tracing       | `trace_function`, `trace_list`                                 |
+| Threads    | Thread management      | `thread_list`, `thread_inspect`, `thread_backtrace`            |
+| Monitor    | Production monitoring  | `health_check`, `runtime_stats`                                |
+| Logging    | Package logging        | `log_configure`, `log_info`                                    |
+| XRef       | Cross-reference        | `who_calls`, `who_references`, `list_callees`                  |
+| Security   | Approval whitelist     | `whitelist_add`, `whitelist_status`                            |
+| Swank      | Slime integration (21) | `swank_connect`, `swank_eval`, `swank_backtrace`, `swank_step` |
+| Unified    | Swank REPL             | `repl_connect`, `repl_eval`, `repl_step`, `repl_continue`      |
 
 ## Cross-References
 
@@ -157,7 +157,7 @@ When the server is launched by MCP clients (Cursor, Kilocode, Opencode) over std
 - **Do not write to stdout** except the single JSON response line per request in `send-message-via-stdio`. No banners, no `[MCP]` messages, no notifications, no SBCL startup text on stdout.
 - **All server activity must be logged via log4cl** (see below), not `format t` or `*standard-output*`. For stdio transport, log4cl is configured to write to stderr via `ensure-log-to-stream(*error-output*)`.
 
-### Logging: use log4cl, not *error-output*
+### Logging: use log4cl, not _error-output_
 
 - **MCP activity (server start/stop, transport start, notifications, errors) must be logged through the `cl-tron-mcp/logging` API** (`log-info`, `log-warn`, `log-error`), not by writing directly to `*error-output*`. This keeps behaviour consistent and allows log4cl to route output (e.g. to stderr for stdio).
 - When starting with `:stdio` transport, the server calls `ensure-log-to-stream(*error-output*)` so log4cl writes to stderr and stdout stays clean.
@@ -173,7 +173,7 @@ When the server is launched by MCP clients (Cursor, Kilocode, Opencode) over std
 
 ### HTTP and WebSocket Transport
 
-- **HTTP:** Implemented; supports POST /rpc. Server log messages use log4cl (stderr) to match stdio purity.
+- **HTTP:** Implemented with **Hunchentoot**. Start with `./start-mcp.sh --http [--port 4006]`; default port is 4006 (to avoid Swank on 4005). The process stays alive until you stop it (e.g. Ctrl+C). Clients POST JSON-RPC to `http://127.0.0.1:PORT/rpc`; GET endpoints include `/health`, `/lisply/ping-lisp`, `/lisply/tools/list`. Server log messages use log4cl (stderr).
 - **WebSocket:** Placeholder only (no real server or message handling); `start-websocket-transport` prints a notice.
 
 ## Recommended Workflow: One Long-Running Lisp Session
@@ -182,10 +182,10 @@ For the MCP to interact with Swank the same way a user in Slime would—see outp
 
 ### Two processes
 
-1. **Lisp session (Swank)**  
+1. **Lisp session (Swank)**
    The user starts one SBCL (or other Lisp) with Swank and leaves it running. All code loading and execution (by the user or by the MCP) happens in this process. The debugger runs here; Slime/Sly/Emacs can attach to the same session.
 
-2. **MCP server**  
+2. **MCP server**
    Started by the MCP client (Cursor, Kilocode, Opencode) via `start-mcp.sh` or equivalent. It runs in a separate process and connects to the Lisp session as a **Swank client**. The MCP then uses Swank facilities (eval, backtrace, restarts, stepping, inspect, etc.) over the protocol—the same way Slime does.
 
 ### Agent workflow
@@ -211,7 +211,7 @@ See **docs/architecture.md** and **README.md** (Swank Integration / Recommended 
 cl-tron-mcp/
 ├── src/
 │   ├── core/                    # Core infrastructure (config, utils, version, server)
-│   ├── transport/              # Transport layer (stdio, http, websocket)
+│   ├── transport/              # Transport layer (stdio, http via Hunchentoot, websocket)
 │   ├── protocol/                # MCP protocol handler (JSON-RPC 2.0)
 │   ├── tools/                   # Tool registry, definitions, and registration of MCP tools
 │   ├── security/                # Approval workflow, audit logging
@@ -292,8 +292,8 @@ cl-tron-mcp/
 ;; Start MCP server (stdio transport - primary for AI agents)
 (cl-tron-mcp/core:start-server :transport :stdio)
 
-;; Start MCP server (HTTP transport on port 12345)
-(cl-tron-mcp/core:start-server :transport :http :port 12345)
+;; Start MCP server (HTTP transport via Hunchentoot; default port 4006)
+(cl-tron-mcp/core:start-server :transport :http :port 4006)
 
 ;; Start MCP server (WebSocket transport)
 (cl-tron-mcp/core:start-server :transport :websocket :port 23456)
@@ -335,12 +335,12 @@ Follow the Google Common Lisp Style Guide with project-specific additions:
 
 | Pattern           | Example                 | Usage                                  |
 | ----------------- | ----------------------- | -------------------------------------- |
-| Package           | `:cl-tron-mcp/debugger` | Package names use dash-separated words  |
+| Package           | `:cl-tron-mcp/debugger` | Package names use dash-separated words |
 | Functions         | `get-backtrace`         | Lower-case lisp-case                   |
-| Predicates        | `breakpoint-active-p`    | End with `-p`                         |
-| Constants         | `+max-registry-size+`    | Surrounded by `+`                     |
-| Special variables | `*current-thread*`       | Surrounded by `*`                     |
-| Condition types   | `evaluation-timeout`     | Lower-case, dash-separated             |
+| Predicates        | `breakpoint-active-p`   | End with `-p`                          |
+| Constants         | `+max-registry-size+`   | Surrounded by `+`                      |
+| Special variables | `*current-thread*`      | Surrounded by `*`                      |
+| Condition types   | `evaluation-timeout`    | Lower-case, dash-separated             |
 
 ### SBCL-Specific Patterns
 
@@ -585,11 +585,21 @@ echo '{"jsonrpc": "2.0", "method": "initialize", "params": {}, "id": 1}' | \
     --eval '(ql:quickload :cl-tron-mcp :silent t)' \
     --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
 ```
+
 Or: `echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | ./start-mcp.sh`
 
 Expected response:
+
 ```json
-{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","capabilities":[],"serverInfo":{"name":"cl-tron-mcp","version":"0.1.0"}}}
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": [],
+    "serverInfo": { "name": "cl-tron-mcp", "version": "0.1.0" }
+  }
+}
 ```
 
 ## Development Workflow
@@ -727,15 +737,18 @@ clgrep   lisp-read   inspect   code_      compile   tests
 ### Unified REPL Tools (23) - Swank
 
 **Connection:**
+
 - `repl_connect` - Connect to Swank REPL
 - `repl_disconnect` - Disconnect from the current REPL
 - `repl_status` - Check REPL connection status and type
 
 **Evaluation:**
+
 - `repl_eval` - Evaluate Lisp code via the connected REPL (requires approval)
 - `repl_compile` - Compile Lisp code via the connected REPL (requires approval)
 
 **Debugging:**
+
 - `repl_backtrace` - Get backtrace via the connected REPL
 - `repl_frame_locals` - Get local variables for a frame
 - `repl_get_restarts` - Get available restarts
@@ -746,40 +759,44 @@ clgrep   lisp-read   inspect   code_      compile   tests
 - `repl_continue` - Continue execution from debugger
 
 **Breakpoints:**
+
 - `repl_set_breakpoint` - Set a breakpoint on a function (requires approval)
 - `repl_remove_breakpoint` - Remove a breakpoint by ID
 - `repl_list_breakpoints` - List all breakpoints
 - `repl_toggle_breakpoint` - Toggle breakpoint enabled state
 
 **Inspection:**
+
 - `repl_inspect` - Inspect an object via the connected REPL
 - `repl_describe` - Describe a symbol via the connected REPL
 - `repl_completions` - Get symbol completions via the connected REPL
 - `repl_doc` - Get documentation for a symbol via the connected REPL
 
 **Threads:**
+
 - `repl_threads` - List all threads via the connected REPL
 - `repl_abort` - Abort/interrupt evaluation via the connected REPL
 
 **Help:**
+
 - `repl_help` - Get help on available unified REPL tools
 
 ## Troubleshooting
 
 ### Common Issues
 
-| Symptom                            | Cause                                      | Solution                                                      |
-| ---------------------------------- | ------------------------------------------ | ------------------------------------------------------------- |
-| "Symbol not found"                 | Package not loaded                         | `(ql:quickload :cl-tron-mcp)`                                 |
-| "Approval timeout"                 | User not responding                        | Increase timeout or proceed without approval                   |
-| "Transport bind failed"            | Port in use                                | Use different port or kill conflicting process                |
-| Tests failing                      | Stale FASL files                           | `(asdf:compile-system :cl-tron-mcp :force t)`                 |
-| HTTP transport issues              | Thread handling problems                   | Use stdio transport for production                            |
-| Debugger features unavailable      | SBCL compiled without :sb-dbg              | Rebuild SBCL with debugging or use default fallbacks           |
-| MCP client shows "failed"          | Wrong JSON key case                        | Ensure responses use lowercase keys (`jsonrpc`, `id`, `result`) |
-| No response to requests            | Thread crash or buffering                  | Use stdio transport; ensure `force-output` is called           |
-| "Package not found" error          | Quicklisp not loaded                       | Add `(ql:quickload :cl-tron-mcp)` before starting server      |
-| "not a function" error            | Case sensitivity in symbol                 | Use uppercase: `CL:CAR` not `cl:car`                         |
+| Symptom                       | Cause                         | Solution                                                        |
+| ----------------------------- | ----------------------------- | --------------------------------------------------------------- |
+| "Symbol not found"            | Package not loaded            | `(ql:quickload :cl-tron-mcp)`                                   |
+| "Approval timeout"            | User not responding           | Increase timeout or proceed without approval                    |
+| "Transport bind failed"       | Port in use                   | Use different port or kill conflicting process                  |
+| Tests failing                 | Stale FASL files              | `(asdf:compile-system :cl-tron-mcp :force t)`                   |
+| Stop HTTP server              | Process runs until stopped    | Ctrl+C in the terminal where the server is running              |
+| Debugger features unavailable | SBCL compiled without :sb-dbg | Rebuild SBCL with debugging or use default fallbacks            |
+| MCP client shows "failed"     | Wrong JSON key case           | Ensure responses use lowercase keys (`jsonrpc`, `id`, `result`) |
+| No response to requests       | Thread crash or buffering     | Use stdio transport; ensure `force-output` is called            |
+| "Package not found" error     | Quicklisp not loaded          | Add `(ql:quickload :cl-tron-mcp)` before starting server        |
+| "not a function" error        | Case sensitivity in symbol    | Use uppercase: `CL:CAR` not `cl:car`                            |
 
 ### Getting Help
 
@@ -805,5 +822,5 @@ clgrep   lisp-read   inspect   code_      compile   tests
 - **Security**: User approval required for modifying operations
 - **Docs**: See `@prompts/` and `docs/tools/` for detailed guides
 - **Tools**: 86 tools implemented across 14 categories
-- **Transport**: Stdio (primary), HTTP (has issues), WebSocket (placeholder)
+- **Transport**: Stdio (primary), HTTP (Hunchentoot, supported), WebSocket (placeholder)
 - **MCP Clients**: Verified working with OpenCode, Cursor, VS Code

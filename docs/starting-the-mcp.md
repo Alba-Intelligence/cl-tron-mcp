@@ -5,7 +5,7 @@ This document explains how the MCP server is started and how to fix common "MCP 
 ## Who Starts the MCP
 
 - **The MCP client** (Cursor, OpenCode, Kilocode) starts the server when you add it to your config and (re)start the client. The client runs the configured command (e.g. `start-mcp.sh`).
-- **The AI agent** only uses tools *after* the server is running. The agent does not start the server; if the server fails to start, the cause is client config or environment.
+- **The AI agent** only uses tools _after_ the server is running. The agent does not start the server; if the server fails to start, the cause is client config or environment.
 
 ## Portable Config Pattern
 
@@ -39,6 +39,10 @@ The script chooses the Lisp in this order:
 2. **Auto-detect:** try `sbcl`, then `ecl`; error if neither is found.
 
 Example: `./start-mcp.sh --use-ecl` to force ECL when both are installed.
+
+### HTTP transport
+
+To run the MCP with HTTP instead of stdio, use `./start-mcp.sh --http [--port 4006]`. The HTTP server is implemented with **Hunchentoot**. It listens on `http://127.0.0.1:PORT`; clients POST JSON-RPC to `/rpc`. GET endpoints include `/health`, `/lisply/ping-lisp`, `/lisply/tools/list`. Default port is 4006 (to avoid Swank on 4005). The process stays alive until you stop it with **Ctrl+C** in the terminal.
 
 ## One-Time Precompile (Avoid First-Start Timeout)
 

@@ -11,6 +11,6 @@
   (setf (gethash key *config*) value))
 
 (set-config :transport :stdio)
-(set-config :port 8080)
+(set-config :port )
 (set-config :approval-timeout 300)
 (set-config :debug nil)

@@ -14,7 +14,7 @@ This document describes the recommended setup so the MCP can interact with a Lis
 ### 2. MCP server
 
 - **Who starts it:** The MCP client (Cursor, Kilocode, Opencode) via `start-mcp.sh` or the configured command. It runs in a **separate process**.
-- **Role:** Handles JSON-RPC over stdio (or HTTP/WebSocket). Connects to the Lisp session as a **Swank client**—the same way Slime does. The MCP then uses Swank facilities (eval, backtrace, restarts, stepping, inspect, compile) over the protocol.
+- **Role:** Handles JSON-RPC over stdio (or HTTP via Hunchentoot / WebSocket). Connects to the Lisp session as a **Swank client**—the same way Slime does. The MCP then uses Swank facilities (eval, backtrace, restarts, stepping, inspect, compile) over the protocol.
 - **Connection:** After the MCP server is running, it must connect to your Lisp session (e.g. via MCP tool `repl_connect` or `swank_connect` with the port you used). Once connected, tools like `repl_eval`, `repl_backtrace`, `repl_inspect` operate on that session.
 
 ## Agent Workflow

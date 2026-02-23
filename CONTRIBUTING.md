@@ -88,7 +88,7 @@ If the MCP does not start, see [docs/starting-the-mcp.md](docs/starting-the-mcp.
 cl-tron-mcp/
 ├── src/
 │   ├── core/              # Server core (start/stop, config)
-│   ├── transport/         # Transport layer (stdio, http, websocket)
+│   ├── transport/         # Transport layer (stdio, http via Hunchentoot, websocket)
 │   ├── protocol/          # JSON-RPC 2.0 protocol handler
 │   ├── tools/             # Tool registration
 │   ├── security/          # Approval workflow, audit logging
@@ -224,14 +224,14 @@ Follow the [Google Common Lisp Style Guide](https://google.github.io/styleguide/
 
 ### Naming Conventions
 
-| Pattern | Example | Usage |
-|---------|---------|-------|
-| Packages | `:cl-tron-mcp/core` | Dash-separated |
-| Functions | `start-server` | Lowercase with dashes |
-| Predicates | `server-running-p` | End with `-p` |
-| Constants | `+max-tools+` | Surrounded by `+` |
-| Special vars | `*server-state*` | Surrounded by `*` |
-| Conditions | `connection-error` | Lowercase with dashes |
+| Pattern      | Example             | Usage                 |
+| ------------ | ------------------- | --------------------- |
+| Packages     | `:cl-tron-mcp/core` | Dash-separated        |
+| Functions    | `start-server`      | Lowercase with dashes |
+| Predicates   | `server-running-p`  | End with `-p`         |
+| Constants    | `+max-tools+`       | Surrounded by `+`     |
+| Special vars | `*server-state*`    | Surrounded by `*`     |
+| Conditions   | `connection-error`  | Lowercase with dashes |
 
 ### Formatting
 
@@ -243,7 +243,7 @@ Follow the [Google Common Lisp Style Guide](https://google.github.io/styleguide/
 ### Example
 
 ```lisp
-(defun start-server (&key (transport :stdio) (port 8080))
+(defun start-server (&key (transport :stdio) (port ))
   "Start the MCP server with the specified transport.
 
    TRANSPORT can be :stdio, :http, or :websocket.
@@ -263,6 +263,7 @@ Follow the [Google Common Lisp Style Guide](https://google.github.io/styleguide/
 
 1. **Fork the repository**
 2. **Create a feature branch**
+
    ```bash
    git checkout -b feature/my-new-feature
    ```

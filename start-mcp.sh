@@ -13,9 +13,9 @@
 #   ./start-mcp.sh                    # Stdio, auto-detect Lisp (sbcl then ecl)
 #   ./start-mcp.sh --use-sbcl          # Stdio, force SBCL
 #   ./start-mcp.sh --use-ecl           # Stdio, force ECL
-#   ./start-mcp.sh --http              # HTTP transport on default port 8080
+#   ./start-mcp.sh --http              # HTTP transport on default port 4005
 #   ./start-mcp.sh --http --port 9000  # HTTP on port 9000
-#   ./start-mcp.sh --websocket        # WebSocket on port 8080
+#   ./start-mcp.sh --websocket        # WebSocket on port 4005
 #   ./start-mcp.sh --help              # Show full options and examples
 #
 # Environment:
@@ -41,7 +41,7 @@ cd "$(dirname "$0")"
 
 # Default settings
 TRANSPORT="stdio"
-PORT="8080"
+PORT="4005"
 LISP_CHOICE=""
 
 # Parse arguments
@@ -74,7 +74,7 @@ while [[ $# -gt 0 ]]; do
         echo "  --use-sbcl   Use SBCL (error if not installed)"
         echo "  --use-ecl    Use ECL (error if not installed)"
         echo "  --http       Use HTTP transport (default: stdio)"
-        echo "  --port PORT  HTTP/WebSocket port (default: 8080)"
+        echo "  --port PORT  HTTP/WebSocket port (default: 4005)"
         echo "  --websocket  Use WebSocket transport"
         echo "  --help       Show this help"
         echo ""
@@ -83,9 +83,9 @@ while [[ $# -gt 0 ]]; do
         echo "Examples:"
         echo "  $0                      # Stdio (for OpenCode)"
         echo "  $0 --use-ecl             # Stdio with ECL"
-        echo "  $0 --http                # HTTP on port 8080"
+        echo "  $0 --http                # HTTP on port 4005"
         echo "  $0 --http --port 9000    # HTTP on port 9000"
-        echo "  $0 --websocket           # WebSocket on port 8080"
+        echo "  $0 --websocket           # WebSocket on port 4005"
         exit 0
         ;;
     *)
@@ -150,16 +150,18 @@ fi
 # Set *load-verbose* nil before load so ECL does not print to stdout (stdio = JSON only).
 # Bind *standard-output* to *error-output* during load/compile so ECL style warnings go to stderr.
 case "$LISP" in
-*ecl*) ECL_LOAD_QL_FLAG="-eval"
-       ECL_LOAD_QL_EXPR="(progn (setq *load-verbose* nil *compile-verbose* nil) (let ((*standard-output* *error-output*)) (load #p\"$QUICKLISP_DIR/setup.lisp\")))"
-       COMPILE_EXPR="(let ((*standard-output* *error-output*)) (asdf:compile-system :cl-tron-mcp :force t))"
-       LOAD_EXPR="(let ((*standard-output* *error-output*)) (asdf:load-system :cl-tron-mcp))"
-       ;;
-*)     ECL_LOAD_QL_FLAG=""
-       ECL_LOAD_QL_EXPR=""
-       COMPILE_EXPR="(asdf:compile-system :cl-tron-mcp :force t)"
-       LOAD_EXPR="(asdf:load-system :cl-tron-mcp)"
-       ;;
+*ecl*)
+    ECL_LOAD_QL_FLAG="-eval"
+    ECL_LOAD_QL_EXPR="(progn (setq *load-verbose* nil *compile-verbose* nil) (let ((*standard-output* *error-output*)) (load #p\"$QUICKLISP_DIR/setup.lisp\")))"
+    COMPILE_EXPR="(let ((*standard-output* *error-output*)) (asdf:compile-system :cl-tron-mcp :force t))"
+    LOAD_EXPR="(let ((*standard-output* *error-output*)) (asdf:load-system :cl-tron-mcp))"
+    ;;
+*)
+    ECL_LOAD_QL_FLAG=""
+    ECL_LOAD_QL_EXPR=""
+    COMPILE_EXPR="(asdf:compile-system :cl-tron-mcp :force t)"
+    LOAD_EXPR="(asdf:load-system :cl-tron-mcp)"
+    ;;
 esac
 
 echo "Starting CL-TRON-MCP..." >&2

@@ -7,7 +7,7 @@ import json
 import time
 
 MCP_HOST = sys.argv[1] if len(sys.argv) > 1 else "localhost"
-MCP_PORT = sys.argv[2] if len(sys.argv) > 2 else "8080"
+MCP_PORT = sys.argv[2] if len(sys.argv) > 2 else ""
 BASE_URL = f"http://{MCP_HOST}:{MCP_PORT}"
 
 
