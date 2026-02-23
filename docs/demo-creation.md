@@ -1,5 +1,12 @@
 # Creating Terminal Demos for Tron
 
+## Current Setup
+
+- **Tape files:** `demo/demo.tape`, `demo/demo-kilocode.tape`, `demo/demo-mcp-raw.tape`
+- **Generate GIFs:** From project root run `./demo/generate.sh` (requires VHS; runs from `demo/`, creates `demo.gif`, `demo-kilocode.gif`, `demo-mcp-raw.gif`)
+- **Demo scripts:** `demo/start-swank.lisp` (Swank on port 4005), `demo/demo-script.lisp`, `demo/demo-kilocode.lisp`, `demo/demo-mcp-raw.lisp`
+- **Lisp export:** `cl-tron-mcp/demo:demo-export-vhs` can export a recorded session to a VHS tape file (see `src/demo/package.lisp`)
+
 ## Options
 
 | Tool | Output | Pros | Cons |

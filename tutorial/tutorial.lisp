@@ -4,7 +4,7 @@ CL-TRON-MCP Tutorial
 This tutorial demonstrates the CL-TRON-MCP debugging MCP server.
 Usage: (load "tutorial/tutorial.lisp")
 
-CL-TRON-MCP provides 43 tools for debugging Common Lisp applications.
+CL-TRON-MCP provides 86+ tools for debugging Common Lisp applications.
 
 NEW: See comprehensive tutorials:
 - tutorial/CURSOR-MCP-TUTORIAL.md - Full guide for Cursor IDE setup
@@ -45,7 +45,7 @@ NEW: See comprehensive tutorials:
 
 (format t "~%=== CL-TRON-MCP Summary ===~%")
 (format t "MCP Server: RUNNING~%")
-(format t "Total Tools: 43 across 11 categories~%")
+(format t "Total Tools: 86+ across 14 categories~%")
 (format t "~%Categories:~%")
 (format t "  Inspector (5):  object, slot, class, function, package~%")
 (format t "  Debugger (6):   frames, restarts, breakpoints, stepping~%")
@@ -56,7 +56,7 @@ NEW: See comprehensive tutorials:
 (format t "  Thread (3):      list, inspect, backtrace~%")
 (format t "  Monitor (4):     health, stats, gc, system info~%")
 (format t "  Logging (5):      log4cl integration~%")
-(format t "  XRef (7):        who-calls, who-references, etc~%")
+(format t "  XRef (5):        who-calls, who-references, etc~%")
 (format t "  Security (5):    whitelist management~%")
 (format t "~%CL-TRON-MCP is fully functional!~%")
 (format t "=== TUTORIAL COMPLETE ===~%")

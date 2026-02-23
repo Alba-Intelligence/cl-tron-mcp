@@ -1,6 +1,6 @@
 # CL-TRON-MCP: AI-Powered Common Lisp Debugging with Cursor IDE
 
-This tutorial demonstrates how to set up and use CL-TRON-MCP with Cursor IDE for AI-assisted Common Lisp debugging. CL-TRON-MCP provides 43 tools that enable AI agents to interact with running Lisp sessions as if they were a human developer at the keyboard.
+This tutorial demonstrates how to set up and use CL-TRON-MCP with Cursor IDE for AI-assisted Common Lisp debugging. CL-TRON-MCP provides 86+ tools that enable AI agents to interact with running Lisp sessions as if they were a human developer at the keyboard.
 
 ## Table of Contents
 
@@ -36,7 +36,7 @@ This tutorial demonstrates how to set up and use CL-TRON-MCP with Cursor IDE for
 Expected output:
 ```
 Version: 0.1.0
-Tools registered: 43
+Tools registered: 86
 ```
 
 ---
@@ -255,7 +255,7 @@ The CL Cookbook shows breaking when `factorial` is called with 0:
 AI Agent equivalent - use the debugger tool:
 ```json
 {
-  "tool": "set_breakpoint",
+  "tool": "breakpoint_set",
   "arguments": {
     "functionName": "factorial",
     "condition": "(equal 0 n)"
@@ -267,7 +267,7 @@ AI Agent equivalent - use the debugger tool:
 
 | Option | Description | AI Tool |
 |--------|-------------|---------|
-| `:break` | Invoke debugger before call | `set_breakpoint` |
+| `:break` | Invoke debugger before call | `breakpoint_set` |
 | `:break-after` | Invoke debugger after call | (future) |
 | `:condition` | Trace only if condition true | (future) |
 | `:wherein` | Trace only when called from | (future) |
@@ -332,8 +332,8 @@ Returns restarts:
 {
   "tool": "step_frame",
   "arguments": {
-    "frameId": 0,
-    "action": "continue"
+    "frame": 0,
+    "mode": "into"
   }
 }
 ```
@@ -434,7 +434,7 @@ Or reload the entire ASDF system:
 
 ```json
 {
-  "tool": "set_breakpoint",
+  "tool": "breakpoint_set",
   "arguments": {
     "functionName": "factorial",
     "condition": "(> n 3)"

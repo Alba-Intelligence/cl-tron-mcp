@@ -50,9 +50,9 @@ Read with any markdown viewer, or open in Cursor/VS Code.
 ### Start the MCP Server
 
 ```bash
-sbcl --non-interactive \
-  --eval '(ql:quickload :cl-tron-mcp)' \
-  --eval '(cl-tron-mcp:start-server :transport :stdio)'
+sbcl --non-interactive --noinform \
+  --eval '(ql:quickload :cl-tron-mcp :silent t)' \
+  --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
 ```
 
 ### Example AI Agent Session
@@ -85,7 +85,7 @@ AI Agent:
 | Swank | 13 | Swank server integration |
 | Unified | 12 | Swank unified REPL interface |
 
-**Total: 67 tools** (86 total in MCP; table above is by category)
+**Total: 86+ tools** (table above is by category)
 
 ## Files
 
