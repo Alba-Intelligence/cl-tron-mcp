@@ -137,6 +137,11 @@ Response:
   "result": {
     "prompts": [
       {
+        "name": "discover-mcp",
+        "title": "How to Fully Use This MCP (No User Explanation Needed)",
+        "description": "Exact steps to learn and use the MCP without user explanation."
+      },
+      {
         "name": "getting-started",
         "title": "Getting Started with Tron MCP",
         "description": "Step-by-step guide to connect to Swank and verify..."
@@ -164,6 +169,10 @@ Get a specific workflow with step-by-step instructions.
 Response includes the full prompt text with instructions.
 
 ### Available Prompts
+
+#### discover-mcp
+
+**Call this first if you do not know how the MCP works.** Returns the exact ordered steps for an AI agent to fully learn and use the MCP without any user explanation: resources/list → resources/read AGENTS.md → prompts/list → prompts/get getting-started → tools/list. The MCP is fully discoverable via these standard methods.
 
 #### getting-started
 

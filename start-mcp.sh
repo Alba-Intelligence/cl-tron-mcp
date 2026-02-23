@@ -7,8 +7,7 @@
 #
 # Lisp selection (first match):
 #   1. CLI: --use-sbcl or --use-ecl (error if that Lisp is not installed)
-#   2. Env: TRON_LISP=sbcl or TRON_LISP=ecl
-#   3. Auto: try sbcl, then ecl
+#   2. Auto: try sbcl, then ecl
 #
 # Usage:
 #   ./start-mcp.sh                    # Stdio, auto-detect Lisp (sbcl then ecl)
@@ -20,7 +19,6 @@
 #   ./start-mcp.sh --help              # Show full options and examples
 #
 # Environment:
-#   TRON_LISP   When set to sbcl or ecl, select that Lisp (unless --use-sbcl/--use-ecl is given).
 #   QUICKLISP_DIR  Optional; defaults to $HOME/quicklisp.
 #
 # Example OpenCode config (~/.config/opencode/opencode.json):
@@ -80,8 +78,7 @@ while [[ $# -gt 0 ]]; do
         echo "  --websocket  Use WebSocket transport"
         echo "  --help       Show this help"
         echo ""
-        echo "Lisp selection (first match): --use-sbcl/--use-ecl, then TRON_LISP, then auto-detect (sbcl, then ecl)."
-        echo "Environment: TRON_LISP=sbcl or TRON_LISP=ecl to prefer a Lisp when no --use-* option is given."
+        echo "Lisp selection: --use-sbcl or --use-ecl (or auto-detect: sbcl, then ecl)."
         echo ""
         echo "Examples:"
         echo "  $0                      # Stdio (for OpenCode)"
@@ -98,7 +95,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Detect Lisp: CLI (--use-sbcl/--use-ecl) > TRON_LISP > auto-detect (sbcl then ecl).
+# Detect Lisp: CLI (--use-sbcl/--use-ecl) > auto-detect (sbcl then ecl).
 if [ "$LISP_CHOICE" = "sbcl" ]; then
     if command -v sbcl &>/dev/null; then
         LISP="sbcl"
@@ -123,37 +120,6 @@ elif [ "$LISP_CHOICE" = "ecl" ]; then
         LISP_EVAL="-eval"
     else
         echo "Error: ECL not found. Install ECL or do not use --use-ecl." >&2
-        exit 1
-    fi
-elif [ -n "$TRON_LISP" ]; then
-    if [ "$TRON_LISP" = "sbcl" ]; then
-        if command -v sbcl &>/dev/null; then
-            LISP="sbcl"
-            LISP_QUIET="--noinform"
-            LISP_EVAL="--eval"
-        elif command -v /usr/local/bin/sbcl &>/dev/null; then
-            LISP="/usr/local/bin/sbcl"
-            LISP_QUIET="--noinform"
-            LISP_EVAL="--eval"
-        else
-            echo "Error: TRON_LISP=sbcl but SBCL not found." >&2
-            exit 1
-        fi
-    elif [ "$TRON_LISP" = "ecl" ]; then
-        if command -v ecl &>/dev/null; then
-            LISP="ecl"
-            LISP_QUIET="-q"
-            LISP_EVAL="-eval"
-        elif command -v /usr/local/bin/ecl &>/dev/null; then
-            LISP="/usr/local/bin/ecl"
-            LISP_QUIET="-q"
-            LISP_EVAL="-eval"
-        else
-            echo "Error: TRON_LISP=ecl but ECL not found." >&2
-            exit 1
-        fi
-    else
-        echo "Error: TRON_LISP must be 'sbcl' or 'ecl' (got: $TRON_LISP)." >&2
         exit 1
     fi
 else

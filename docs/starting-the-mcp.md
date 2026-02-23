@@ -36,10 +36,9 @@ The server process is **long-running**: it stays alive and reads JSON-RPC from s
 The script chooses the Lisp in this order:
 
 1. **CLI:** `--use-sbcl` or `--use-ecl` — use that Lisp (error if not installed).
-2. **Environment:** `TRON_LISP=sbcl` or `TRON_LISP=ecl` — use that Lisp when no `--use-*` option is given.
-3. **Auto-detect:** try `sbcl`, then `ecl`; error if neither is found.
+2. **Auto-detect:** try `sbcl`, then `ecl`; error if neither is found.
 
-Examples: `./start-mcp.sh --use-ecl` (force ECL), or set `env.TRON_LISP=ecl` in your MCP client config to prefer ECL when both are installed.
+Example: `./start-mcp.sh --use-ecl` to force ECL when both are installed.
 
 ## One-Time Precompile (Avoid First-Start Timeout)
 
@@ -60,7 +59,7 @@ If the MCP or Tron "doesn't start" or the client says the server failed:
 
 1. **Replace path in config** — Ensure the command uses the correct path to `cl-tron-mcp` (and to `start-mcp.sh`). Use the same path you used for the one-time precompile.
 2. **Precompile once** — Run the one-time precompile command above so the first client start stays under the client's timeout.
-3. **Lisp in PATH** — The client runs the command in its own environment. Ensure `sbcl` (or `ecl`) is on the PATH. To use ECL, pass **`--use-ecl`** in the command (e.g. `["/path/to/cl-tron-mcp/start-mcp.sh", "--use-ecl"]`) or set **`TRON_LISP=ecl`** in the client config `env`.
+3. **Lisp in PATH** — The client runs the command in its own environment. Ensure `sbcl` (or `ecl`) is on the PATH. To use ECL, pass **`--use-ecl`** in the command (e.g. `["/path/to/cl-tron-mcp/start-mcp.sh", "--use-ecl"]`).
 4. **No stdout pollution** — Use `start-mcp.sh` (recommended) or, if you run Lisp directly, use SBCL with `--noinform` or ECL with `-q`. Any output on stdout before the first JSON line will break the MCP handshake.
 
 ## See Also

@@ -2,6 +2,15 @@
 
 This document provides guidelines for AI agents working on the SBCL Debugging MCP project - a Model Context Protocol server that enables deep debugging, introspection, profiling, and hot code reloading for SBCL Common Lisp applications.
 
+## How to Use This MCP (Fully Discoverable — No User Explanation Needed)
+
+An AI agent can learn how to fully use this MCP without any user explanation. Use one of these entry points:
+
+- **If you prefer a short recipe:** Call **prompts/get** with name **`discover-mcp`**. It returns the exact ordered steps (resources/list → resources/read AGENTS.md → prompts/list → prompts/get getting-started → tools/list).
+- **If you prefer to read:** Call **resources/list**, then **resources/read** with uri **`AGENTS.md`**. This document (plus the other listed resources) explains connection, tools, workflows, and conventions.
+
+After following that path you have everything needed to connect to Swank, evaluate code, debug, inspect, profile, and hot-reload. The MCP is fully discoverable via standard MCP methods: `resources/list`, `resources/read`, `prompts/list`, `prompts/get`, `tools/list`.
+
 ## Quick Start for AI Agents
 
 **What is Tron?** An MCP server that connects to a running SBCL Lisp session and provides debugging, code evaluation, inspection, profiling, and hot-reload capabilities.
@@ -74,7 +83,7 @@ Tron exposes documentation and guided workflows via MCP standard mechanisms:
 ### Lisp Implementation Support
 
 - **Primary:** Tested with **SBCL**; Swank integration and debugger features are developed against SBCL.
-- **ECL:** The MCP server can run under **ECL** as well. Lisp selection in `start-mcp.sh`: **CLI** (`--use-sbcl` / `--use-ecl`) overrides **env** (`TRON_LISP=sbcl` or `ecl`), then **auto-detect** (sbcl, then ecl). Run `./start-mcp.sh --help` for full usage. For stdio, the script uses SBCL `--noinform` or ECL `-q` so stdout stays JSON-only.
+- **ECL:** The MCP server can run under **ECL** as well. Lisp selection in `start-mcp.sh`: **CLI** (`--use-sbcl` / `--use-ecl`) or **auto-detect** (sbcl, then ecl). Run `./start-mcp.sh --help` for full usage. For stdio, the script uses SBCL `--noinform` or ECL `-q` so stdout stays JSON-only.
 - **Goal:** Any Common Lisp implementation should be able to use the MCP where possible; REPL connectivity is via Swank.
 
 ## Quick Reference
@@ -102,6 +111,7 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
 
 | Prompt | Purpose |
 |--------|---------|
+| `discover-mcp` | How to fully use this MCP without user explanation (ordered discovery steps) |
 | `getting-started` | How to connect to Swank and verify setup |
 | `debugging-workflow` | Step-by-step error debugging |
 | `hot-reload-workflow` | Live code modification without restart |

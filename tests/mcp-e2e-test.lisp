@@ -30,7 +30,7 @@
 
 (deftest mcp-stdio-startup-test
     (testing "Stdio first line is JSON (optional, slow - run manually)"
-             (ok t "Skipped: run manually to verify stdout purity: echo '{\"jsonrpc\":\"2.0\",\"method\":\"initialize\",\"params\":{},\"id\":1}' | ./start-mcp.sh 2>/dev/null | head -1. With ECL: TRON_LISP=ecl ./start-mcp.sh same way.")))
+             (ok t "Skipped: run manually to verify stdout purity: echo '{\"jsonrpc\":\"2.0\",\"method\":\"initialize\",\"params\":{},\"id\":1}' | ./start-mcp.sh 2>/dev/null | head -1. With ECL: ./start-mcp.sh --use-ecl same way.")))
 
 (deftest mcp-tools-list-test
     (testing "List tools"

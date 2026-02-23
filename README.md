@@ -93,6 +93,17 @@ Shows the actual JSON-RPC messages that AI clients send to Tron internally. This
 
 📖 **[More workflow examples →](prompts/workflow-examples.md)**
 
+## Discoverable by AI Agents
+
+The MCP is **fully discoverable**: an AI agent can learn how to use it without any user explanation.
+
+- **Short path:** The agent calls **`prompts/get`** with name **`discover-mcp`**. That returns the exact steps: `resources/list` → `resources/read` AGENTS.md → `prompts/list` → `prompts/get` getting-started → `tools/list`. After that, the agent has everything needed to connect, evaluate, debug, inspect, profile, and hot-reload.
+- **Read path:** The agent calls **`resources/list`**, then **`resources/read`** with uri **`AGENTS.md`**. That document (and the other listed resources) explains the one long-running Lisp session, connection, tools, workflows, and conventions.
+
+No manual “how to use Tron” instructions are required. Standard MCP methods (`resources/list`, `resources/read`, `prompts/list`, `prompts/get`, `tools/list`) are enough.
+
+📖 **[MCP resources and prompts →](docs/mcp-resources-prompts.md)**
+
 ## Quick Start
 
 ### 1. Start a Swank Server
@@ -105,42 +116,85 @@ Shows the actual JSON-RPC messages that AI clients send to Tron internally. This
 
 ### 2. Configure Your AI Client
 
-Copy the example for your client from **`examples/`** (e.g. `examples/cursor-mcp.json.example`), replace `/path/to/cl-tron-mcp` with your path, and put the config in the location below. See [docs/starting-the-mcp.md](docs/starting-the-mcp.md) if the MCP won't start.
+You can run the MCP from a **local copy** or from a **clone of the GitHub repo**. In both cases the client runs a command that starts `start-mcp.sh` (or equivalent) inside the project directory.
 
-**Kilocode** (`~/.kilocode/cli/config.json`):
+#### Getting the server
+
+| Option | What to do |
+|--------|------------|
+| **Local copy** | You already have the repo on disk (e.g. in `~/quicklisp/local-projects/cl-tron-mcp`). Use that path in the config below. |
+| **From GitHub** | Clone the repo, then use the path to the cloned directory: `git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git` and `cd cl-tron-mcp`. In config, set the path to where you cloned it (e.g. `$HOME/cl-tron-mcp` or `~/cl-tron-mcp`). |
+
+Replace **`/path/to/cl-tron-mcp`** in the examples below with your actual path (e.g. `~/cl-tron-mcp` or `$HOME/quicklisp/local-projects/cl-tron-mcp`). Copy the example for your client from **`examples/`** if you prefer. See [docs/starting-the-mcp.md](docs/starting-the-mcp.md) if the MCP won't start.
+
+#### Kilocode
+
+Config file: **`~/.kilocode/cli/config.json`** (or your Kilocode MCP config location).
+
 ```json
 {
   "mcpServers": {
     "cl-tron-mcp": {
-      "command": ["/path/to/cl-tron-mcp/start-mcp.sh"]
+      "command": ["/path/to/cl-tron-mcp/start-mcp.sh"],
+      "disabled": false,
+      "env": {},
+      "alwaysAllow": []
     }
   }
 }
 ```
 
-**Cursor** (`~/.cursor/mcp.json`):
+Or run from the project directory:
+
+```json
+"command": ["bash", "-c", "cd /path/to/cl-tron-mcp && ./start-mcp.sh"]
+```
+
+#### OpenCode
+
+Config file: **`~/.config/opencode/opencode.json`**.
+
 ```json
 {
-  "mcpServers": {
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
     "cl-tron-mcp": {
-      "command": ["/path/to/cl-tron-mcp/start-mcp.sh"]
+      "type": "local",
+      "command": ["bash", "-c", "cd /path/to/cl-tron-mcp && ./start-mcp.sh"],
+      "enabled": true
     }
   }
 }
 ```
 
-**Claude Code** (`~/.config/claude-code/mcp.json`):
+#### Cursor
+
+Config file: **`~/.cursor/mcp.json`** (or Cursor MCP settings).
+
 ```json
 {
   "mcpServers": {
     "cl-tron-mcp": {
-      "command": ["sbcl", "--non-interactive", "--noinform",
-        "--eval", "(ql:quickload :cl-tron-mcp :silent t)",
-        "--eval", "(cl-tron-mcp/core:start-server :transport :stdio)"]
+      "command": ["bash", "-c", "cd /path/to/cl-tron-mcp && ./start-mcp.sh"],
+      "disabled": false,
+      "env": {}
     }
   }
 }
 ```
+
+#### Other clients (Claude Code, VS Code, etc.)
+
+Any MCP client that runs a **local command** can use Tron the same way:
+
+1. Clone or copy the repo: `git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git` (or use an existing local path).
+2. In the client’s MCP config, add a server entry whose **command** runs the MCP over stdio, for example:
+   - **Preferred:** `["/path/to/cl-tron-mcp/start-mcp.sh"]` or `["bash", "-c", "cd /path/to/cl-tron-mcp && ./start-mcp.sh"]`
+   - **Alternative (SBCL only):** `["sbcl", "--non-interactive", "--noinform", "--eval", "(ql:quickload :cl-tron-mcp :silent t)", "--eval", "(cl-tron-mcp/core:start-server :transport :stdio)"]`
+
+Ensure **SBCL** (or ECL) and **Quicklisp** are on the PATH when the client starts the server. To force ECL, use `["/path/to/cl-tron-mcp/start-mcp.sh", "--use-ecl"]`.
+
+Example config files: [examples/cursor-mcp.json.example](examples/cursor-mcp.json.example), [examples/kilocode-mcp.json.example](examples/kilocode-mcp.json.example), [examples/opencode-mcp.json.example](examples/opencode-mcp.json.example).
 
 ### 3. Start Debugging
 
@@ -157,7 +211,7 @@ Ask your AI: *"Connect to Swank on port 4005 and debug factorial-example.lisp"*
 ### From Source
 
 ```bash
-git clone https://github.com/yourusername/cl-tron-mcp.git
+git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git
 cd cl-tron-mcp
 sbcl --eval '(load "cl-tron-mcp.asd")' --eval '(ql:quickload :cl-tron-mcp)'
 ```
@@ -217,7 +271,7 @@ cl-tron-mcp/
 
 ## Requirements
 
-- **SBCL** 2.0.0 or later, or **ECL** (Embeddable Common Lisp). The MCP server runs with either. `start-mcp.sh` selects the Lisp by: **`--use-sbcl`** / **`--use-ecl`** (CLI), then **`TRON_LISP`** (env), then auto-detect (sbcl, then ecl). Run **`./start-mcp.sh --help`** for full usage.
+- **SBCL** 2.0.0 or later, or **ECL** (Embeddable Common Lisp). The MCP server runs with either. `start-mcp.sh` selects the Lisp by: **`--use-sbcl`** / **`--use-ecl`** (CLI) or auto-detect (sbcl, then ecl). Run **`./start-mcp.sh --help`** for full usage.
 - **Quicklisp**
 - **Swank** (for Slime/Portacle/Sly)
 
@@ -236,6 +290,7 @@ Apache License 2.0. See [LICENSE](LICENSE) file.
 
 ## Resources
 
+- **Repository:** [https://github.com/Alba-Intelligence/cl-tron-mcp](https://github.com/Alba-Intelligence/cl-tron-mcp)
 - [SBCL Documentation](http://www.sbcl.org/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 - [Swank/Slime](https://slime.common-lisp.dev/)
