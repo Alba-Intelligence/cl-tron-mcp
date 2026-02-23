@@ -20,6 +20,7 @@ Thumbs.db
 
 # Project-specific
 .sbclrc
+http-port.txt
 
 flake.lock
 git_examples
@@ -28,4 +29,5 @@ tmp
 # VHS tape files (source for demo GIFs)
 *.tape
 
+*.log
 

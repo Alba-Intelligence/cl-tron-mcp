@@ -13,9 +13,9 @@
 #   ./start-mcp.sh                    # Stdio, auto-detect Lisp (sbcl then ecl)
 #   ./start-mcp.sh --use-sbcl          # Stdio, force SBCL
 #   ./start-mcp.sh --use-ecl           # Stdio, force ECL
-#   ./start-mcp.sh --http              # HTTP transport on default port 4005
+#   ./start-mcp.sh --http              # HTTP transport on default port 4006 (avoids Swank 4005)
 #   ./start-mcp.sh --http --port 9000  # HTTP on port 9000
-#   ./start-mcp.sh --websocket        # WebSocket on port 4005
+#   ./start-mcp.sh --websocket        # WebSocket on port 4006
 #   ./start-mcp.sh --help              # Show full options and examples
 #
 # Environment:
@@ -42,7 +42,10 @@ cd "$(dirname "$0")"
 # Default settings
 TRANSPORT="stdio"
 PORT="4005"
+PORT_GIVEN=""
 LISP_CHOICE=""
+# HTTP/WebSocket default port (avoid 4005 which is usually Swank)
+HTTP_DEFAULT_PORT="4006"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -61,6 +64,7 @@ while [[ $# -gt 0 ]]; do
         ;;
     --port)
         PORT="$2"
+        PORT_GIVEN=1
         shift 2
         ;;
     --websocket)
@@ -74,7 +78,7 @@ while [[ $# -gt 0 ]]; do
         echo "  --use-sbcl   Use SBCL (error if not installed)"
         echo "  --use-ecl    Use ECL (error if not installed)"
         echo "  --http       Use HTTP transport (default: stdio)"
-        echo "  --port PORT  HTTP/WebSocket port (default: 4005)"
+        echo "  --port PORT  HTTP/WebSocket port (default: 4006 for HTTP/WebSocket, to avoid Swank on 4005)"
         echo "  --websocket  Use WebSocket transport"
         echo "  --help       Show this help"
         echo ""
@@ -83,9 +87,9 @@ while [[ $# -gt 0 ]]; do
         echo "Examples:"
         echo "  $0                      # Stdio (for OpenCode)"
         echo "  $0 --use-ecl             # Stdio with ECL"
-        echo "  $0 --http                # HTTP on port 4005"
+        echo "  $0 --http                # HTTP on port 4006"
         echo "  $0 --http --port 9000    # HTTP on port 9000"
-        echo "  $0 --websocket           # WebSocket on port 4005"
+        echo "  $0 --websocket           # WebSocket on port 4006"
         exit 0
         ;;
     *)
@@ -146,6 +150,13 @@ else
     fi
 fi
 
+# HTTP/WebSocket: when --port was not given, use 4006 to avoid clashing with Swank (usually 4005)
+if [[ "$TRANSPORT" == "http" || "$TRANSPORT" == "websocket" ]]; then
+    if [[ -z "$PORT_GIVEN" ]]; then
+        PORT="$HTTP_DEFAULT_PORT"
+    fi
+fi
+
 # ECL does not load Quicklisp from init; load setup.lisp before any ql: use.
 # Set *load-verbose* nil before load so ECL does not print to stdout (stdio = JSON only).
 # Bind *standard-output* to *error-output* during load/compile so ECL style warnings go to stderr.
@@ -163,6 +174,10 @@ case "$LISP" in
     LOAD_EXPR="(asdf:load-system :cl-tron-mcp)"
     ;;
 esac
+
+# Do not pass empty args to Lisp (e.g. SBCL treats '' as a script and exits before --eval).
+ECL_ARGS=()
+[[ -n "$ECL_LOAD_QL_FLAG" ]] && ECL_ARGS=("$ECL_LOAD_QL_FLAG" "$ECL_LOAD_QL_EXPR")
 
 echo "Starting CL-TRON-MCP..." >&2
 echo "  Lisp: $LISP" >&2
@@ -190,7 +205,7 @@ if [[ "$TRANSPORT" == "stdio" ]]; then
     exec \
         "$LISP" \
         $LISP_QUIET \
-        $ECL_LOAD_QL_FLAG "$ECL_LOAD_QL_EXPR" \
+        "${ECL_ARGS[@]}" \
         $LISP_EVAL "(setq *compile-verbose* nil *load-verbose* nil)" \
         $LISP_EVAL "(push #p\"$(pwd)/\" ql:*local-project-directories*)" \
         $LISP_EVAL "$COMPILE_EXPR" \
@@ -198,22 +213,51 @@ if [[ "$TRANSPORT" == "stdio" ]]; then
         $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :stdio) #+sbcl (sb-ext:quit 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
 elif [[ "$TRANSPORT" == "http" ]]; then
     echo "-- Starting the HTTP server on port $PORT" >&2
+    echo "-- (Keep this running; use Ctrl+C to stop. If port $PORT is in use, e.g. by Swank, use --port N)" >&2
+    echo '-- Test: curl -X POST http://127.0.0.1:'"$PORT"'/rpc -H "Content-Type: application/json" -d '"'"'{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}'"'"'' >&2
     echo "--" >&2
+    echo "$PORT" > http-port.txt
+    [[ "$LISP" = *sbcl* ]] && LISP_EXTRA="--non-interactive" || LISP_EXTRA=""
+    # Write boot script (logs steps to /tmp/cl-tron-mcp-boot.log) then load it with one short --eval.
+    PROOT="$(pwd)"
+    BOOT_FILE="$PROOT/scripts/http-boot.lisp"
+    cat > "$BOOT_FILE" << BOOTEOF
+(defun %boot-log (msg)
+  (ignore-errors
+    (with-open-file (f #p"/tmp/cl-tron-mcp-boot.log" :direction :output :if-exists :append :if-does-not-exist :create)
+      (write-line (format nil "~a ~a" (get-universal-time) msg) f))))
+(%boot-log "0: entered")
+(setq *compile-verbose* nil *load-verbose* nil)
+(%boot-log "1: setq done")
+(push #p"$PROOT/" ql:*local-project-directories*)
+(%boot-log "2: push done")
+(asdf:compile-system :cl-tron-mcp :force t)
+(%boot-log "3: compile done")
+(asdf:load-system :cl-tron-mcp)
+(%boot-log "4: load done")
+(let ((port (parse-integer (with-open-file (f #p"$PROOT/http-port.txt") (read-line f)))))
+  (%boot-log (format nil "5: port=~a calling start-server" port))
+  (cl-tron-mcp/core:start-server :transport :http :port port))
+(%boot-log "6: start-server returned")
+#+sbcl (sb-ext:quit 0)
+#+ecl (ext:quit 0)
+#-(or sbcl ecl) (cl-user::quit 0)
+BOOTEOF
     exec \
         "$LISP" \
         $LISP_QUIET \
-        $ECL_LOAD_QL_FLAG "$ECL_LOAD_QL_EXPR" \
-        $LISP_EVAL "(push #p\"$(pwd)/\" ql:*local-project-directories*)" \
-        $LISP_EVAL "$COMPILE_EXPR" \
-        $LISP_EVAL "$LOAD_EXPR" \
-        $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :http :port $PORT) #+sbcl (sb-ext:quit 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
+        $LISP_EXTRA \
+        "${ECL_ARGS[@]}" \
+        $LISP_EVAL "(load #p\"$BOOT_FILE\")"
 elif [[ "$TRANSPORT" == "websocket" ]]; then
     echo "-- Starting Websocket server on port $PORT" >&2
     echo "--" >&2
+    [[ "$LISP" = *sbcl* ]] && LISP_EXTRA="--non-interactive" || LISP_EXTRA=""
     exec \
         "$LISP" \
         $LISP_QUIET \
-        $ECL_LOAD_QL_FLAG "$ECL_LOAD_QL_EXPR" \
+        $LISP_EXTRA \
+        "${ECL_ARGS[@]}" \
         $LISP_EVAL "(push #p\"$(pwd)/\" ql:*local-project-directories*)" \
         $LISP_EVAL "$COMPILE_EXPR" \
         $LISP_EVAL "$LOAD_EXPR" \
