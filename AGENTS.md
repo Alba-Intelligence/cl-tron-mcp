@@ -153,7 +153,7 @@ When the server is launched by MCP clients (Cursor, Kilocode, Opencode) over std
 ### Logging: use log4cl, not _error-output_
 
 - **MCP activity (server start/stop, transport start, notifications, errors) must be logged through the `cl-tron-mcp/logging` API** (`log-info`, `log-warn`, `log-error`), not by writing directly to `*error-output*`. This keeps behaviour consistent and allows log4cl to route output (e.g. to stderr for stdio).
-- When starting with `:stdio` transport, the server calls `ensure-log-to-stream(*error-output*)` so log4cl writes to stderr and stdout stays clean.
+- When starting with stdio (e.g. `:stdio-only` or `:combined`), the server calls `ensure-log-to-stream(*error-output*)` so log4cl writes to stderr and stdout stays clean.
 
 ### SBCL startup (stdio)
 
@@ -166,7 +166,8 @@ When the server is launched by MCP clients (Cursor, Kilocode, Opencode) over std
 
 ### HTTP and WebSocket Transport
 
-- **HTTP:** Implemented with **Hunchentoot**. Start with `./start-mcp.sh --http [--port 4006]`; default port is 4006 (to avoid Swank on 4005). The process stays alive until you stop it (e.g. Ctrl+C). Clients POST JSON-RPC to `http://127.0.0.1:PORT/rpc`; GET endpoints include `/health`, `/lisply/ping-lisp`, `/lisply/tools/list`. Server log messages use log4cl (stderr).
+- **Transport modes:** Default is **combined** (stdio + HTTP): `./start-mcp.sh` runs both. Use **`--stdio-only`** for stdio only (e.g. when the MCP client starts the server) or **`--http-only`** for HTTP only. Run `./start-mcp.sh --help` for options.
+- **HTTP:** Implemented with **Hunchentoot**. HTTP port default is 4006 (to avoid Swank on 4005). Start with `./start-mcp.sh` (combined) or `./start-mcp.sh --http-only [--port 4006]`. Clients POST JSON-RPC to `http://127.0.0.1:PORT/rpc` or `/mcp`; GET endpoints include `/health`, `/lisply/ping-lisp`, `/lisply/tools/list`. Server log messages use log4cl (stderr).
 - **WebSocket:** Placeholder only (no real server or message handling); `start-websocket-transport` prints a notice.
 
 ### MCP protocol compliance (stdio and HTTP)
@@ -287,11 +288,14 @@ cl-tron-mcp/
 ### Development Server
 
 ```lisp
-;; Start MCP server (stdio transport - primary for AI agents)
-(cl-tron-mcp/core:start-server :transport :stdio)
+;; Start MCP server (default: combined = stdio + HTTP on 4006)
+(cl-tron-mcp/core:start-server)
 
-;; Start MCP server (HTTP transport via Hunchentoot; default port 4006)
-(cl-tron-mcp/core:start-server :transport :http :port 4006)
+;; Start MCP server (stdio only - e.g. when MCP client starts the server)
+(cl-tron-mcp/core:start-server :transport :stdio-only)
+
+;; Start MCP server (HTTP only via Hunchentoot; default port 4006)
+(cl-tron-mcp/core:start-server :transport :http-only :port 4006)
 
 ;; Start MCP server (WebSocket transport)
 (cl-tron-mcp/core:start-server :transport :websocket :port 23456)
@@ -306,12 +310,12 @@ cl-tron-mcp/
 ### Testing with MCP Client
 
 ```bash
-# Test with stdio transport (primary method). Use --noinform so stdout = JSON only.
+# Test with stdio (--stdio-only for pure stdio, or default combined).
 echo '{"jsonrpc": "2.0", "method": "initialize", "params": {}, "id": 1}' | \
   sbcl --non-interactive --noinform \
     --eval '(ql:quickload :cl-tron-mcp :silent t)' \
-    --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
-# Or: echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | ./start-mcp.sh
+    --eval '(cl-tron-mcp/core:start-server :transport :stdio-only)'
+# Or: echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | ./start-mcp.sh --stdio-only
 
 # Quick verification
 sbcl --non-interactive \
@@ -573,7 +577,8 @@ Configure in `~/.config/opencode/opencode.json`:
 
 ### Kilocode Integration
 
-1. Copy `.kilocode/mcp.json` to appropriate config location
+1. Copy `.kilocode/mcp.json` to appropriate config location (or use `examples/kilocode-mcp.json.example` with your path).
+2. **If Kilocode does not connect:** See [docs/starting-the-mcp.md § Debugging Kilocode MCP](docs/starting-the-mcp.md#debugging-kilocode-mcp): prove Tron alone (stdio), run the exact Kilocode command, use one transport at a time, check Kilocode/VS Code output, and optional `./scripts/debug-mcp-stdio.sh`.
 
 ### Manual Test (Verify Server Works)
 
@@ -581,10 +586,10 @@ Configure in `~/.config/opencode/opencode.json`:
 echo '{"jsonrpc": "2.0", "method": "initialize", "params": {}, "id": 1}' | \
   sbcl --non-interactive --noinform \
     --eval '(ql:quickload :cl-tron-mcp :silent t)' \
-    --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
+    --eval '(cl-tron-mcp/core:start-server :transport :stdio-only)'
 ```
 
-Or: `echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | ./start-mcp.sh`
+Or: `echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | ./start-mcp.sh --stdio-only`
 
 Expected response:
 
@@ -613,7 +618,7 @@ Expected response:
 (format t "Tools registered: ~d~%" (hash-table-count cl-tron-mcp/tools:*tool-registry*))
 
 ;; Start development server
-(cl-tron-mcp/core:start-server :transport :stdio)
+(cl-tron-mcp/core:start-server :transport :stdio-only)
 ```
 
 **First run with MCP clients:** `start-mcp.sh` and the direct SBCL configs (e.g. `.cursor/mcp-direct.json`, `.kilocode/run-mcp.sh`) set `*compile-verbose*` and `*load-verbose*` to nil so compilation does not pollute stdout. If a client still fails on first start, precompile once in a REPL with `(ql:quickload :cl-tron-mcp)` then restart the MCP server.
@@ -807,18 +812,18 @@ clgrep   lisp-read   inspect   code_      compile   tests
    echo '{"jsonrpc": "2.0", "method": "initialize", "params": {}, "id": 1}' | \
      sbcl --non-interactive --noinform \
        --eval '(ql:quickload :cl-tron-mcp :silent t)' \
-       --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
+       --eval '(cl-tron-mcp/core:start-server :transport :stdio-only)'
    ```
 
 ## Summary
 
 - **Build**: `(ql:quickload :cl-tron-mcp)`
 - **Test**: `(asdf:test-system :cl-tron-mcp)`
-- **Dev Server**: `(cl-tron-mcp/core:start-server :transport :stdio)`
+- **Dev Server**: `(cl-tron-mcp/core:start-server)` (combined) or `:transport :stdio-only` / `:http-only`
 - **Style**: Google CL guide + project conventions
 - **Tests**: Rove in `tests/`, mirror source structure
 - **Security**: User approval required for modifying operations
 - **Docs**: See `@prompts/` and `docs/tools/` for detailed guides
 - **Tools**: 86 tools implemented across 14 categories
-- **Transport**: Stdio (primary), HTTP (Hunchentoot, supported), WebSocket (placeholder)
+- **Transport**: Combined (default: stdio + HTTP), stdio-only, http-only; WebSocket (placeholder)
 - **MCP Clients**: Verified working with OpenCode, Cursor, VS Code

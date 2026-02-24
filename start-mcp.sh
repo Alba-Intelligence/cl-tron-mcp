@@ -10,13 +10,13 @@
 #   2. Auto: try sbcl, then ecl
 #
 # Usage:
-#   ./start-mcp.sh                    # Stdio, auto-detect Lisp (sbcl then ecl)
-#   ./start-mcp.sh --use-sbcl          # Stdio, force SBCL
-#   ./start-mcp.sh --use-ecl           # Stdio, force ECL
-#   ./start-mcp.sh --http              # HTTP transport on default port 4006 (avoids Swank 4005)
-#   ./start-mcp.sh --http --port 9000  # HTTP on port 9000
-#   ./start-mcp.sh --websocket        # WebSocket on port 4006
-#   ./start-mcp.sh --help              # Show full options and examples
+#   ./start-mcp.sh                    # Combined (stdio + HTTP), default (recommended)
+#   ./start-mcp.sh --stdio-only       # Stdio only (e.g. for MCP clients that start the server)
+#   ./start-mcp.sh --http-only        # HTTP only on default port 4006
+#   ./start-mcp.sh --http-only --port 9000
+#   ./start-mcp.sh --use-sbcl         # Combined with SBCL
+#   ./start-mcp.sh --websocket       # WebSocket on port 4006
+#   ./start-mcp.sh --help            # Show full options and examples
 #
 # Environment:
 #   QUICKLISP_DIR  Optional; defaults to $HOME/quicklisp.
@@ -39,8 +39,8 @@ export QUICKLISP_DIR="$HOME/quicklisp"
 # Navigate to the cl-tron-mcp directory
 cd "$(dirname "$0")"
 
-# Default settings
-TRANSPORT="stdio"
+# Default: combined (stdio + HTTP) so both MCP and HTTP clients can connect
+TRANSPORT="combined"
 PORT="4005"
 PORT_GIVEN=""
 LISP_CHOICE=""
@@ -58,6 +58,14 @@ while [[ $# -gt 0 ]]; do
         LISP_CHOICE="ecl"
         shift
         ;;
+    --stdio-only)
+        TRANSPORT="stdio"
+        shift
+        ;;
+    --http-only)
+        TRANSPORT="http"
+        shift
+        ;;
     --http)
         TRANSPORT="http"
         shift
@@ -72,24 +80,25 @@ while [[ $# -gt 0 ]]; do
         shift
         ;;
     --help | -h)
-        echo "Usage: $0 [--use-sbcl | --use-ecl] [--http] [--port PORT] [--websocket]"
+        echo "Usage: $0 [--use-sbcl | --use-ecl] [--stdio-only | --http-only] [--port PORT] [--websocket]"
         echo ""
         echo "Options:"
         echo "  --use-sbcl   Use SBCL (error if not installed)"
         echo "  --use-ecl    Use ECL (error if not installed)"
-        echo "  --http       Use HTTP transport (default: stdio)"
-        echo "  --port PORT  HTTP/WebSocket port (default: 4006 for HTTP/WebSocket, to avoid Swank on 4005)"
+        echo "  --stdio-only   Stdio only (no HTTP)"
+        echo "  --http-only    HTTP only (no stdio)"
+        echo "  --port PORT    HTTP/WebSocket port (default: 4006 for HTTP/combined)"
         echo "  --websocket  Use WebSocket transport"
         echo "  --help       Show this help"
         echo ""
-        echo "Lisp selection: --use-sbcl or --use-ecl (or auto-detect: sbcl, then ecl)."
+        echo "Default: combined (stdio + HTTP) so both MCP-over-stdio and HTTP clients can connect."
         echo ""
         echo "Examples:"
-        echo "  $0                      # Stdio (for OpenCode)"
-        echo "  $0 --use-ecl             # Stdio with ECL"
-        echo "  $0 --http                # HTTP on port 4006"
-        echo "  $0 --http --port 9000    # HTTP on port 9000"
-        echo "  $0 --websocket           # WebSocket on port 4006"
+        echo "  $0                      # Combined (stdio + HTTP on 4006)"
+        echo "  $0 --stdio-only         # Stdio only (e.g. Cursor/OpenCode)"
+        echo "  $0 --http-only          # HTTP only on port 4006"
+        echo "  $0 --http-only --port 9000"
+        echo "  $0 --websocket          # WebSocket on port 4006"
         exit 0
         ;;
     *)
@@ -150,8 +159,8 @@ else
     fi
 fi
 
-# HTTP/WebSocket: when --port was not given, use 4006 to avoid clashing with Swank (usually 4005)
-if [[ "$TRANSPORT" == "http" || "$TRANSPORT" == "websocket" ]]; then
+# HTTP port: when --port was not given, use 4006 for http or combined to avoid clashing with Swank (4005)
+if [[ "$TRANSPORT" == "http" || "$TRANSPORT" == "combined" || "$TRANSPORT" == "websocket" ]]; then
     if [[ -z "$PORT_GIVEN" ]]; then
         PORT="$HTTP_DEFAULT_PORT"
     fi
@@ -198,10 +207,8 @@ echo "" >&2
 echo "-------------------------------------------------------------------------" >&2
 echo "--" >&2
 if [[ "$TRANSPORT" == "stdio" ]]; then
-    echo "-- Starting the stdio MCP" >&2
+    echo "-- Starting the stdio-only MCP" >&2
     echo "--" >&2
-    # LISP_QUIET: SBCL --noinform / ECL -q so stdout = JSON-RPC only for MCP clients.
-    # After start-server returns (client disconnected), quit so we never run the REPL on stdin.
     exec \
         "$LISP" \
         $LISP_QUIET \
@@ -210,7 +217,19 @@ if [[ "$TRANSPORT" == "stdio" ]]; then
         $LISP_EVAL "(push #p\"$(pwd)/\" ql:*local-project-directories*)" \
         $LISP_EVAL "$COMPILE_EXPR" \
         $LISP_EVAL "$LOAD_EXPR" \
-        $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :stdio) #+sbcl (sb-ext:quit 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
+        $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :stdio-only) #+sbcl (sb-ext:quit 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
+elif [[ "$TRANSPORT" == "combined" ]]; then
+    echo "-- Starting combined (stdio + HTTP on port $PORT)" >&2
+    echo "--" >&2
+    exec \
+        "$LISP" \
+        $LISP_QUIET \
+        "${ECL_ARGS[@]}" \
+        $LISP_EVAL "(setq *compile-verbose* nil *load-verbose* nil)" \
+        $LISP_EVAL "(push #p\"$(pwd)/\" ql:*local-project-directories*)" \
+        $LISP_EVAL "$COMPILE_EXPR" \
+        $LISP_EVAL "$LOAD_EXPR" \
+        $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :combined :port $PORT) #+sbcl (sb-ext:quit 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
 elif [[ "$TRANSPORT" == "http" ]]; then
     echo "-- Starting the HTTP server on port $PORT" >&2
     echo "-- (Keep this running; use Ctrl+C to stop. If port $PORT is in use, e.g. by Swank, use --port N)" >&2
@@ -237,7 +256,7 @@ elif [[ "$TRANSPORT" == "http" ]]; then
 (%boot-log "4: load done")
 (let ((port (parse-integer (with-open-file (f #p"$PROOT/http-port.txt") (read-line f)))))
   (%boot-log (format nil "5: port=~a calling start-server" port))
-  (cl-tron-mcp/core:start-server :transport :http :port port))
+  (cl-tron-mcp/core:start-server :transport :http-only :port port))
 (%boot-log "6: start-server returned")
 #+sbcl (sb-ext:quit 0)
 #+ecl (ext:quit 0)

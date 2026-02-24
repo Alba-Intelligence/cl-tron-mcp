@@ -68,16 +68,18 @@
             (if start (subseq out (+ start 4)) out))))))
 
 (defun mcp-dispatch-table ()
-  "Dispatch table for MCP HTTP routes (Hunchentoot)."
+  "Dispatch table for MCP HTTP routes (Hunchentoot). /mcp and /rpc both accept POST JSON-RPC (Kilocode streamable-http uses url .../mcp)."
   (list (hunchentoot:create-regex-dispatcher "^/health$" #'mcp-health)
         (hunchentoot:create-regex-dispatcher "^/lisply/ping-lisp$" #'mcp-lisply-ping)
         (hunchentoot:create-regex-dispatcher "^/lisply/tools/list$" #'mcp-lisply-tools-list)
         (hunchentoot:create-regex-dispatcher "^/lisply/lisp-eval$" #'mcp-lisply-eval)
+        (hunchentoot:create-regex-dispatcher "^/mcp$" #'mcp-rpc)
         (hunchentoot:create-regex-dispatcher "^/rpc$" #'mcp-rpc)
         (hunchentoot:create-regex-dispatcher "^/$" #'mcp-root)))
 
-(defun start-http-transport (&key (port 4005))
-  "Start HTTP transport using Hunchentoot. Blocks until stop-http-transport."
+(defun start-http-transport (&key (port 4005) (block t))
+  "Start HTTP transport using Hunchentoot. When BLOCK is true (default), block until stop-http-transport.
+   When BLOCK is false, start the server and return (for combined stdio+http)."
   (when *http-acceptor*
     (cl-tron-mcp/logging:log-info (format nil "[MCP] HTTP server already running on port ~d" port))
     (return-from start-http-transport))
@@ -93,11 +95,20 @@
   (hunchentoot:start *http-acceptor*)
   (cl-tron-mcp/logging:log-info (format nil "[MCP] HTTP server listening on http://127.0.0.1:~d - POST /rpc for JSON-RPC" port))
   (setf *http-running* t)
-  ;; Block until stopped (Hunchentoot runs in its own threads)
-  (loop while *http-running* do (bt:thread-yield) (sleep 1))
-  (hunchentoot:stop *http-acceptor*)
-  (setf *http-acceptor* nil)
-  (setf *http-running* nil))
+  (if block
+      (progn
+        (loop while *http-running* do (bt:thread-yield) (sleep 1))
+        (hunchentoot:stop *http-acceptor*)
+        (setf *http-acceptor* nil)
+        (setf *http-running* nil))
+      (bt:make-thread
+       (lambda ()
+         (loop while *http-running* do (bt:thread-yield) (sleep 1))
+         (when *http-acceptor*
+           (ignore-errors (hunchentoot:stop *http-acceptor*))
+           (setf *http-acceptor* nil))
+         (setf *http-running* nil))
+       :name "http-watchdog")))
 
 (defun stop-http-transport ()
   "Stop the Hunchentoot HTTP server."

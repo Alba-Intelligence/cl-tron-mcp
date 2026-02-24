@@ -109,7 +109,7 @@ No manual “how to use Tron” instructions are required. Standard MCP methods 
 
 ## Quick Start
 
-The server supports **stdio** (default for AI clients) and **HTTP** (Hunchentoot). For HTTP, run `./start-mcp.sh --http [--port 4006]`; default port is 4006. The process stays alive until you stop it (Ctrl+C). Clients send JSON-RPC via POST to `http://127.0.0.1:PORT/rpc`. Both transports use the same protocol: initialize returns MCP-compliant capabilities (e.g. `resources.subscribe` boolean); `prompts/get` returns messages with `content` as an array of parts per MCP spec. See [docs/starting-the-mcp.md](docs/starting-the-mcp.md) for details.
+The server runs in **combined** mode by default (stdio + HTTP): both MCP-over-stdio and HTTP clients can connect. Use **`--stdio-only`** or **`--http-only`** to run one transport. Run `./start-mcp.sh --help` for options. HTTP port default is 4006. The process stays alive until you stop it (Ctrl+C). Clients send JSON-RPC via POST to `http://127.0.0.1:PORT/rpc`. Both transports use the same protocol: initialize returns MCP-compliant capabilities (e.g. `resources.subscribe` boolean); `prompts/get` returns messages with `content` as an array of parts per MCP spec. See [docs/starting-the-mcp.md](docs/starting-the-mcp.md) for details.
 
 ### 1. Start a Swank Server
 
@@ -134,26 +134,18 @@ Replace **`/path/to/cl-tron-mcp`** in the examples below with your actual path (
 
 #### Kilocode
 
-Config file: **`~/.kilocode/cli/config.json`** (or your Kilocode MCP config location).
+Config file: **`.kilocode/mcp.json`** (project) or global MCP settings. The repo provides **both** Tron variants under different server names so you can **choose one**:
 
-```json
-{
-  "mcpServers": {
-    "cl-tron-mcp": {
-      "command": ["/path/to/cl-tron-mcp/start-mcp.sh"],
-      "disabled": false,
-      "env": {},
-      "alwaysAllow": []
-    }
-  }
-}
-```
+| Server name           | Transport        | Choose this if…                          |
+|-----------------------|------------------|------------------------------------------|
+| **cl-tron-mcp-stdio** | STDIO            | You want Kilocode to start Tron (default)|
+| **cl-tron-mcp-http**  | Streamable HTTP  | You run `./start-mcp.sh --http` yourself  |
 
-Or run from the project directory:
+Enable the one you want (`disabled: false`); leave the other disabled or remove it. See `examples/kilocode-mcp.json.example` for a template with both entries.
 
-```json
-"command": ["bash", "-c", "cd /path/to/cl-tron-mcp && ./start-mcp.sh"]
-```
+**STDIO (cl-tron-mcp-stdio, recommended):** `command` (path to `start-mcp.sh`) and `args: []`. Replace `/path/to/cl-tron-mcp` with your path.
+
+**Streamable HTTP (cl-tron-mcp-http):** Start Tron with `./start-mcp.sh` (combined) or `./start-mcp.sh --http-only [--port 4006]`, then set `"type": "streamable-http"` and `"url": "http://127.0.0.1:4006/mcp"`.
 
 #### OpenCode
 
@@ -195,7 +187,7 @@ Any MCP client that runs a **local command** can use Tron the same way:
 1. Clone or copy the repo: `git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git` (or use an existing local path).
 2. In the client’s MCP config, add a server entry whose **command** runs the MCP over stdio, for example:
    - **Preferred:** `["/path/to/cl-tron-mcp/start-mcp.sh"]` or `["bash", "-c", "cd /path/to/cl-tron-mcp && ./start-mcp.sh"]`
-   - **Alternative (SBCL only):** `["sbcl", "--non-interactive", "--noinform", "--eval", "(ql:quickload :cl-tron-mcp :silent t)", "--eval", "(cl-tron-mcp/core:start-server :transport :stdio)"]`
+   - **Alternative (SBCL only):** `["sbcl", "--non-interactive", "--noinform", "--eval", "(ql:quickload :cl-tron-mcp :silent t)", "--eval", "(cl-tron-mcp/core:start-server :transport :stdio-only)"]`
 
 Ensure **SBCL** (or ECL) and **Quicklisp** are on the PATH when the client starts the server. To force ECL, use `["/path/to/cl-tron-mcp/start-mcp.sh", "--use-ecl"]`.
 

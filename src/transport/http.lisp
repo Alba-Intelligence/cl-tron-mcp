@@ -195,7 +195,7 @@
                  (cond
                    ((search "/lisply/lisp-eval" path)
                     (send-response client-stream (lisp-eval-handler body)))
-                   ((string= path "/rpc")
+                   ((or (string= path "/rpc") (string= path "/mcp"))
                     (handle-rpc client-stream body))
                    (t
                     (send-response client-stream (http-not-found))))))
@@ -265,7 +265,9 @@
       (force-output *error-output*)
       (signal e))))
 
-(defun start-http-transport (&key (port 4005))
+(defun start-http-transport (&key (port 4005) (block t))
+  "Start HTTP transport. When BLOCK is true (default), block until the server stops.
+   When BLOCK is false, start the server in a background thread and return (for combined stdio+http)."
   (http-dbg "start-http-transport: entered")
   (when *http-server*
     (http-dbg "start-http-transport: already running, returning")
@@ -275,8 +277,8 @@
   (setf *http-thread*
         (bt:make-thread (lambda () (http-server-loop port))
                         :name "http-server"))
-  (http-dbg (format nil "start-http-transport: thread=~a joining" (and *http-thread* t)))
-  (when *http-thread*
+  (http-dbg (format nil "start-http-transport: thread=~a block=~a" (and *http-thread* t) block))
+  (when (and block *http-thread*)
     (handler-case (bt:join-thread *http-thread*)
       (serious-condition (e)
         (cl-tron-mcp/logging:log-error (format nil "[MCP] HTTP server thread exited: ~a" e))
