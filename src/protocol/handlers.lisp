@@ -99,7 +99,8 @@ Logged via log4cl (not stdout) so stdio transport stays clean."
 (defun handle-initialize (id params)
   "Handle initialize request.
 Returns server capabilities including tools, resources, and prompts.
-This is the first message sent by MCP clients during handshake."
+This is the first message sent by MCP clients during handshake.
+Response is used by both stdio and HTTP transports unchanged."
   (declare (ignore params))
   (jonathan:to-json
    (list :|jsonrpc| "2.0"
@@ -110,8 +111,8 @@ This is the first message sent by MCP clients during handshake."
                (list
                 ;; Tools capability - allows model-controlled tool invocation
                 :|tools| (list :|listChanged| t)
-                ;; Resources capability - exposes documentation files
-                :|resources| (list :|subscribe| nil :|listChanged| t)
+                ;; Resources capability - exposes documentation files (subscribe must be boolean per MCP; nil encodes as [] in Jonathan)
+                :|resources| (list :|subscribe| :false :|listChanged| t)
                 ;; Prompts capability - exposes guided workflows
                 :|prompts| (list :|listChanged| t))
                :|serverInfo|

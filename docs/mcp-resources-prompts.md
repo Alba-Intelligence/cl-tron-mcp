@@ -166,7 +166,7 @@ Get a specific workflow with step-by-step instructions.
 }
 ```
 
-Response includes the full prompt text with instructions.
+Response format (MCP spec): `result.messages` is an array of messages; each message has `role` (e.g. `"user"`) and `content` as an **array of parts** (e.g. `[{ "type": "text", "text": "..." }]`), not a single content object. Part keys are lowercase. This structure is required for Cursor and other MCP clients that use prompts as slash commands.
 
 ### Available Prompts
 

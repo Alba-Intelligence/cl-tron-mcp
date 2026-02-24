@@ -503,6 +503,26 @@ Returns plist suitable for JSON serialization."
 ;;; ============================================================
 ;;; Prompt Retrieval (prompts/get)
 ;;; ============================================================
+;;; MCP spec: each message has role (e.g. "user") and content as an array of
+;;; parts: [ { "type": "text", "text": "..." } ], not a single content object.
+;;; Part keys must be lowercase in JSON (use :|type| :|text|).
+
+(defun normalize-part (part)
+  "Return part with lowercase keys for JSON (:type -> :|type|, :text -> :|text|)."
+  (list :|type| (or (getf part :|type|) (getf part :type) "text")
+        :|text| (or (getf part :|text|) (getf part :text) "")))
+
+(defun message-content-to-parts (content)
+  "Ensure content is a list of part objects (MCP parts array). If CONTENT is a single part object, wrap in list and normalize keys."
+  (if (and (listp content) (not (null content))
+           (or (eq (first content) :type) (eq (first content) :|type|)))
+      (list (normalize-part content))
+      (mapcar #'normalize-part content)))
+
+(defun normalize-prompt-message (message)
+  "Return message with content as array of parts for MCP spec."
+  (list :|role| (getf message :role)
+        :|content| (message-content-to-parts (getf message :content))))
 
 (defun get-prompt (name)
   "Get a prompt by name.
@@ -515,7 +535,7 @@ Returns the prompt descriptor or signals PROMPT-NOT-FOUND-ERROR."
 (defun handle-prompts-get (id params)
   "Handle MCP prompts/get request.
 PARAMS should contain :|name| with the prompt name.
-Returns plist suitable for JSON serialization."
+Returns plist suitable for JSON serialization. Messages use content as parts array per MCP spec."
   (let ((name (getf params :|name|))
         (arguments (getf params :|arguments|)))
     (declare (ignore arguments))
@@ -525,7 +545,7 @@ Returns plist suitable for JSON serialization."
                 :|id| id
                 :|result|
                 (list :|description| (prompt-descriptor-description prompt)
-                      :|messages| (prompt-descriptor-messages prompt))))
+                      :|messages| (mapcar #'normalize-prompt-message (prompt-descriptor-messages prompt)))))
       (prompt-not-found-error (e)
         (list :|jsonrpc| "2.0"
               :|id| id

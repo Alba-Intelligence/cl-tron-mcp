@@ -30,6 +30,8 @@
   (setq *running* nil))
 
 (defun send-message-via-stdio (message)
-  "Send a single JSON-RPC message to stdout. CRITICAL: This is the only place that must write to stdout for stdio transport."
-  (format *standard-output* "~a~%" (jonathan:to-json message))
+  "Send a single JSON-RPC message to stdout. CRITICAL: This is the only place that must write to stdout for stdio transport.
+   Handlers return already-serialized JSON strings; write as-is to avoid double-encoding (Cursor expects object, not string)."
+  (format *standard-output* "~a~%"
+          (if (stringp message) message (jonathan:to-json message)))
   (force-output *standard-output*))

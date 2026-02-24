@@ -37,7 +37,7 @@ Shows the actual JSON-RPC messages that AI clients send to Tron internally. This
 ```
 ┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
 │  SBCL + Swank   │◄───────►│   Tron (MCP)    │◄───────►│   AI Client     │
-│  (Port 4005)    │         │   (stdio)       │         │ (Kilocode, etc) │
+│  (Port 4006)    │         │   (stdio)       │         │ (Kilocode, etc) │
 │                 │         │                 │         │                 │
 │  Your code      │         │  86 tools:      │         │  Sends prompts  │
 │  Debugger       │         │   - swank_eval  │         │  Receives       │
@@ -109,14 +109,14 @@ No manual “how to use Tron” instructions are required. Standard MCP methods 
 
 ## Quick Start
 
-The server supports **stdio** (default for AI clients) and **HTTP** (Hunchentoot). For HTTP, run `./start-mcp.sh --http [--port 4006]`; default port is 4006. The process stays alive until you stop it (Ctrl+C). Clients send JSON-RPC via POST to `http://127.0.0.1:PORT/rpc`. See [docs/starting-the-mcp.md](docs/starting-the-mcp.md) for details.
+The server supports **stdio** (default for AI clients) and **HTTP** (Hunchentoot). For HTTP, run `./start-mcp.sh --http [--port 4006]`; default port is 4006. The process stays alive until you stop it (Ctrl+C). Clients send JSON-RPC via POST to `http://127.0.0.1:PORT/rpc`. Both transports use the same protocol: initialize returns MCP-compliant capabilities (e.g. `resources.subscribe` boolean); `prompts/get` returns messages with `content` as an array of parts per MCP spec. See [docs/starting-the-mcp.md](docs/starting-the-mcp.md) for details.
 
 ### 1. Start a Swank Server
 
 ```lisp
 ;; In SBCL
 (ql:quickload :swank)
-(swank:create-server :port 4005 :dont-close t)
+(swank:create-server :port 4006 :dont-close t)
 ```
 
 ### 2. Configure Your AI Client
@@ -203,7 +203,7 @@ Example config files: [examples/cursor-mcp.json.example](examples/cursor-mcp.jso
 
 ### 3. Start Debugging
 
-Ask your AI: _"Connect to Swank on port 4005 and debug factorial-example.lisp"_
+Ask your AI: _"Connect to Swank on port 4006 and debug factorial-example.lisp"_
 
 ## Installation
 

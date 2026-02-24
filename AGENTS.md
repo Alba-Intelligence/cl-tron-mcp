@@ -33,7 +33,7 @@ Tron exposes documentation and guided workflows via MCP standard mechanisms:
 ```
 ┌─────────────────┐         ┌─────────────────┐
 │  SBCL + Swank   │◄───────►│   Tron (MCP)    │
-│  (Port 4005)    │         │   (stdio)       │
+│  (Port 4006)    │         │   (stdio)       │
 │                 │         │                 │
 │  Your code      │         │   AI Agent      │
 │  Debugger state │         │   evaluates     │
@@ -45,14 +45,7 @@ Tron exposes documentation and guided workflows via MCP standard mechanisms:
 
 ### First Steps (Do This Now)
 
-1. **Check if Swank is running**: `ss -tlnp | grep 4005`
-2. **If not, start it**:
-   ```lisp
-   (ql:quickload :swank)
-   (swank:create-server :port 4005 :dont-close t)
-   ```
-3. **Connect Tron**: Use `swank_connect` or `repl_connect` tool
-4. **Verify**: Use `swank_eval` with `"(+ 1 2)"` → should return `"3"`
+We recommend using port 4006 for the Swank server. That way 4005 is available for the user's Slime.
 
 ### Common Workflows
 
@@ -154,7 +147,7 @@ When the server is launched by MCP clients (Cursor, Kilocode, Opencode) over std
 ### Stdout purity (stdio transport)
 
 - **MCP over stdio expects stdout to contain only newline-delimited JSON-RPC messages.** The client reads line-by-line and parses each line as JSON. Any other output on stdout breaks the protocol.
-- **Do not write to stdout** except the single JSON response line per request in `send-message-via-stdio`. No banners, no `[MCP]` messages, no notifications, no SBCL startup text on stdout.
+- **Do not write to stdout** except the single JSON response line per request in `send-message-via-stdio`. No banners, no `[MCP]` messages, no notifications, no SBCL startup text on stdout. Handlers return already-serialized JSON strings; the transport writes them as-is (no double-encoding) so clients receive a JSON object per line.
 - **All server activity must be logged via log4cl** (see below), not `format t` or `*standard-output*`. For stdio transport, log4cl is configured to write to stderr via `ensure-log-to-stream(*error-output*)`.
 
 ### Logging: use log4cl, not _error-output_
@@ -176,6 +169,11 @@ When the server is launched by MCP clients (Cursor, Kilocode, Opencode) over std
 - **HTTP:** Implemented with **Hunchentoot**. Start with `./start-mcp.sh --http [--port 4006]`; default port is 4006 (to avoid Swank on 4005). The process stays alive until you stop it (e.g. Ctrl+C). Clients POST JSON-RPC to `http://127.0.0.1:PORT/rpc`; GET endpoints include `/health`, `/lisply/ping-lisp`, `/lisply/tools/list`. Server log messages use log4cl (stderr).
 - **WebSocket:** Placeholder only (no real server or message handling); `start-websocket-transport` prints a notice.
 
+### MCP protocol compliance (stdio and HTTP)
+
+- **Initialize:** `capabilities.resources.subscribe` is sent as boolean `false` (MCP spec; Jonathan encodes `nil` as `[]` otherwise).
+- **Prompts:** `prompts/get` returns messages with `content` as an array of parts per MCP spec (e.g. `[{ "type": "text", "text": "..." }]`), with lowercase keys, so Cursor and other clients accept slash-command payloads.
+
 ## Recommended Workflow: One Long-Running Lisp Session
 
 For the MCP to interact with Swank the same way a user in Slime would—see output, debugger state, step, move frames, invoke restarts, inspect, compile—use a **single long-running Lisp session** that the user (or automation) starts and keeps running.
@@ -190,7 +188,7 @@ For the MCP to interact with Swank the same way a user in Slime would—see outp
 
 ### Agent workflow
 
-1. User starts the Lisp session with Swank (e.g. `(swank:create-server :port 4005)`).
+1. User starts the Lisp session with Swank (e.g. `(swank:create-server :port 4006)`).
 2. User (or client) starts the MCP server; the agent connects to the Lisp session via `repl_connect` or `swank_connect` (or the client config is set so the MCP connects on startup).
 3. The agent uses `repl_eval`, `repl_backtrace`, `repl_inspect`, and related tools to load code, run it, see output and debugger state, step, move frames, invoke restarts, and fix code—all through the connected session. No second REPL; one session, MCP as a client of it.
 
