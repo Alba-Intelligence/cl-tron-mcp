@@ -1,13 +1,14 @@
 {
-  "mcpServers": {
-    "cl-tron-mcp": {
-      "command": [
-        "bash",
-        "-c",
-        "cd /home/emmanuel/quicklisp/local-projects/cl-tron-mcp && ./start-mcp.sh"
-      ],
-      "disabled": false,
-      "env": {}
+    "mcpServers": {
+        "cl-tron-mcp": {
+            "command": "/home/emmanuel/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
+            "args": [
+                "--http",
+                "--port",
+                "4006"
+            ],
+            "disabled": false,
+            "env": {}
+        }
     }
-  }
 }
