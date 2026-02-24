@@ -1,10 +1,11 @@
 {
   "mcpServers": {
     "cl-tron-mcp": {
-      "command": ["/path/to/cl-tron-mcp/start-mcp.sh"],
-      "disabled": false,
+      "command": "/path/to/cl-tron-mcp/start-mcp.sh",
+      "args": [],
       "env": {},
-      "alwaysAllow": []
+      "alwaysAllow": [],
+      "disabled": false
     }
   }
 }

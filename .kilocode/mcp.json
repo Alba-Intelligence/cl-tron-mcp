@@ -1,1 +1,9 @@
-{"mcpServers":{"cl-tron-mcp":{"command":["/home/emmanuel/quicklisp/local-projects/cl-tron-mcp/.kilocode/run-mcp.sh"],"disabled":true,"env":{},"alwaysAllow":[]}}}
+{
+  "mcpServers": {
+    "cl-tron-mcp": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:4006/mcp",
+      "disabled": false
+    }
+  }
+}
