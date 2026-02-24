@@ -4,8 +4,8 @@
   :name "SBCL Debugging MCP"
   :description "Model Context Protocol server for SBCL debugging, introspection, and hot code reloading"
   :version "0.1.0"
-  :author "Emmanuel[emms@anoma.ai]"
-  :licence "MIT"
+  :author "Emmanuel Rialland [alba.intelligence@gmail.com]"
+  :licence "Apache"
   :serial t
   :depends-on (:jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket :hunchentoot)
   :components ((:file "src/core/package")
@@ -69,7 +69,7 @@
   :name "cl-tron-mcp Tests"
   :description "Test suite for cl-tron-mcp"
   :author "Emmanuel"
-  :licence "MIT"
+  :licence "Apache"
   :depends-on (:cl-tron-mcp :rove)
   :serial t
   :components ((:file "tests/package")
