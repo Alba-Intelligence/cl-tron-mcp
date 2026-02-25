@@ -101,7 +101,7 @@ Returns the directory containing cl-tron-mcp.asd."
   (let ((asd-path (asdf:system-source-file (asdf:find-system :cl-tron-mcp))))
     (if asd-path
         (make-pathname :directory (pathname-directory asd-path))
-        #p"/home/emmanuel/quicklisp/local-projects/cl-tron-mcp/")))
+        (uiop:pathname-directory-pathname (truename *default-pathname-defaults*)))))
 
 (defun resolve-resource-path (uri)
   "Resolve URI to an absolute pathname.

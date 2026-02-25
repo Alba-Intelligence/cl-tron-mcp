@@ -37,7 +37,7 @@
 
 ;; In another terminal, start CL-TRON-MCP:
 
-;; sbcl --load tutorial-run.lisp
+;; sbcl --load scripts/tutorial-run.lisp
 
 ;; Or start just the server:
 

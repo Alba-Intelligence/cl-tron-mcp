@@ -227,12 +227,15 @@ cl-tron-mcp/
 │   └── xref/                    # Cross-reference tools
 │
 ├── tests/                       # Rove test suites
+├── scripts/                     # run-http.sh, run-http-server.lisp, tutorial-run.lisp, debug-mcp-stdio.sh
+├── examples/                    # MCP config examples + mcp-kilocode.json, test_client.py, cl_tron_client.py
 ├── reports/                     # Result and diagnostic reports (not tmp/)
 ├── prompts/                     # Workflow-specific prompts
 ├── agents/                      # Specialized agent personas
 ├── docs/
-│   └── tools/                   # Tool documentation
-├── .cursor/                     # Cursor MCP configs
+│   ├── tools/                   # Tool documentation
+│   └── plans/                   # Planning docs (e.g. swank-integration)
+├── .cursor/                     # Cursor MCP configs (replace /path/to/cl-tron-mcp in examples)
 ├── .vscode/                     # VS Code MCP configs
 ├── .kilocode/                   # Kilocode MCP configs
 ├── cl-tron-mcp.asd             # ASDF system definition

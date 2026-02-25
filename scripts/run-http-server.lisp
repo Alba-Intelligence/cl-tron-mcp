@@ -1,6 +1,6 @@
 ;;;; run-http-server.lisp - Run HTTP server for testing
 
-(push #p"/home/emmanuel/quicklisp/local-projects/cl-tron-mcp/" ql:*local-project-directories*)
+(push (uiop:pathname-directory-pathname (or (ignore-errors (asdf:system-source-file (asdf:find-system :cl-tron-mcp))) (truename *default-pathname-defaults*))) ql:*local-project-directories*)
 (asdf:load-system :cl-tron-mcp)
 
 (format t "Starting HTTP server on port 3333...~%")

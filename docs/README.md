@@ -23,6 +23,7 @@
 
 | Document | Description |
 |----------|-------------|
+| [DEVELOPERS.md](DEVELOPERS.md) | Where to add features, map of the codebase, testing and conventions |
 | [demo-creation.md](demo-creation.md) | How to create and regenerate demo GIFs with VHS |
 
 ## Workflow Guides

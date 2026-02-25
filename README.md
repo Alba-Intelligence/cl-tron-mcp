@@ -235,8 +235,11 @@ cl-tron-mcp/
 │   ├── tools/              # Tool definitions
 │   └── ...
 ├── tests/                  # Rove test suites
+├── scripts/                # run-http.sh, tutorial-run.lisp, debug-mcp-stdio.sh
+├── examples/               # MCP config examples, mcp-kilocode.json, example Python clients
 ├── docs/                   # Documentation
 │   ├── architecture.md     # How it works
+│   ├── DEVELOPERS.md       # Developer guide (where to add features)
 │   ├── swank-integration.md
 │   └── tools/              # Tool docs
 ├── prompts/                # Workflow guides
@@ -259,6 +262,8 @@ cl-tron-mcp/
 | [prompts/debugging-workflows.md](prompts/debugging-workflows.md) | Debugging patterns                                           |
 
 ### Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests, and PR process, and [docs/DEVELOPERS.md](docs/DEVELOPERS.md) for where to add features and how the codebase is organized.
 
 1. Fork the repository
 2. Create a feature branch

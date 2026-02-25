@@ -1,6 +1,6 @@
 # Contributing to CL-TRON-MCP
 
-Thank you for your interest in contributing! This guide will help you get started.
+Thank you for your interest in contributing! This guide will help you get started. For a map of the codebase and how to add tools, transports, and MCP resources, see [docs/DEVELOPERS.md](docs/DEVELOPERS.md).
 
 ## Table of Contents
 
@@ -68,7 +68,7 @@ Core protocol tests (initialize, tools/list, health_check, thread_list, approval
 ### Running the Tutorial
 
 ```bash
-sbcl --load tutorial-run.lisp
+sbcl --load scripts/tutorial-run.lisp
 ```
 
 ### Development Server

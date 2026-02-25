@@ -1,7 +1,7 @@
 {
     "mcpServers": {
         "cl-tron-mcp": {
-            "command": "/home/emmanuel/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
+            "command": "/path/to/cl-tron-mcp/start-mcp.sh",
             "args": [
                 "--http",
                 "--port",

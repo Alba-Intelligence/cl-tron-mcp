@@ -21,6 +21,9 @@ Thumbs.db
 # Project-specific
 .sbclrc
 http-port.txt
+scripts/http-boot.lisp
+startup.log
+system-index.txt
 
 flake.lock
 git_examples
