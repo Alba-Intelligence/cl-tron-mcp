@@ -109,7 +109,23 @@ No manual "how to use Tron" instructions are required. Standard MCP methods (`re
 
 ## Quick Start
 
-The server runs in **combined** mode by default (stdio + HTTP): both MCP-over-stdio and HTTP clients can connect. Use **`--stdio-only`** or **`--http-only`** to run one transport. Run `./start-mcp.sh --help` for options. HTTP port default is 4006. The process stays alive until you stop it (Ctrl+C). Clients send JSON-RPC via POST to `http://127.0.0.1:PORT/rpc`. Both transports use the same protocol: initialize returns MCP-compliant capabilities (e.g. `resources.subscribe` boolean); `prompts/get` returns messages with `content` as an array of parts per MCP spec. See [docs/starting-the-mcp.md](docs/starting-the-mcp.md) for details.
+**Recommended:** Start Tron once as a long-running HTTP server, then configure MCP clients to connect via streamable HTTP. This keeps Tron running across IDE sessions without repeated startup.
+
+```bash
+./start-mcp.sh                    # Start long-running HTTP server (port 4006)
+./start-mcp.sh --status           # Check if server is running
+./start-mcp.sh --stop             # Stop the server
+```
+
+For MCP clients that require stdio (e.g., older configurations), use `--stdio-only`. This creates a short-lived process that exits when the client disconnects.
+
+| Mode | Command | Lifecycle | Use Case |
+|------|---------|-----------|----------|
+| **combined** | (default) | Long-running HTTP | Recommended for IDE sessions |
+| **stdio-only** | `--stdio-only` | Exits when client disconnects | MCP client starts the server |
+| **http-only** | `--http-only` | Long-running HTTP | Same as combined |
+
+Run `./start-mcp.sh --help` for all options. See [docs/starting-the-mcp.md](docs/starting-the-mcp.md) for details.
 
 ### 1. Start a Swank Server
 
@@ -292,14 +308,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests, and PR process, and [do
 
 ## Server Management
 
-For HTTP and combined modes, `start-mcp.sh` includes server detection and management:
+For HTTP and combined modes, `start-mcp.sh` includes server detection and session management:
 
 ```bash
-./start-mcp.sh --status   # Check if server is running
-./start-mcp.sh --stop     # Stop a running HTTP server
+./start-mcp.sh --status   # Check if server is running (shows PID, port, uptime)
+./start-mcp.sh --stop     # Stop a running server gracefully
+./start-mcp.sh --restart  # Stop existing and start new instance
 ```
 
-The script automatically detects if a server is already running (via PID file and health check) and exits successfully without starting a duplicate instance.
+The PID file (`.tron-server.pid`) contains JSON metadata: `{"pid": 12345, "port": 4006, "transport": "combined", "started": 1709000000}`. The script automatically detects if a server is already running (via PID file and health endpoint) and exits successfully without starting a duplicate instance.
+
+Use `--restart` when you want to stop an old instance and start a fresh one (e.g., after updating code).
 
 ## Troubleshooting
 

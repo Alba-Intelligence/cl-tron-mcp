@@ -34,3 +34,6 @@ tmp
 
 *.log
 
+
+# Server PID file
+.tron-server.pid

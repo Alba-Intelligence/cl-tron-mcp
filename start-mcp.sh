@@ -9,19 +9,28 @@
 #   For HTTP/combined modes, checks if a server is already running via PID file
 #   and health endpoint. If healthy, exits successfully without starting a new instance.
 #
+# Session Management:
+#   The PID file contains JSON metadata: pid, port, transport, started timestamp.
+#   Use --restart to stop an existing instance and start a new one.
+#
+# Transport Modes:
+#   - stdio-only: Short-lived, exits when MCP client disconnects
+#   - http-only: Long-running HTTP server
+#   - combined: Long-running HTTP server (stdio handled via HTTP client pattern)
+#
 # Lisp selection (first match):
 #   1. CLI: --use-sbcl or --use-ecl (error if that Lisp is not installed)
 #   2. Auto: try sbcl, then ecl
 #
 # Usage:
-#   ./start-mcp.sh                    # Combined (stdio + HTTP), default (recommended)
-#   ./start-mcp.sh --stdio-only       # Stdio only (e.g. for MCP clients that start the server)
+#   ./start-mcp.sh                    # Combined (long-running HTTP), default
+#   ./start-mcp.sh --stdio-only       # Stdio only (short-lived, for MCP clients)
 #   ./start-mcp.sh --http-only        # HTTP only on default port 4006
 #   ./start-mcp.sh --http-only --port 9000
 #   ./start-mcp.sh --use-sbcl         # Combined with SBCL
-#   ./start-mcp.sh --websocket       # WebSocket on port 4006
 #   ./start-mcp.sh --status           # Check if server is running
-#   ./start-mcp.sh --stop             # Stop a running HTTP server
+#   ./start-mcp.sh --stop             # Stop a running server
+#   ./start-mcp.sh --restart          # Stop existing and start new
 #   ./start-mcp.sh --help            # Show full options and examples
 #
 # Environment:
@@ -50,7 +59,7 @@ PID_FILE="$PROOT/.tron-server.pid"
 HTTP_PORT_FILE="$PROOT/http-port.txt"
 HEALTH_TIMEOUT=2
 
-# Default: combined (stdio + HTTP) so both MCP and HTTP clients can connect
+# Default: combined (long-running HTTP server)
 TRANSPORT="combined"
 PORT="4006"
 PORT_GIVEN=""
@@ -85,7 +94,6 @@ is_process_running() {
 # Check if port is in use
 is_port_in_use() {
     local port="$1"
-    local check_cmd
     if command -v ss &>/dev/null; then
         ss -tln 2>/dev/null | grep -q ":${port} "
     elif command -v netstat &>/dev/null; then
@@ -117,22 +125,67 @@ check_server_health() {
     echo "$response" | grep -q '"status".*"ok"' 2>/dev/null
 }
 
-# Read PID from file
-get_server_pid() {
+# ============================================================================
+# PID File Management (JSON format)
+# ============================================================================
+
+# Get current timestamp (seconds since epoch)
+get_timestamp() {
+    date +%s
+}
+
+# Read PID file and extract field
+get_pid_field() {
+    local field="$1"
     if [[ -f "$PID_FILE" ]]; then
-        cat "$PID_FILE" 2>/dev/null
+        local content=$(cat "$PID_FILE" 2>/dev/null)
+        # Simple JSON parsing without jq dependency
+        echo "$content" | grep -o "\"$field\"[[:space:]]*:[[:space:]]*[^,}]*" | sed 's/.*:[[:space:]]*//' | tr -d '",'
     fi
 }
 
-# Write PID to file
+# Get PID from file
+get_server_pid() {
+    get_pid_field "pid"
+}
+
+# Get port from PID file
+get_pid_port() {
+    get_pid_field "port"
+}
+
+# Get transport from PID file
+get_pid_transport() {
+    get_pid_field "transport"
+}
+
+# Get started timestamp from PID file
+get_pid_started() {
+    get_pid_field "started"
+}
+
+# Write PID file with JSON metadata
 write_pid_file() {
     local pid="$1"
-    echo "$pid" > "$PID_FILE"
+    local port="$2"
+    local transport="$3"
+    local started=$(get_timestamp)
+    
+    cat > "$PID_FILE" << EOF
+{
+  "pid": $pid,
+  "port": $port,
+  "transport": "$transport",
+  "started": $started
+}
+EOF
+    log_debug "Wrote PID file: pid=$pid, port=$port, transport=$transport"
 }
 
 # Remove PID file
 remove_pid_file() {
     rm -f "$PID_FILE"
+    log_debug "Removed PID file"
 }
 
 # Get port from file or default
@@ -150,7 +203,12 @@ check_server_status() {
     local port
     
     pid=$(get_server_pid)
-    port=$(get_http_port)
+    port=$(get_pid_port)
+    
+    # If no PID file port, use http-port.txt or default
+    if [[ -z "$port" ]]; then
+        port=$(get_http_port)
+    fi
     
     if [[ -n "$pid" ]] && is_process_running "$pid"; then
         # Process exists, check if it's healthy
@@ -333,6 +391,10 @@ while [[ $# -gt 0 ]]; do
         ACTION="stop"
         shift
         ;;
+    --restart)
+        ACTION="restart"
+        shift
+        ;;
     --help | -h)
         cat << 'HELP_EOF'
 Usage: start-mcp.sh [OPTIONS]
@@ -342,29 +404,44 @@ Start the CL-TRON-MCP server for MCP clients (OpenCode, Cursor, Kilocode).
 Options:
   --use-sbcl       Use SBCL (error if not installed)
   --use-ecl        Use ECL (error if not installed)
-  --stdio-only     Stdio only (no HTTP) - for MCP client communication
-  --http-only      HTTP only (no stdio) - for persistent server
+  --stdio-only     Stdio only (short-lived, exits when client disconnects)
+  --http-only      HTTP only (long-running)
   --port PORT      HTTP/WebSocket port (default: 4006)
   --websocket      Use WebSocket transport
   --status         Check if server is running
-  --stop           Stop a running HTTP server
+  --stop           Stop a running server
+  --restart        Stop existing server and start new one
   --help           Show this help
 
-Default: combined (stdio + HTTP) so both MCP-over-stdio and HTTP clients can connect.
+Transport Modes:
+  --stdio-only     Short-lived process for MCP client communication
+                   Process exits when the MCP client disconnects
+  
+  --http-only      Long-running HTTP server
+                   Stays alive until stopped with Ctrl+C or --stop
+  
+  combined (default)  Long-running HTTP server (same as --http-only)
+                   MCP clients should use streamable HTTP transport
 
 Server Detection:
   For HTTP/combined modes, the script checks if a server is already running.
   If a healthy server is found, it exits successfully without starting a new one.
   
-  PID file: .tron-server.pid in the project directory
+  PID file: .tron-server.pid (JSON format with pid, port, transport, started)
+
+Session Management:
+  --status         Show server status (running/stopped, PID, port)
+  --stop           Stop a running server gracefully
+  --restart        Stop any existing server and start a new one
 
 Examples:
-  start-mcp.sh                      # Combined (stdio + HTTP on 4006)
-  start-mcp.sh --stdio-only         # Stdio only (e.g. Cursor/OpenCode)
+  start-mcp.sh                      # Combined (long-running HTTP on 4006)
+  start-mcp.sh --stdio-only         # Stdio only (for MCP client config)
   start-mcp.sh --http-only          # HTTP only on port 4006
   start-mcp.sh --http-only --port 9000
   start-mcp.sh --status             # Check server status
   start-mcp.sh --stop               # Stop running server
+  start-mcp.sh --restart            # Restart server
 
 MCP Client Config (Cursor ~/.cursor/mcp.json):
   {
@@ -375,6 +452,11 @@ MCP Client Config (Cursor ~/.cursor/mcp.json):
       }
     }
   }
+
+For long-running server (recommended for multiple sessions):
+  1. Start manually: ./start-mcp.sh
+  2. Configure client for streamable HTTP:
+     "url": "http://127.0.0.1:4006/mcp"
 
 HELP_EOF
         exit 0
@@ -394,19 +476,34 @@ done
 if [[ "$ACTION" == "status" ]]; then
     status=$(check_server_status)
     pid=$(get_server_pid)
-    port=$(get_http_port)
+    port=$(get_pid_port)
+    transport=$(get_pid_transport)
+    started=$(get_pid_started)
+    
+    # If no port from PID file, use http-port.txt or default
+    if [[ -z "$port" ]]; then
+        port=$(get_http_port)
+    fi
     
     case "$status" in
     running)
-        log_info "Server is RUNNING (PID: $pid, Port: $port)"
+        log_info "Server is RUNNING"
+        log_info "  PID: $pid"
+        log_info "  Port: $port"
+        [[ -n "$transport" ]] && log_info "  Transport: $transport"
+        [[ -n "$started" ]] && log_info "  Started: $(date -d @$started 2>/dev/null || date -r $started 2>/dev/null)"
         exit 0
         ;;
     running-external)
-        log_info "Server is RUNNING (external instance, Port: $port)"
+        log_info "Server is RUNNING (external instance)"
+        log_info "  Port: $port"
         exit 0
         ;;
     unhealthy)
-        log_info "Server is UNHEALTHY (PID: $pid, Port: $port)"
+        log_info "Server is UNHEALTHY"
+        log_info "  PID: $pid"
+        log_info "  Port: $port"
+        log_info "  Use --restart to start a new instance"
         exit 1
         ;;
     port-in-use)
@@ -426,6 +523,15 @@ if [[ "$ACTION" == "stop" ]]; then
     exit $?
 fi
 
+# Handle --restart action
+if [[ "$ACTION" == "restart" ]]; then
+    status=$(check_server_status)
+    if [[ "$status" == "running" ]] || [[ "$status" == "unhealthy" ]]; then
+        stop_server
+    fi
+    # Continue to start a new instance
+fi
+
 # For HTTP/combined modes, check if server is already running
 if [[ "$TRANSPORT" != "stdio" ]]; then
     status=$(check_server_status)
@@ -433,17 +539,18 @@ if [[ "$TRANSPORT" != "stdio" ]]; then
     
     case "$status" in
     running)
-        log_info "Server is already running (PID: $pid, Port: $(get_http_port))"
+        log_info "Server is already running (PID: $pid, Port: $(get_pid_port))"
         log_info "Use 'start-mcp.sh --stop' to stop it first."
+        log_info "Use 'start-mcp.sh --restart' to stop and start a new instance."
         exit 0
         ;;
     running-external)
-        log_info "Server is already running on port $(get_http_port) (external instance)"
+        log_info "Server is already running on port $(get_pid_port) (external instance)"
         exit 0
         ;;
     unhealthy)
         log_info "Server process exists but is unhealthy. Starting new instance..."
-        remove_pid_file
+        stop_server
         ;;
     port-in-use)
         log_error "Port $(get_http_port) is in use by another process."
@@ -496,6 +603,9 @@ log_info "  Lisp: $LISP"
 log_info "  Transport: $TRANSPORT"
 if [[ "$TRANSPORT" != "stdio" ]]; then
     log_info "  Port: $PORT"
+    log_info "  Mode: Long-running (use Ctrl+C or --stop to stop)"
+else
+    log_info "  Mode: Short-lived (exits when client disconnects)"
 fi
 log_info ""
 log_info "Available tools: 86"
@@ -510,11 +620,11 @@ if [[ "$TRANSPORT" != "stdio" ]]; then
     echo "$PORT" > "$HTTP_PORT_FILE"
 fi
 
-# Function to clean up PID file on exit
+# Function to clean up PID file on exit (only for HTTP/combined modes)
 cleanup() {
     local exit_code=$?
     if [[ "$TRANSPORT" != "stdio" ]] && [[ -f "$PID_FILE" ]]; then
-        local pid_in_file=$(cat "$PID_FILE" 2>/dev/null)
+        local pid_in_file=$(get_server_pid)
         if [[ "$pid_in_file" == "$$" ]]; then
             remove_pid_file
         fi
@@ -522,10 +632,10 @@ cleanup() {
     exit $exit_code
 }
 
-# For HTTP modes, set up PID file and cleanup trap
+# For HTTP/combined modes, set up PID file and cleanup trap
 if [[ "$TRANSPORT" != "stdio" ]]; then
     trap cleanup EXIT
-    write_pid_file "$$"
+    write_pid_file "$$" "$PORT" "$TRANSPORT"
 fi
 
 # Build and execute the command
@@ -534,6 +644,7 @@ log_info "----------------------------------------------------------------------
 log_info "--"
 if [[ "$TRANSPORT" == "stdio" ]]; then
     log_info "-- Starting the stdio-only MCP"
+    log_info "-- (Process will exit when client disconnects)"
     log_info "--"
     exec \
         "$LISP" \
@@ -545,17 +656,41 @@ if [[ "$TRANSPORT" == "stdio" ]]; then
         $LISP_EVAL "$LOAD_EXPR" \
         $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :stdio-only) #+sbcl (sb-ext:quit 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
 elif [[ "$TRANSPORT" == "combined" ]]; then
-    log_info "-- Starting combined (stdio + HTTP on port $PORT)"
+    # Combined mode: long-running HTTP server (stdio clients should use HTTP transport)
+    log_info "-- Starting combined mode (long-running HTTP on port $PORT)"
+    log_info "-- MCP clients can connect via streamable HTTP: http://127.0.0.1:$PORT/mcp"
     log_info "--"
+    [[ "$LISP" = *sbcl* ]] && LISP_EXTRA="--non-interactive" || LISP_EXTRA=""
+    # Write boot script then load it
+    BOOT_FILE="$PROOT/scripts/http-boot.lisp"
+    cat > "$BOOT_FILE" << BOOTEOF
+(defun %boot-log (msg)
+  (ignore-errors
+    (with-open-file (f #p"/tmp/cl-tron-mcp-boot.log" :direction :output :if-exists :append :if-does-not-exist :create)
+      (write-line (format nil "~a ~a" (get-universal-time) msg) f))))
+(%boot-log "0: entered")
+(setq *compile-verbose* nil *load-verbose* nil)
+(%boot-log "1: setq done")
+(push #p"$PROOT/" ql:*local-project-directories*)
+(%boot-log "2: push done")
+(asdf:compile-system :cl-tron-mcp :force t)
+(%boot-log "3: compile done")
+(asdf:load-system :cl-tron-mcp)
+(%boot-log "4: load done")
+(let ((port (parse-integer (with-open-file (f #p"$PROOT/http-port.txt") (read-line f)))))
+  (%boot-log (format nil "5: port=~a calling start-server" port))
+  (cl-tron-mcp/core:start-server :transport :http-only :port port))
+(%boot-log "6: start-server returned")
+#+sbcl (sb-ext:quit 0)
+#+ecl (ext:quit 0)
+#-(or sbcl ecl) (cl-user::quit 0)
+BOOTEOF
     exec \
         "$LISP" \
         $LISP_QUIET \
+        $LISP_EXTRA \
         "${ECL_ARGS[@]}" \
-        $LISP_EVAL "(setq *compile-verbose* nil *load-verbose* nil)" \
-        $LISP_EVAL "(push #p\"$PROOT/\" ql:*local-project-directories*)" \
-        $LISP_EVAL "$COMPILE_EXPR" \
-        $LISP_EVAL "$LOAD_EXPR" \
-        $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :combined :port $PORT) #+sbcl (sb-ext:quit 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
+        $LISP_EVAL "(load #p\"$BOOT_FILE\")"
 elif [[ "$TRANSPORT" == "http" ]]; then
     log_info "-- Starting the HTTP server on port $PORT"
     log_info "-- (Keep this running; use Ctrl+C to stop. If port $PORT is in use, e.g. by Swank, use --port N)"
