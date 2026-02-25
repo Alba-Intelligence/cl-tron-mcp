@@ -82,7 +82,7 @@ log_error() {
 }
 
 log_debug() {
-    [[ "${TRON_DEBUG:-}" == "1" ]] && echo "[DEBUG] $1" >&2
+    [[ "${TRON_DEBUG:-}" == "1" ]] && echo "[DEBUG] $1" >&2 || true
 }
 
 # Check if a process with given PID is running
@@ -240,7 +240,7 @@ stop_server() {
     local status
     
     pid=$(get_server_pid)
-    status=$(check_server_status)
+    status=$(check_server_status) || true
     
     if [[ "$status" == "stopped" ]]; then
         log_info "Server is not running."
@@ -474,7 +474,7 @@ done
 
 # Handle --status action
 if [[ "$ACTION" == "status" ]]; then
-    status=$(check_server_status)
+    status=$(check_server_status) || true
     pid=$(get_server_pid)
     port=$(get_pid_port)
     transport=$(get_pid_transport)
@@ -525,7 +525,7 @@ fi
 
 # Handle --restart action
 if [[ "$ACTION" == "restart" ]]; then
-    status=$(check_server_status)
+    status=$(check_server_status) || true
     if [[ "$status" == "running" ]] || [[ "$status" == "unhealthy" ]]; then
         stop_server
     fi
@@ -534,7 +534,7 @@ fi
 
 # For HTTP/combined modes, check if server is already running
 if [[ "$TRANSPORT" != "stdio" ]]; then
-    status=$(check_server_status)
+    status=$(check_server_status) || true
     pid=$(get_server_pid)
     
     case "$status" in
