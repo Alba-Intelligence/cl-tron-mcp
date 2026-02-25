@@ -189,7 +189,7 @@ You now have a persistent Lisp session. You can:
 The MCP server is started by the **client** (Cursor, OpenCode, Kilocode), not by the agent. If the user says the MCP or Tron doesn't start:
 
 1. **Check client config** — Ensure the command uses the correct path to cl-tron-mcp and uses `start-mcp.sh` (or SBCL with `--noinform`). See docs/starting-the-mcp.md.
-2. **One-time precompile** — Suggest running once: `cd /path/to/cl-tron-mcp && sbcl --noinform --eval '(ql:quickload :cl-tron-mcp)' --eval '(quit)'` so the first client start stays under the client's timeout.
+2. **One-time precompile** — Suggest running once: `cd ~/quicklisp/local-projects/cl-tron-mcp && sbcl --noinform --eval '(ql:quickload :cl-tron-mcp)' --eval '(quit)'` so the first client start stays under the client's timeout.
 3. **SBCL in PATH** — Ensure sbcl is on the PATH when the client starts the server. Check client logs for errors.
 
 ## Important Notes

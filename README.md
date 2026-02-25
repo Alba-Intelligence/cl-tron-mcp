@@ -103,7 +103,7 @@ The MCP is **fully discoverable**: an AI agent can learn how to use it without a
 - **Short path:** The agent calls **`prompts/get`** with name **`discover-mcp`**. That returns the exact steps: `resources/list` → `resources/read` AGENTS.md → `prompts/list` → `prompts/get` getting-started → `tools/list`. After that, the agent has everything needed to connect, evaluate, debug, inspect, profile, and hot-reload.
 - **Read path:** The agent calls **`resources/list`**, then **`resources/read`** with uri **`AGENTS.md`**. That document (and the other listed resources) explains the one long-running Lisp session, connection, tools, workflows, and conventions.
 
-No manual “how to use Tron” instructions are required. Standard MCP methods (`resources/list`, `resources/read`, `prompts/list`, `prompts/get`, `tools/list`) are enough.
+No manual "how to use Tron" instructions are required. Standard MCP methods (`resources/list`, `resources/read`, `prompts/list`, `prompts/get`, `tools/list`) are enough.
 
 📖 **[MCP resources and prompts →](docs/mcp-resources-prompts.md)**
 
@@ -128,9 +128,9 @@ You can run the MCP from a **local copy** or from a **clone of the GitHub repo**
 | Option          | What to do                                                                                                                                                                                                                                      |
 | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Local copy**  | You already have the repo on disk (e.g. in `~/quicklisp/local-projects/cl-tron-mcp`). Use that path in the config below.                                                                                                                        |
-| **From GitHub** | Clone the repo, then use the path to the cloned directory: `git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git` and `cd cl-tron-mcp`. In config, set the path to where you cloned it (e.g. `$HOME/cl-tron-mcp` or `~/cl-tron-mcp`). |
+| **From GitHub** | Clone the repo, then use the path to the cloned directory: `git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git` and `cd cl-tron-mcp`. In config, set the path to where you cloned it (e.g. `~/cl-tron-mcp`). |
 
-Replace **`/path/to/cl-tron-mcp`** in the examples below with your actual path (e.g. `~/cl-tron-mcp` or `$HOME/quicklisp/local-projects/cl-tron-mcp`). Copy the example for your client from **`examples/`** if you prefer. See [docs/starting-the-mcp.md](docs/starting-the-mcp.md) if the MCP won't start.
+The config examples below use **tilde expansion** (`~`) for the standard Quicklisp path. MCP clients support `~` but do not support `$HOME` or other environment variables. Adjust the path if your Quicklisp is in a different location.
 
 #### Kilocode
 
@@ -143,7 +143,19 @@ Config file: **`.kilocode/mcp.json`** (project) or global MCP settings. The repo
 
 Enable the one you want (`disabled: false`); leave the other disabled or remove it. See `examples/kilocode-mcp.json.example` for a template with both entries.
 
-**STDIO (cl-tron-mcp-stdio, recommended):** `command` (path to `start-mcp.sh`) and `args: []`. Replace `/path/to/cl-tron-mcp` with your path.
+**STDIO (cl-tron-mcp-stdio, recommended):**
+
+```json
+{
+  "mcpServers": {
+    "cl-tron-mcp": {
+      "command": "~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
+      "args": ["--stdio-only"],
+      "disabled": false
+    }
+  }
+}
+```
 
 **Streamable HTTP (cl-tron-mcp-http):** Start Tron with `./start-mcp.sh` (combined) or `./start-mcp.sh --http-only [--port 4006]`, then set `"type": "streamable-http"` and `"url": "http://127.0.0.1:4006/mcp"`.
 
@@ -157,7 +169,7 @@ Config file: **`~/.config/opencode/opencode.json`**.
   "mcp": {
     "cl-tron-mcp": {
       "type": "local",
-      "command": ["bash", "-c", "cd /path/to/cl-tron-mcp && ./start-mcp.sh"],
+      "command": "~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
       "enabled": true
     }
   }
@@ -172,7 +184,8 @@ Config file: **`~/.cursor/mcp.json`** (or Cursor MCP settings).
 {
   "mcpServers": {
     "cl-tron-mcp": {
-      "command": ["bash", "-c", "cd /path/to/cl-tron-mcp && ./start-mcp.sh"],
+      "command": "~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
+      "args": ["--stdio-only"],
       "disabled": false,
       "env": {}
     }
@@ -185,11 +198,11 @@ Config file: **`~/.cursor/mcp.json`** (or Cursor MCP settings).
 Any MCP client that runs a **local command** can use Tron the same way:
 
 1. Clone or copy the repo: `git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git` (or use an existing local path).
-2. In the client’s MCP config, add a server entry whose **command** runs the MCP over stdio, for example:
-   - **Preferred:** `["/path/to/cl-tron-mcp/start-mcp.sh"]` or `["bash", "-c", "cd /path/to/cl-tron-mcp && ./start-mcp.sh"]`
+2. In the client's MCP config, add a server entry whose **command** runs the MCP over stdio, for example:
+   - **Preferred:** `["~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh", "--stdio-only"]`
    - **Alternative (SBCL only):** `["sbcl", "--non-interactive", "--noinform", "--eval", "(ql:quickload :cl-tron-mcp :silent t)", "--eval", "(cl-tron-mcp/core:start-server :transport :stdio-only)"]`
 
-Ensure **SBCL** (or ECL) and **Quicklisp** are on the PATH when the client starts the server. To force ECL, use `["/path/to/cl-tron-mcp/start-mcp.sh", "--use-ecl"]`.
+Ensure **SBCL** (or ECL) and **Quicklisp** are on the PATH when the client starts the server. To force ECL, use `["~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh", "--use-ecl"]`.
 
 Example config files: [examples/cursor-mcp.json.example](examples/cursor-mcp.json.example), [examples/kilocode-mcp.json.example](examples/kilocode-mcp.json.example), [examples/opencode-mcp.json.example](examples/opencode-mcp.json.example).
 
@@ -276,6 +289,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests, and PR process, and [do
 - **SBCL** 2.0.0 or later, or **ECL** (Embeddable Common Lisp). The MCP server runs with either. `start-mcp.sh` selects the Lisp by: **`--use-sbcl`** / **`--use-ecl`** (CLI) or auto-detect (sbcl, then ecl). Run **`./start-mcp.sh --help`** for full usage.
 - **Quicklisp**
 - **Swank** (for Slime/Portacle/Sly)
+
+## Server Management
+
+For HTTP and combined modes, `start-mcp.sh` includes server detection and management:
+
+```bash
+./start-mcp.sh --status   # Check if server is running
+./start-mcp.sh --stop     # Stop a running HTTP server
+```
+
+The script automatically detects if a server is already running (via PID file and health check) and exits successfully without starting a duplicate instance.
 
 ## Troubleshooting
 

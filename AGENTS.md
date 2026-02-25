@@ -235,7 +235,7 @@ cl-tron-mcp/
 ├── docs/
 │   ├── tools/                   # Tool documentation
 │   └── plans/                   # Planning docs (e.g. swank-integration)
-├── .cursor/                     # Cursor MCP configs (replace /path/to/cl-tron-mcp in examples)
+├── .cursor/                     # Cursor MCP configs (tilde expansion works; adjust path if needed)
 ├── .vscode/                     # VS Code MCP configs
 ├── .kilocode/                   # Kilocode MCP configs
 ├── cl-tron-mcp.asd             # ASDF system definition
@@ -561,7 +561,7 @@ Configure in `~/.config/opencode/opencode.json`:
   "mcp": {
     "cl-tron-mcp": {
       "type": "local",
-      "command": ["/path/to/cl-tron-mcp/start-mcp.sh"],
+      "command": ["~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh"],
       "enabled": true
     }
   }

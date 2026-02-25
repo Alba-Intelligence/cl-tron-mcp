@@ -1,9 +1,10 @@
 {
-  "mcpServers": {
-    "cl-tron-mcp": {
-      "command": ["bash", "-c", "cd /path/to/cl-tron-mcp && ./start-mcp.sh"],
-      "disabled": false,
-      "env": {}
+    "mcpServers": {
+        "cl-tron-mcp": {
+            "command": "~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
+            "args": ["--stdio-only"],
+            "disabled": false,
+            "env": {}
+        }
     }
-  }
 }

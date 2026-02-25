@@ -1,12 +1,8 @@
 {
     "mcpServers": {
         "cl-tron-mcp": {
-            "command": "/path/to/cl-tron-mcp/start-mcp.sh",
-            "args": [
-                "--http",
-                "--port",
-                "4006"
-            ],
+            "command": "~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
+            "args": ["--stdio-only"],
             "disabled": false,
             "env": {}
         }

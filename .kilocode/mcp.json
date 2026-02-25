@@ -1,1 +1,11 @@
-{"mcpServers":{"cl-tron-mcp":{"type":"streamable-http","url":"http://127.0.0.1:4006/mcp","disabled":false,"alwaysAllow":[]}}}
+{
+    "mcpServers": {
+        "cl-tron-mcp": {
+            "command": "~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
+            "args": ["--stdio-only"],
+            "env": {},
+            "alwaysAllow": [],
+            "disabled": false
+        }
+    }
+}
