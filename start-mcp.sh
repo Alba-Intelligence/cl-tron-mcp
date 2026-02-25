@@ -654,7 +654,7 @@ if [[ "$TRANSPORT" == "stdio" ]]; then
         $LISP_EVAL "(push #p\"$PROOT/\" ql:*local-project-directories*)" \
         $LISP_EVAL "$COMPILE_EXPR" \
         $LISP_EVAL "$LOAD_EXPR" \
-        $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :stdio-only) #+sbcl (sb-ext:quit 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
+        $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :stdio-only) #+sbcl (sb-ext:exit :code 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
 elif [[ "$TRANSPORT" == "combined" ]]; then
     # Combined mode: long-running HTTP server (stdio clients should use HTTP transport)
     log_info "-- Starting combined mode (long-running HTTP on port $PORT)"
@@ -681,7 +681,7 @@ elif [[ "$TRANSPORT" == "combined" ]]; then
   (%boot-log (format nil "5: port=~a calling start-server" port))
   (cl-tron-mcp/core:start-server :transport :http-only :port port))
 (%boot-log "6: start-server returned")
-#+sbcl (sb-ext:quit 0)
+#+sbcl (sb-ext:exit :code 0)
 #+ecl (ext:quit 0)
 #-(or sbcl ecl) (cl-user::quit 0)
 BOOTEOF
@@ -717,7 +717,7 @@ elif [[ "$TRANSPORT" == "http" ]]; then
   (%boot-log (format nil "5: port=~a calling start-server" port))
   (cl-tron-mcp/core:start-server :transport :http-only :port port))
 (%boot-log "6: start-server returned")
-#+sbcl (sb-ext:quit 0)
+#+sbcl (sb-ext:exit :code 0)
 #+ecl (ext:quit 0)
 #-(or sbcl ecl) (cl-user::quit 0)
 BOOTEOF
@@ -739,5 +739,5 @@ elif [[ "$TRANSPORT" == "websocket" ]]; then
         $LISP_EVAL "(push #p\"$PROOT/\" ql:*local-project-directories*)" \
         $LISP_EVAL "$COMPILE_EXPR" \
         $LISP_EVAL "$LOAD_EXPR" \
-        $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :websocket :port $PORT) #+sbcl (sb-ext:quit 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
+        $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :websocket :port $PORT) #+sbcl (sb-ext:exit :code 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
 fi
