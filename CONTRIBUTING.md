@@ -84,6 +84,8 @@ If the MCP does not start, see [docs/starting-the-mcp.md](docs/starting-the-mcp.
 
 ## Project Structure
 
+The directory `git_examples/` (e.g. cl-nrepl) is in `.gitignore` and is optional/vendored; it is not required for the main build.
+
 ```
 cl-tron-mcp/
 ├── src/
