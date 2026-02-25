@@ -15,9 +15,9 @@
 ;;; The target SBCL should have Swank loaded:
 ;;;
 ;;;   (ql:quickload :swank)
-;;;   (swank:create-server :port 4005)
+;;;   (swank:create-server :port 4006)
 ;;;
-;;; CL-TRON-MCP will connect to port 4005 and send commands.
+;;; CL-TRON-MCP will connect to port 4006 and send commands.
 
 ;;; ============================================================
 ;;; STEP 1: Set up the target SBCL with Swank
@@ -25,11 +25,11 @@
 
 ;; In one terminal, start SBCL with Swank:
 
-;; sbcl --eval "(ql:quickload :swank :silent t)" --eval "(swank:create-server :port 4005)"
+;; sbcl --eval "(ql:quickload :swank :silent t)" --eval "(swank:create-server :port 4006)"
 
 ;; You should see:
-;; ;;; Swank started at port 4005.
-;; ;;; Connections will be accepted on #<UC:SOCKET 127.0.0.1:4005>
+;; ;;; Swank started at port 4006.
+;; ;;; Connections will be accepted on #<UC:SOCKET 127.0.0.1:4006>
 
 ;;; ============================================================
 ;;; STEP 2: Start CL-TRON-MCP
@@ -53,8 +53,8 @@
 CL-USER> (ql:quickload :cl-tron-mcp :silent t)
 
 ;; Connect to the Swank server
-CL-USER> (cl-tron-mcp/swank:swank-connect :port 4005)
-;; => (:SUCCESS T :HOST "127.0.0.1" :PORT 4005 :MESSAGE "Connected to Swank at 127.0.0.1:4005")
+CL-USER> (cl-tron-mcp/swank:swank-connect :port 4006)
+;; => (:SUCCESS T :HOST "127.0.0.1" :PORT 4006 :MESSAGE "Connected to Swank at 127.0.0.1:4006")
 
 ;; Check connection status
 CL-USER> (cl-tron-mcp/swank:swank-status)
@@ -125,7 +125,7 @@ CL-USER> (cl-tron-mcp/swank:mcp-swank-completions "mak")
 
 python3
 >>> from cl_tron_client import CLTronClient
->>> 
+>>>
 >>> # Connect to Swank via CL-TRON-MCP's MCP tools
 >>> # First, ensure CL-TRON-MCP is running as MCP server
 >>> # Then use swank_eval tool to execute code
@@ -169,7 +169,7 @@ CL-USER> (cl-tron-mcp/swank:mcp-swank-frame-locals 0)
 ;; => (:LOCALS ((:NAME "A" :VALUE "10") (:NAME "B" :VALUE "0")))
 
 ;; Fix the function
-CL-USER> (cl-tron-mcp/swank:swank-eval 
+CL-USER> (cl-tron-mcp/swank:swank-eval
            "(defun divide (a b) (if (zerop b) (error \"Cannot divide by zero\") (/ a b)))"
            :package "CL-USER")
 ;; => (:VALUE "DIVIDE")
@@ -191,9 +191,9 @@ CL-USER> (cl-tron-mcp/swank:swank-disconnect)
 
 ;; The workflow is:
 ;;
-;; 1. Start SBCL with Swank: (swank:create-server :port 4005)
+;; 1. Start SBCL with Swank: (swank:create-server :port 4006)
 ;; 2. Start CL-TRON-MCP as MCP server
-;; 3. Connect CL-TRON-MCP to Swank: (swank-connect :port 4005)
+;; 3. Connect CL-TRON-MCP to Swank: (swank-connect :port 4006)
 ;; 4. Send code for evaluation: (swank-eval "(+ 1 2)")
 ;; 5. Debugank-backtrace), errors: (sw (swank-inspect ...)
 ;; 6. Disconnect when done: (swank-disconnect)

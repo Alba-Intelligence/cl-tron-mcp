@@ -36,9 +36,9 @@
 ;; swank_connect
 (format t "═══ MCP Tool: swank_connect ═══~%")
 (format t "  → {\"jsonrpc\":\"2.0\",\"method\":\"tools/call\",~%")
-(format t "      \"params\":{\"name\":\"swank_connect\",\"arguments\":{\"port\":4005}},\"id\":3}~%")
+(format t "      \"params\":{\"name\":\"swank_connect\",\"arguments\":{\"port\":4006}},\"id\":3}~%")
 (force-output)
-(let ((result (cl-tron-mcp/swank:swank-connect :port 4005)))
+(let ((result (cl-tron-mcp/swank:swank-connect :port 4006)))
   (format t "  ← ~S~%~%" result))
 (force-output)
 (sleep 2)
@@ -47,7 +47,7 @@
 (format t "═══ MCP Tool: swank_eval (define buggy factorial) ═══~%")
 (let ((code "(defun factorial(n) (if (> n 1) (* n (factorial (- n 1)) (1))))"))
   (format t "  → {\"method\":\"tools/call\",~%")
-  (format t "      \"params\":{\"name\":\"swank_eval\",\"arguments\":{\"code\":\"~A\"}}}~%" 
+  (format t "      \"params\":{\"name\":\"swank_eval\",\"arguments\":{\"code\":\"~A\"}}}~%"
           (substitute #\\ #\" code))
   (force-output)
   (let ((result (cl-tron-mcp/swank:swank-eval :code code)))

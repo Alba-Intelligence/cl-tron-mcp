@@ -7,7 +7,7 @@
 (defvar *websocket-clients* nil)
 (defvar *websocket-running* nil)
 
-(defun start-websocket-transport (&key (port 4005))
+(defun start-websocket-transport (&key (port 4006))
   "Start WebSocket transport on specified port.
    Requires: usocket, ironclad, babel, base64"
   (cl-tron-mcp/logging:log-info (format nil "[MCP] WebSocket transport enabled on port ~d" port))

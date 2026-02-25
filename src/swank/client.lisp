@@ -7,7 +7,7 @@
 ;;;;
 ;;;; ARCHITECTURE:
 ;;;; =============
-;;;; 1. Connection Layer - Socket connection to Swank server (port 4005 default)
+;;;; 1. Connection Layer - Socket connection to Swank server (port 4006 default)
 ;;;; 2. Protocol Layer - Length-prefixed UTF-8 messages (see protocol.lisp)
 ;;;; 3. Request/Response - Synchronous RPC with ID correlation
 ;;;; 4. Event Queue - Async messages (:debug, :write-string) handled separately
@@ -22,7 +22,7 @@
 ;;;;
 ;;;; USAGE:
 ;;;; ======
-;;;;   (swank-connect :port 4005)           ; Connect to Swank server
+;;;;   (swank-connect :port 4006)           ; Connect to Swank server
 ;;;;   (swank-eval :code "(+ 1 2)")         ; Evaluate code
 ;;;;   (swank-backtrace)                     ; Get backtrace
 ;;;;   (swank-get-restarts)                  ; Get restarts (when in debugger)
@@ -139,9 +139,9 @@ Swank supports nested debuggers; each level has its own restarts/frames.")
 ;;; Connection Management
 ;;; ============================================================
 
-(defun swank-connect (&key (host "127.0.0.1") (port 4005) (timeout 10))
+(defun swank-connect (&key (host "127.0.0.1") (port 4006) (timeout 10))
   "Connect to a running SBCL with Swank loaded.
-On the SBCL side: (ql:quickload :swank) (swank:create-server :port 4005)
+On the SBCL side: (ql:quickload :swank) (swank:create-server :port 4006)
 
 Returns: Connection status or error."
   (when (and *swank-connected* *swank-socket*)
@@ -835,7 +835,7 @@ Returns (values condition restarts frames) or NIL if none."
           do (let* ((event (aref *event-queue* i))
                     (data (swank-event-data event)))
                ;; Remove the event from the vector
-               (setf *event-queue* 
+               (setf *event-queue*
                      (delete (aref *event-queue* i) *event-queue* :test #'eq))
                (return (values (getf data :condition)
                                (getf data :restarts)

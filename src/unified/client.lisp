@@ -36,8 +36,8 @@
 Includes hints for starting Swank and connecting."
   (list :error t
         :message "Not connected to any REPL"
-        :hint "Run repl_connect first. Example: repl_connect :port 4005"
-        :setup "To start Swank in SBCL: (ql:quickload :swank) (swank:create-server :port 4005 :dont-close t)"
+        :hint "Run repl_connect first. Example: repl_connect :port 4006"
+        :setup "To start Swank in SBCL: (ql:quickload :swank) (swank:create-server :port 4006 :dont-close t)"
         :docs "See prompts/get 'getting-started' for step-by-step instructions"))
 
 (defun make-already-connected-error ()
@@ -51,15 +51,15 @@ Includes hints for starting Swank and connecting."
 ;;; Unified Connection
 ;;; ============================================================
 
-(defun repl-connect (&key (type :auto) (host "127.0.0.1") (port 4005))
+(defun repl-connect (&key (type :auto) (host "127.0.0.1") (port 4006))
   "Connect to a Lisp REPL (Swank).
 
    Usage:
      ;; Auto-detect Swank on port
-     (repl-connect :port 4005)
+     (repl-connect :port 4006)
 
      ;; Explicit Swank (Slime, Portacle, Sly)
-     (repl-connect :type :swank :port 4005)
+     (repl-connect :type :swank :port 4006)
 
    Returns: Connection status with :type :swank"
   (when *repl-connected*
@@ -69,7 +69,7 @@ Includes hints for starting Swank and connecting."
     (return-from repl-connect
       (list :error t
             :message "nrepl is no longer supported; use Swank"
-            :hint "Use repl_connect :type :swank :port 4005 or start Swank: (ql:quickload :swank) (swank:create-server :port 4005)")))
+            :hint "Use repl_connect :type :swank :port 4006 or start Swank: (ql:quickload :swank) (swank:create-server :port 4006)")))
 
   (let ((actual-type (if (eq type :auto)
                          (auto-detect-repl host port)
@@ -88,7 +88,7 @@ Includes hints for starting Swank and connecting."
        (list :error t
              :message "Could not detect Swank"
              :hint "Ensure Swank server is running on the specified port"
-             :setup "For Swank: (ql:quickload :swank) (swank:create-server :port 4005)"
+             :setup "For Swank: (ql:quickload :swank) (swank:create-server :port 4006)"
              :tried (list :host host :port port))))))
 
 (defun auto-detect-repl (host port)
@@ -326,5 +326,5 @@ Includes hints for starting Swank and connecting."
                (list :name "repl_list_breakpoints" :description "List all breakpoints")
                (list :name "repl_toggle_breakpoint" :description "Toggle breakpoint enabled"))
         :examples (list
-                  (list :auto-detect "repl_connect" :port 4005)
-                  (list :explicit-swank "repl_connect" :type :swank :port 4005))))
+                  (list :auto-detect "repl_connect" :port 4006)
+                  (list :explicit-swank "repl_connect" :type :swank :port 4006))))

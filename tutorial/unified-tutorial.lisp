@@ -14,7 +14,7 @@
 
 ;; Option A: Swank (Slime, Portacle)
 ;; (ql:quickload :swank)
-;; (swank:create-server :port 4005)
+;; (swank:create-server :port 4006)
 
 ;; Option B: nrepl (Sly, CIDER)
 ;; (ql:quickload :sly)
@@ -25,11 +25,11 @@
 ;; ============================================================
 
 ;; Auto-detect (recommended for beginners)
-;; (cl-tron-mcp/unified:repl-connect :port 4005)
-;; ;; => (:SUCCESS T :TYPE :SWANK :HOST "127.0.0.1" :PORT 4005 ...)
+;; (cl-tron-mcp/unified:repl-connect :port 4006)
+;; ;; => (:SUCCESS T :TYPE :SWANK :HOST "127.0.0.1" :PORT 4006 ...)
 
 ;; Explicit type specification
-;; (cl-tron-mcp/unified:repl-connect :type :swank :port 4005)
+;; (cl-tron-mcp/unified:repl-connect :type :swank :port 4006)
 ;; ;; => (:SUCCESS T :TYPE :SWANK ...)
 
 ;; (cl-tron-mcp/unified:repl-connect :type :nrepl :port 7888)
@@ -37,7 +37,7 @@
 
 ;; Check status
 ;; (cl-tron-mcp/unified:repl-status)
-;; ;; => (:CONNECTED T :TYPE :SWANK :HOST "127.0.0.1" :PORT 4005)
+;; ;; => (:CONNECTED T :TYPE :SWANK :HOST "127.0.0.1" :PORT 4006)
 
 ;; ============================================================
 ;; Part 3: Using Unified Tools
@@ -94,7 +94,7 @@
 ;;
 ;; {
 ;;   "tool": "repl_connect",
-;;   "arguments": {"port": 4005}
+;;   "arguments": {"port": 4006}
 ;; }
 ;;
 ;; {
@@ -113,5 +113,5 @@
 ;; }
 
 (print "Unified REPL tutorial loaded!")
-(print "Connect with: (repl-connect :port 4005)")
+(print "Connect with: (repl-connect :port 4006)")
 (print "Evaluate with: (repl-eval :code \"(+ 1 2)\")")

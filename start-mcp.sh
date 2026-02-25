@@ -41,7 +41,7 @@ cd "$(dirname "$0")"
 
 # Default: combined (stdio + HTTP) so both MCP and HTTP clients can connect
 TRANSPORT="combined"
-PORT="4005"
+PORT="4006"
 PORT_GIVEN=""
 LISP_CHOICE=""
 # HTTP/WebSocket default port (avoid 4005 which is usually Swank)

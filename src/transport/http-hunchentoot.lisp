@@ -77,7 +77,7 @@
         (hunchentoot:create-regex-dispatcher "^/rpc$" #'mcp-rpc)
         (hunchentoot:create-regex-dispatcher "^/$" #'mcp-root)))
 
-(defun start-http-transport (&key (port 4005) (block t))
+(defun start-http-transport (&key (port 4006) (block t))
   "Start HTTP transport using Hunchentoot. When BLOCK is true (default), block until stop-http-transport.
    When BLOCK is false, start the server and return (for combined stdio+http)."
   (when *http-acceptor*

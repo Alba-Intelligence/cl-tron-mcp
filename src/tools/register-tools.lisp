@@ -358,13 +358,13 @@
   ;;; IMPORTANT: These tools require a running Swank server.
   ;;; To start Swank in your SBCL session:
   ;;;   (ql:quickload :swank)
-  ;;;   (swank:create-server :port 4005 :dont-close t)
+  ;;;   (swank:create-server :port 4006 :dont-close t)
   ;;;
   ;;; Then use swank_connect to connect. All state persists in the SBCL session.
 
     (register-tool
      "swank_connect"
-     "Connect to a running SBCL with Swank loaded. PREREQUISITE: Start Swank in SBCL first with (ql:quickload :swank) (swank:create-server :port 4005 :dont-close t). Default port is 4005. Returns connection status."
+     "Connect to a running SBCL with Swank loaded. PREREQUISITE: Start Swank in SBCL first with (ql:quickload :swank) (swank:create-server :port 4006 :dont-close t). Default port is 4006. Returns connection status."
      :input-schema (list :host "string" :port "integer")
      :output-schema (list :type "object")
      :requires-approval nil)
@@ -527,11 +527,11 @@
 ;;; These tools work with Swank (Slime/Portacle/Sly).
 ;;;
 ;;; IMPORTANT: You must connect before using these tools.
-;;;   Start Swank: (ql:quickload :swank) (swank:create-server :port 4005)
+;;;   Start Swank: (ql:quickload :swank) (swank:create-server :port 4006)
 
   (register-tool
    "repl_connect"
-   "Connect to Swank REPL. PREREQUISITE: Start Swank in SBCL first: (ql:quickload :swank) (swank:create-server :port 4005). Default port 4005."
+   "Connect to Swank REPL. PREREQUISITE: Start Swank in SBCL first: (ql:quickload :swank) (swank:create-server :port 4006). Default port 4006."
    :input-schema (list :type "string" :host "string" :port "integer")
    :output-schema (list :type "object")
    :requires-approval nil)
@@ -725,6 +725,3 @@
    :output-schema (list :type "object")
    :requires-approval nil)
   (register-tool-handler "repl_help" (function cl-tron-mcp/unified:repl-help))
-
-
-

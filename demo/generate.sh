@@ -4,7 +4,7 @@
 # Prerequisites:
 #   - VHS installed: brew install vhs
 #   - Quicklisp available
-#   - No Swank server running on port 4005
+#   - No Swank server running on port 4006
 
 set -e
 
@@ -27,9 +27,9 @@ if ! command -v vhs &>/dev/null; then
 	exit 1
 fi
 
-# Check port 4005 is free
-if ss -tlnp 2>/dev/null | grep -q 4005; then
-	echo "Warning: Port 4005 is in use. Killing existing Swank..."
+# Check port 4006 is free
+if ss -tlnp 2>/dev/null | grep -q 4006; then
+	echo "Warning: Port 4006 is in use. Killing existing Swank..."
 	pkill -f 'swank:create-server' || true
 	pkill -f 'start-swank' || true
 	sleep 2

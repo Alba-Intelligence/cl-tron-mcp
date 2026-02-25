@@ -1,18 +1,18 @@
 ;;;; tests/swank-integration-test.lisp - Swank integration tests
 ;;;;
-;;;; These tests require a running Swank server on port 4005.
+;;;; These tests require a running Swank server on port 4006.
 ;;;; Run with: (rove:run 'cl-tron-mcp/tests/swank-integration)
 ;;;;
 ;;;; To start a Swank server:
-;;;;   sbcl --eval '(ql:quickload :swank)' --eval '(swank:create-server :port 4005 :dont-close t)'
+;;;;   sbcl --eval '(ql:quickload :swank)' --eval '(swank:create-server :port 4006 :dont-close t)'
 
 (defpackage :cl-tron-mcp/tests/swank-integration
   (:use #:cl #:rove))
 
 (in-package :cl-tron-mcp/tests/swank-integration)
 
-(defvar *swank-port* 4005
-  "Port for Swank server (default 4005).")
+(defvar *swank-port* 4006
+  "Port for Swank server (default 4006).")
 
 (defvar *swank-available* nil
   "Cached result of swank availability check.")

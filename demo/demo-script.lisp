@@ -24,8 +24,8 @@
 (sleep 3)
 
 ;; Connect
-(announce-step "🔧 Connecting to Swank on port 4005...")
-(let ((result (cl-tron-mcp/swank:swank-connect :port 4005)))
+(announce-step "🔧 Connecting to Swank on port 4006...")
+(let ((result (cl-tron-mcp/swank:swank-connect :port 4006)))
   (format t "   Result: ~S~%" result))
 (force-output)
 (sleep 3)

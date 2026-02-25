@@ -116,7 +116,7 @@ In your Lisp process:
 
 ```lisp
 (ql:quickload :swank)
-(swank:create-server :port 4005)
+(swank:create-server :port 4006)
 ```
 
 ### Connecting from MCP
@@ -126,7 +126,7 @@ Via MCP tool call:
 ```json
 {
   "name": "swank_connect",
-  "arguments": {"host": "127.0.0.1", "port": 4005}
+  "arguments": { "host": "127.0.0.1", "port": 4006 }
 }
 ```
 
@@ -135,7 +135,7 @@ Or using the unified interface:
 ```json
 {
   "name": "repl_connect",
-  "arguments": {"type": "swank", "port": 4005}
+  "arguments": { "type": "swank", "port": 4006 }
 }
 ```
 
@@ -181,69 +181,72 @@ When code triggers an error, `swank_eval` (or `repl_eval`) returns a debug state
 ### Key Implementation Details
 
 **Debugger Event Matching:**
+
 - When `:debug` event arrives, the pending request is fulfilled with debug state
 - This prevents the 30-second timeout that would otherwise occur
 - Debug events are matched to requests via `*current-request-id*`
 
 **Restart Functions:**
+
 - `swank-get-restarts` returns cached restarts from the most recent debug event
 - `swank-invoke-restart` uses `*debugger-thread*` and `*debugger-level*` to target the correct thread
 
 **Backtrace:**
+
 - Uses `sb-debug:list-backtrace` since `swank:backtrace` requires debugger context
 
 ## RPC Operations Reference
 
 ### Evaluation
 
-| Function | Swank RPC | Description |
-|----------|-----------|-------------|
-| `swank-eval` | `swank:eval-and-grab-output` | Evaluate code string, capture output |
-| `swank-compile` | `swank:compile-string-for-emacs` | Compile code string |
+| Function        | Swank RPC                        | Description                          |
+| --------------- | -------------------------------- | ------------------------------------ |
+| `swank-eval`    | `swank:eval-and-grab-output`     | Evaluate code string, capture output |
+| `swank-compile` | `swank:compile-string-for-emacs` | Compile code string                  |
 
 **Note:** We use `swank:eval-and-grab-output` with a string argument because the Swank IO package only imports `nil`, `t`, and `quote`. Raw forms cannot be serialized correctly.
 
 ### Debugging
 
-| Function | Swank RPC | Description |
-|----------|-----------|-------------|
-| `swank-backtrace` | `sb-debug:list-backtrace` | Get stack frames (works outside debugger) |
-| `swank-frame-locals` | `swank:frame-locals-and-catch-tags` | Get frame locals |
-| `swank-eval-in-frame` | `swank:eval-string-in-frame` | Eval in frame context |
+| Function              | Swank RPC                           | Description                               |
+| --------------------- | ----------------------------------- | ----------------------------------------- |
+| `swank-backtrace`     | `sb-debug:list-backtrace`           | Get stack frames (works outside debugger) |
+| `swank-frame-locals`  | `swank:frame-locals-and-catch-tags` | Get frame locals                          |
+| `swank-eval-in-frame` | `swank:eval-string-in-frame`        | Eval in frame context                     |
 
 **Note:** `swank:backtrace` requires `*sldb-stack-top*` which is only bound in debugger context. We use `sb-debug:list-backtrace` as a fallback.
 
 ### Restarts
 
-| Function | Implementation | Description |
-|----------|----------------|-------------|
-| `swank-get-restarts` | Cached from `:debug` event | List restarts from current debugger state |
-| `swank-invoke-restart` | `swank:invoke-nth-restart-for-emacs` | Invoke restart by 1-based index |
+| Function               | Implementation                       | Description                               |
+| ---------------------- | ------------------------------------ | ----------------------------------------- |
+| `swank-get-restarts`   | Cached from `:debug` event           | List restarts from current debugger state |
+| `swank-invoke-restart` | `swank:invoke-nth-restart-for-emacs` | Invoke restart by 1-based index           |
 
 ### Stepping
 
-| Function | Swank RPC | Description |
-|----------|-----------|-------------|
-| `swank-step` | `swank:sldb-step-into` | Step into |
-| `swank-next` | `swank:sldb-step-next` | Step over |
-| `swank-out` | `swank:sldb-step-out` | Step out |
-| `swank-continue` | `swank:sldb-continue` | Continue execution |
+| Function         | Swank RPC              | Description        |
+| ---------------- | ---------------------- | ------------------ |
+| `swank-step`     | `swank:sldb-step-into` | Step into          |
+| `swank-next`     | `swank:sldb-step-next` | Step over          |
+| `swank-out`      | `swank:sldb-step-out`  | Step out           |
+| `swank-continue` | `swank:sldb-continue`  | Continue execution |
 
 ### Breakpoints
 
-| Function | Swank RPC | Description |
-|----------|-----------|-------------|
-| `swank-set-breakpoint` | `swank:break` | Set breakpoint |
+| Function                  | Swank RPC            | Description       |
+| ------------------------- | -------------------- | ----------------- |
+| `swank-set-breakpoint`    | `swank:break`        | Set breakpoint    |
 | `swank-remove-breakpoint` | `swank:break-remove` | Remove breakpoint |
-| `swank-list-breakpoints` | `swank:break-list` | List breakpoints |
+| `swank-list-breakpoints`  | `swank:break-list`   | List breakpoints  |
 
 ### Threads
 
-| Function | Swank RPC | Description |
-|----------|-----------|-------------|
-| `swank-threads` | `swank:thread-list` | List threads |
-| `swank-abort-thread` | `swank:abort-thread` | Abort thread |
-| `swank-interrupt` | `swank:interrupt` | Interrupt evaluation |
+| Function             | Swank RPC            | Description          |
+| -------------------- | -------------------- | -------------------- |
+| `swank-threads`      | `swank:thread-list`  | List threads         |
+| `swank-abort-thread` | `swank:abort-thread` | Abort thread         |
+| `swank-interrupt`    | `swank:interrupt`    | Interrupt evaluation |
 
 ## Thread Safety
 

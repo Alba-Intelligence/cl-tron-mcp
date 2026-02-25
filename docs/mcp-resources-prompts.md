@@ -7,6 +7,7 @@ This document describes the MCP Resources and Prompts features added to cl-tron-
 ### Problem
 
 AI agents using cl-tron-mcp didn't know how to use the tools because:
+
 1. They didn't know about `swank_connect` / `repl_connect`
 2. They didn't understand the workflow (connect first, then evaluate)
 3. Error messages didn't provide actionable guidance
@@ -37,6 +38,7 @@ Returns list of available documentation files.
 ```
 
 Response:
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -72,6 +74,7 @@ Read contents of a specific documentation file.
 ```
 
 Response:
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -130,6 +133,7 @@ Returns list of available guided workflows.
 ```
 
 Response:
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -177,6 +181,7 @@ Response format (MCP spec): `result.messages` is an array of messages; each mess
 #### getting-started
 
 Step-by-step guide to:
+
 1. Check if Swank is running
 2. Start Swank server if needed
 3. Connect using `swank_connect` or `repl_connect`
@@ -186,6 +191,7 @@ Step-by-step guide to:
 #### debugging-workflow
 
 Step-by-step process for:
+
 1. Triggering an error
 2. Getting the backtrace
 3. Getting available restarts
@@ -195,6 +201,7 @@ Step-by-step process for:
 #### hot-reload-workflow
 
 Guide for:
+
 1. Identifying bugs
 2. Fixing source files
 3. Reloading code without restart
@@ -204,6 +211,7 @@ Guide for:
 #### profiling-workflow
 
 Performance analysis workflow:
+
 1. Start profiling
 2. Run code
 3. Stop profiling
@@ -253,6 +261,7 @@ The server now declares these capabilities during initialization:
 Error messages now include actionable hints:
 
 **Before:**
+
 ```json
 {
   "error": true,
@@ -261,43 +270,47 @@ Error messages now include actionable hints:
 ```
 
 **After:**
+
 ```json
 {
   "error": true,
   "message": "Not connected to any REPL",
-  "hint": "Run repl_connect first. Example: repl_connect :port 4005",
-  "setup": "To start Swank in SBCL: (ql:quickload :swank) (swank:create-server :port 4005 :dont-close t)",
+  "hint": "Run repl_connect first. Example: repl_connect :port 4006",
+  "setup": "To start Swank in SBCL: (ql:quickload :swank) (swank:create-server :port 4006 :dont-close t)",
   "docs": "See prompts/get 'getting-started' for step-by-step instructions"
 }
 ```
 
 ## Implementation Files
 
-| File | Purpose |
-|------|---------|
-| `src/resources/package.lisp` | Resources package definition |
-| `src/resources/handler.lisp` | Resource listing and reading |
-| `src/prompts/package.lisp` | Prompts package definition |
-| `src/prompts/handler.lisp` | Prompt listing and retrieval |
-| `src/protocol/handlers.lisp` | Protocol handlers for resources/prompts |
-| `src/tools/register-tools.lisp` | Updated tool descriptions |
-| `src/unified/client.lisp` | Error messages with hints |
+| File                            | Purpose                                 |
+| ------------------------------- | --------------------------------------- |
+| `src/resources/package.lisp`    | Resources package definition            |
+| `src/resources/handler.lisp`    | Resource listing and reading            |
+| `src/prompts/package.lisp`      | Prompts package definition              |
+| `src/prompts/handler.lisp`      | Prompt listing and retrieval            |
+| `src/protocol/handlers.lisp`    | Protocol handlers for resources/prompts |
+| `src/tools/register-tools.lisp` | Updated tool descriptions               |
+| `src/unified/client.lisp`       | Error messages with hints               |
 
 ## Testing
 
 Test resources:
+
 ```bash
 echo '{"jsonrpc":"2.0","method":"resources/list","id":1}' | ./start-mcp.sh
 echo '{"jsonrpc":"2.0","method":"resources/read","params":{"uri":"file://AGENTS.md"},"id":2}' | ./start-mcp.sh
 ```
 
 Test prompts:
+
 ```bash
 echo '{"jsonrpc":"2.0","method":"prompts/list","id":1}' | ./start-mcp.sh
 echo '{"jsonrpc":"2.0","method":"prompts/get","params":{"name":"getting-started"},"id":2}' | ./start-mcp.sh
 ```
 
 Test error hints:
+
 ```bash
 echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"repl_eval","arguments":{"code":"(+ 1 2)"}},"id":1}' | ./start-mcp.sh
 ```

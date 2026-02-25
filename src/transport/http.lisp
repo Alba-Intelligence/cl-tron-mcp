@@ -265,7 +265,7 @@
       (force-output *error-output*)
       (signal e))))
 
-(defun start-http-transport (&key (port 4005) (block t))
+(defun start-http-transport (&key (port 4006) (block t))
   "Start HTTP transport. When BLOCK is true (default), block until the server stops.
    When BLOCK is false, start the server in a background thread and return (for combined stdio+http)."
   (http-dbg "start-http-transport: entered")

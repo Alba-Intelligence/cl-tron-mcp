@@ -1,16 +1,20 @@
 # Swank Integration Implementation Plan
 
 ## Goal
+
 Enable the MCP to interact with a running SBCL+Swank session exactly like Slime does: debugger interaction (frames, locals, restarts, eval-in-frame, stepping), REPL evaluation, inspector, thread operations.
 
 ## Current Gap
+
 The existing `src/swank/client.lisp` is skeletal and non-functional:
+
 - Uses line-based protocol instead of length-prefixed
 - No dedicated reader thread for async messages
 - No request/response correlation
 - Debugger tools use direct SBCL introspection (wrong process)
 
 ## Strategy
+
 Implement proper Swank protocol client with threading and event handling, then migrate debugger tools to use Swank RPC instead of local SBCL internals.
 
 ---
@@ -18,6 +22,7 @@ Implement proper Swank protocol client with threading and event handling, then m
 ## Phase 1: Core Swank Client Foundation (BLOCKING)
 
 ### 1.1 Message Framing (`src/swank/protocol.lisp` - NEW)
+
 Implement the wire protocol utilities:
 
 ```lisp
@@ -54,6 +59,7 @@ Implement the wire protocol utilities:
 ### 1.2 Connection State & Management (`src/swank/client.lisp` - REWRITE)
 
 State variables:
+
 ```lisp
 (defvar *swank-connection* nil)
 (defvar *swank-socket* nil)
@@ -63,6 +69,7 @@ State variables:
 ```
 
 Request tracking:
+
 ```lisp
 (defvar *pending-requests* (make-hash-table :test 'equal))
 (defvar *request-lock* (bt:make-lock "swank-requests"))
@@ -70,6 +77,7 @@ Request tracking:
 ```
 
 Event queue:
+
 ```lisp
 (defvar *event-queue* (queue:make-queue))
 (defvar *event-condition* (bt:make-condition-variable))
@@ -79,7 +87,7 @@ Event queue:
 **Core operations**:
 
 ```lisp
-(defun swank-connect (&key (host "127.0.0.1") (port 4005) (timeout 10))
+(defun swank-connect (&key (host "127.0.0.1") (port 4006) (timeout 10))
   "Connect to Swank server. Returns connection info or error."
   (setf *swank-socket* (usocket:socket-connect host port :timeout (* timeout 1000)))
   (setf *swank-io* (usocket:socket-stream *swank-socket*))
@@ -245,17 +253,17 @@ Event queue:
 
 **Key Swank RPC mappings**:
 
-| Operation | Swank call |
-|-----------|------------|
-| Backtrace | `(swank:backtrace start end)` |
-| Frame locals | `(swank:frame-locals-and-catch-tags frame-index)` |
-| Eval in frame | `(swank:eval-string-in-frame code frame-index package)` |
-| Invoke restart | `(swank:invoke-nth-restart restart-index)` |
-| Step | `(swank:sldb-step frame)`, `swank:sldb-next`, `swank:sldb-out` |
-| Thread list | `(swank:thread-list)` |
-| Thread backtrace | `(swank:thread-backtrace thread)` |
-| Interrupt thread | `(:emacs-interrupt thread-id)` |
-| Inspector | `(swank:init-inspector expression)`, `(swank:inspect-nth-part id)` |
+| Operation        | Swank call                                                         |
+| ---------------- | ------------------------------------------------------------------ |
+| Backtrace        | `(swank:backtrace start end)`                                      |
+| Frame locals     | `(swank:frame-locals-and-catch-tags frame-index)`                  |
+| Eval in frame    | `(swank:eval-string-in-frame code frame-index package)`            |
+| Invoke restart   | `(swank:invoke-nth-restart restart-index)`                         |
+| Step             | `(swank:sldb-step frame)`, `swank:sldb-next`, `swank:sldb-out`     |
+| Thread list      | `(swank:thread-list)`                                              |
+| Thread backtrace | `(swank:thread-backtrace thread)`                                  |
+| Interrupt thread | `(:emacs-interrupt thread-id)`                                     |
+| Inspector        | `(swank:init-inspector expression)`, `(swank:inspect-nth-part id)` |
 
 ---
 
@@ -264,7 +272,7 @@ Event queue:
 Extend `repl-connect` to use Swank when type is `:swank` or auto-detected:
 
 ```lisp
-(defun repl-connect (&key (type :auto) (host "127.0.0.1") (port 4005))
+(defun repl-connect (&key (type :auto) (host "127.0.0.1") (port 4006))
   (let ((actual-type (if (eq type :auto)
                         (auto-detect-repl host port)
                         type)))
@@ -293,7 +301,7 @@ Add debugger operations to `repl_backtrace`, `repl_inspect`, etc.
 **Goal**: MCP can start Lisp+Swank itself.
 
 ```lisp
-(defun spawn-sbcl-with-swank (&key (port 4005) (swank-args nil))
+(defun spawn-sbcl-with-swank (&key (port 4006) (swank-args nil))
   "Start SBCL with Swank server on given port."
   (let* ((command (list "sbcl"
                         "--noinform"
@@ -310,7 +318,7 @@ Add debugger operations to `repl_backtrace`, `repl_inspect`, etc.
           :port port
           :message (format nil "Spawned SBCL+Swank on port ~d" port))))
 
-(defun ensure-swank-process (&key (port 4005) (auto-start t))
+(defun ensure-swank-process (&key (port 4006) (auto-start t))
   "Ensure we have a Swank connection, optionally spawning one."
   (if (cl-tron-mcp/swank:swank-connected-p)
       (list :success t :message "Already connected")
@@ -329,6 +337,7 @@ Add debugger operations to `repl_backtrace`, `repl_inspect`, etc.
 ## Technical Details from Swank Reference
 
 ### Message Format
+
 ```
 [6-digit hex length][UTF-8 S-expression]
 Example: "000039(:emacs-rex (swank:connection-info) nil t 1)"
@@ -364,6 +373,7 @@ Example: "000039(:emacs-rex (swank:connection-info) nil t 1)"
 ### Async Debugger Entry
 
 When error occurs in evaluated code, Swank sends:
+
 ```
 (:debug thread-id level condition restarts frames)
 ```
@@ -375,21 +385,24 @@ The MCP must capture this and make it available to `debugger_frames`, `debugger_
 ## Testing Strategy (Fastest Path)
 
 ### Option 1: Manual SBCL+Swank (Fastest initially)
-1. Start SBCL manually: `(ql:quickload :swank) (swank:create-server :port 4005)`
+
+1. Start SBCL manually: `(ql:quickload :swank) (swank:create-server :port 4006)`
 2. Start MCP with stdio transport
 3. Use MCP tools: `swank_connect`, `repl_eval`, `debugger_frames`, etc.
 4. Induce errors to test debugger
 
 ### Option 2: Automated Test Swank Server
+
 Create test helper that spawns SBCL+Swank, but simpler to start manually first.
 
 **Quick verification**:
+
 ```bash
 # Terminal 1
-sbcl --eval "(ql:quickload :swank)" --eval "(swank:create-server :port 4005)"
+sbcl --eval "(ql:quickload :swank)" --eval "(swank:create-server :port 4006)"
 
 # Terminal 2
-echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"swank_connect","arguments":{"port":4005}},"id":1}' | sbcl --noinform --eval "(ql:quickload :cl-tron-mcp)" --eval "(cl-tron-mcp/core:start-server :transport :stdio)"
+echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"swank_connect","arguments":{"port":4006}},"id":1}' | sbcl --noinform --eval "(ql:quickload :cl-tron-mcp)" --eval "(cl-tron-mcp/core:start-server :transport :stdio)"
 ```
 
 ---
@@ -425,19 +438,20 @@ echo '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"swank_connect","a
 
 ## Risks & Mitigations
 
-| Risk | Mitigation |
-|------|------------|
-| Reader thread deadlock | Use separate mutexes for request table vs event queue |
-| Async events missed during request | Event queue is independent; reader always enqueues |
-| Memory leak (pending requests) | Timeout cleanup and disconnection purge |
+| Risk                               | Mitigation                                                     |
+| ---------------------------------- | -------------------------------------------------------------- |
+| Reader thread deadlock             | Use separate mutexes for request table vs event queue          |
+| Async events missed during request | Event queue is independent; reader always enqueues             |
+| Memory leak (pending requests)     | Timeout cleanup and disconnection purge                        |
 | Swank protocol version differences | Stick to stable operations (all listed are in Swank for years) |
-| UTF-8 encoding issues | Use existing `swank/backend:string-to-utf8` from git_examples |
+| UTF-8 encoding issues              | Use existing `swank/backend:string-to-utf8` from git_examples  |
 
 ---
 
 ## Success Criteria
 
 Full Slime-like debugger interaction through MCP tools. AI agent can:
+
 1. Connect to Swank session
 2. Evaluate code and see output
 3. Trigger error, inspect frames

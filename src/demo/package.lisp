@@ -9,14 +9,14 @@
    #:demo-record-start
    #:demo-record-stop
    #:demo-record-add-event
-   
+
    ;; Playback
    #:demo-replay
-   
+
    ;; Export
    #:demo-export-vhs
    #:demo-export-transcript
-   
+
    ;; State
    *demo-events*
    *demo-recording*))
@@ -51,7 +51,7 @@
   "Stop recording and return event count."
   (setq *demo-recording* nil)
   (let ((count (length *demo-events*)))
-    (list :success t 
+    (list :success t
           :events count
           :message (format nil "Recorded ~a events" count))))
 
@@ -90,13 +90,13 @@
       (format f "Set Height 600~%")
       (format f "Set Padding 15~%")
       (format f "~%")
-      
+
       ;; Title
       (format f "Type \"~a\"" title)
       (format f "Enter~%")
       (format f "Sleep 500ms~%")
       (format f "~%")
-      
+
       ;; Events
       (dolist (event events)
         (let ((type (getf event :type)))
@@ -119,7 +119,7 @@
             (:tool-response
              (let ((response (getf event :response)))
                (when (getf response :error)
-                 (format f "Type \"      ⚠️  ~a\"~%" 
+                 (format f "Type \"      ⚠️  ~a\"~%"
                          (escape-vhs-string (getf response :message))))
                (when (getf response :result)
                  (format f "Type \"      → ~a\"~%"
@@ -147,7 +147,7 @@
 (defun escape-vhs-string (s)
   "Escape string for VHS tape file."
   (let ((s (string s)))
-    (substitute #\Space #\" 
+    (substitute #\Space #\"
                 (substitute #\\ #\\ s))))
 
 ;;; ============================================================
@@ -157,58 +157,58 @@
 (defun run-factorial-demo ()
   "Run the factorial debugging demo and export to VHS."
   (demo-record-start)
-  
+
   ;; Connect
-  (demo-record-message "🔧 Connecting to Swank on port 4005...")
-  (demo-record-tool-call "swank_connect" '(:port 4005))
+  (demo-record-message "🔧 Connecting to Swank on port 4006...")
+  (demo-record-tool-call "swank_connect" '(:port 4006))
   (demo-record-tool-response "swank_connect" '(:success t))
   (demo-record-message "✓ Connected" :style :success)
-  
+
   ;; Define buggy function
   (demo-record-message "🔧 Defining factorial function...")
   (demo-record-tool-call "swank_eval" '(:code "(defun factorial(n) (if (> n 1) (* n (factorial (- n 1)) (1))))"))
   (demo-record-tool-response "swank_eval" '(:result "FACTORIAL"))
-  
+
   ;; Run and get error
   (demo-record-message "🔧 Running (factorial 7)...")
   (demo-record-tool-call "swank_eval" '(:code "(factorial 7)"))
   (demo-record-tool-response "swank_eval" '(:error t :condition "The value NIL is not of type NUMBER"))
   (demo-record-message "⚠️  ERROR: The value NIL is not of type NUMBER" :style :error)
   (demo-record-message "📍 Backtrace: (FACTORIAL 2) ← (FACTORIAL 3) ← (FACTORIAL 4)...")
-  
+
   ;; Inspect
   (demo-record-message "🔧 Inspecting frame 0...")
   (demo-record-tool-call "swank_frame_locals" '(:frame 0))
   (demo-record-tool-response "swank_frame_locals" '(:locals ((n . 2))))
   (demo-record-message "   N = 2")
-  
+
   ;; Explain bug
   (demo-record-message "🐛 Bug found: Line 4 has (1) called as function, returns NIL")
   (demo-record-message "   (if (> n 1) (* n (factorial (- n 1)) (1)))")
   (demo-record-message "                                        ^^^")
   (demo-record-message "   Should be: 1 (base case)")
-  
+
   ;; Abort and fix
   (demo-record-message "🔧 Aborting error...")
   (demo-record-tool-call "swank_invoke_restart" '(:restart_index 2))
   (demo-record-tool-response "swank_invoke_restart" '(:result nil))
-  
+
   (demo-record-message "🔧 Hot-reloading fixed function...")
   (demo-record-tool-call "swank_eval" '(:code "(defun factorial(n) (if (> n 1) (* n (factorial (- n 1))) 1))"))
   (demo-record-tool-response "swank_eval" '(:result "FACTORIAL"))
-  
+
   ;; Verify
   (demo-record-message "🔧 Verifying...")
   (demo-record-tool-call "swank_eval" '(:code "(factorial 7)"))
   (demo-record-tool-response "swank_eval" '(:result "5040"))
   (demo-record-message "   (factorial 7)  → 5040      ✓" :style :success)
-  
+
   (demo-record-tool-call "swank_eval" '(:code "(factorial 10)"))
   (demo-record-tool-response "swank_eval" '(:result "3628800"))
   (demo-record-message "   (factorial 10) → 3628800   ✓" :style :success)
-  
+
   ;; Done
   (demo-record-message "✅ Done! Session preserved. Update your source file!" :style :success)
-  
+
   (demo-record-stop)
   (demo-export-vhs :output "demo/factorial-demo.tape" :title "Tron: AI Debugging Demo"))

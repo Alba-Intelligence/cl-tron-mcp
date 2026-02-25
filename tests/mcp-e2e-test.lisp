@@ -87,7 +87,7 @@
   (or *swank-available*
       (setf *swank-available*
             (handler-case
-                (let ((socket (usocket:socket-connect "127.0.0.1" 4005 :timeout 2)))
+                (let ((socket (usocket:socket-connect "127.0.0.1" 4006 :timeout 2)))
                   (usocket:socket-close socket)
                   t)
               (error () nil)))))
@@ -96,7 +96,7 @@
     (testing "Call swank_connect tool"
              (if (not (swank-available-p))
                  (ok t "Swank server not available - skipping")
-                 (let* ((args (list :|port| 4005))
+                 (let* ((args (list :|port| 4006))
                         (params (list :|name| "swank_connect" :|arguments| args))
                         (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
                         (parsed (parse-json-response response)))
@@ -112,7 +112,7 @@
              (if (not (swank-available-p))
                  (ok t "Swank server not available - skipping")
                  (progn
-                   (cl-tron-mcp/swank:swank-connect :port 4005)
+                   (cl-tron-mcp/swank:swank-connect :port 4006)
                    (unwind-protect
                         (let* ((args (list :|code| "(+ 1 2 3)"))
                                (params (list :|name| "swank_eval" :|arguments| args))

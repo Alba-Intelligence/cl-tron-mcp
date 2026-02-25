@@ -4,7 +4,7 @@ This tutorial walks from "nothing running" to "first connection, first eval, fir
 
 ## Prerequisites
 
-- Swank running in your Lisp session, e.g. `(swank:create-server :port 4005 :dont-close t)` or a dedicated port for MCP (e.g. 4006).
+- Swank running in your Lisp session, e.g. `(swank:create-server :port 4006 :dont-close t)` or a dedicated port for MCP (e.g. 4006).
 - MCP server started by your client (Cursor, OpenCode, Kilocode). See [docs/starting-the-mcp.md](../docs/starting-the-mcp.md) if the MCP won't start.
 
 ## Step 1: Connect
@@ -13,14 +13,14 @@ Use the unified interface (Swank on the given port):
 
 ```
 Tool: repl_connect
-Arguments: { "port": 4005 }
+Arguments: { "port": 4006 }
 ```
 
 Or with explicit type and host:
 
 ```
 Tool: repl_connect
-Arguments: { "type": "swank", "host": "127.0.0.1", "port": 4005 }
+Arguments: { "type": "swank", "host": "127.0.0.1", "port": 4006 }
 ```
 
 ## Step 2: First Eval

@@ -8,8 +8,8 @@ This document describes the recommended setup so the MCP can interact with a Lis
 
 - **Who starts it:** The user (or automation). You start one SBCL (or other Lisp) with Swank and **leave it running**.
 - **Role:** This is the single session where all code is loaded and executed—by you or by the MCP. The debugger runs here. Slime/Sly/Emacs can attach to the same session.
-- **Typical start:** `(ql:quickload :swank)` then `(swank:create-server :port 4005)` (default port 4005).
-- **Dedicated port for MCP:** Use a separate Swank port for MCP (e.g. Swank on 4006) so you keep 4005 for your editor: `(swank:create-server :port 4006 :dont-close t)`.
+- **Typical start:** `(ql:quickload :swank)` then `(swank:create-server :port 4006)` (default port 4006).
+- **Dedicated port for MCP:** Use a separate Swank port for MCP (e.g. Swank on 4006) so you keep 4006 for your editor: `(swank:create-server :port 4006 :dont-close t)`.
 
 ### 2. MCP server
 
@@ -19,7 +19,7 @@ This document describes the recommended setup so the MCP can interact with a Lis
 
 ## Agent Workflow
 
-1. **You:** Start the Lisp session with Swank (port 4005). Keep it running.
+1. **You:** Start the Lisp session with Swank (port 4006). Keep it running.
 2. **Client:** Starts the MCP server (e.g. Cursor runs `start-mcp.sh`). The agent (or you) connects the MCP to your session via `repl_connect` or `swank_connect`.
 3. **Agent:** Uses MCP tools (`repl_eval`, `repl_backtrace`, `repl_inspect`, `repl_compile`, etc.) to load code, run it, see output and debugger state, step, move frames, invoke restarts, and fix code—all through the connected session. No second REPL; one session, MCP as a client of it.
 

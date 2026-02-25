@@ -50,10 +50,10 @@ To run HTTP only (no stdio), use `./start-mcp.sh --http-only [--port 4006]`. The
 
 The project’s **`.kilocode/mcp.json`** and **`examples/kilocode-mcp.json.example`** define **both** Tron variants so you can pick the one you want:
 
-| Server name           | Transport        | Use case                          |
-|-----------------------|------------------|-----------------------------------|
-| **cl-tron-mcp-stdio** | STDIO            | Default; client starts the server |
-| **cl-tron-mcp-http**  | Streamable HTTP  | You run `./start-mcp.sh` (combined) or `./start-mcp.sh --http-only`; client connects by URL |
+| Server name           | Transport       | Use case                                                                                    |
+| --------------------- | --------------- | ------------------------------------------------------------------------------------------- |
+| **cl-tron-mcp-stdio** | STDIO           | Default; client starts the server                                                           |
+| **cl-tron-mcp-http**  | Streamable HTTP | You run `./start-mcp.sh` (combined) or `./start-mcp.sh --http-only`; client connects by URL |
 
 **Choose one:** enable the server you want in Kilocode (set `disabled: false` for that entry); leave the other disabled or remove it. The different names are there so both options are available and you select which to use.
 
