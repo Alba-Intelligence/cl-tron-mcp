@@ -41,7 +41,7 @@
                  (ok (getf result :|tools|))
                  (let ((tools (getf result :|tools|)))
                    (ok (listp tools))
-                   (ok (>= (length tools) 86) "Should have 86 tools"))))))
+                   (ok (>= (length tools) 85) "Should have 85 tools"))))))
 
 (deftest mcp-tool-call-health-check
     (testing "Call health_check tool"

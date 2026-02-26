@@ -24,4 +24,8 @@
    #:whitelist-clear
    #:whitelist-enable
    #:whitelist-status
-   #:whitelist-check))
+   #:whitelist-check
+   ;; Cleanup
+   #:cleanup-expired-approvals
+   #:cleanup-old-approved-requests
+   #:cleanup-all-approvals))

@@ -12,7 +12,18 @@
  :input-schema (list :objectId "string" :maxDepth "integer")
  :output-schema (list :type "object")
  :requires-approval nil)
-(register-tool-handler "inspect_object" (function cl-tron-mcp/inspector:inspect-object))
+(register-tool-handler "inspect_object"
+  (lambda (&key object_id max_depth)
+    (handler-case
+        (progn
+          (validate-object-id "object_id" object_id :required t)
+          (when max_depth
+            (validate-integer "max_depth" max_depth :min 0 :max 100))
+          (cl-tron-mcp/inspector:inspect-object :object-id object_id :max-depth max_depth))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
 (register-tool
  "inspect_slot"
@@ -20,7 +31,19 @@
  :input-schema (list :objectId "string" :slotName "string" :value "string")
  :output-schema (list :type "object")
  :requires-approval nil)
-(register-tool-handler "inspect_slot" (function cl-tron-mcp/inspector:inspect-slot))
+(register-tool-handler "inspect_slot"
+  (lambda (&key object_id slot_name value)
+    (handler-case
+        (progn
+          (validate-object-id "object_id" object_id :required t)
+          (validate-string "slot_name" slot_name :required t :min-length 1)
+          (when value
+            (validate-string "value" value))
+          (cl-tron-mcp/inspector:inspect-slot :object-id object_id :slot-name slot_name :value value))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
 (register-tool
  "inspect_class"
@@ -28,7 +51,16 @@
  :input-schema (list :className "string")
  :output-schema (list :type "object")
  :requires-approval nil)
-(register-tool-handler "inspect_class" (function cl-tron-mcp/inspector:inspect-class))
+(register-tool-handler "inspect_class"
+  (lambda (&key class_name)
+    (handler-case
+        (progn
+          (validate-string "class_name" class_name :required t :min-length 1)
+          (cl-tron-mcp/inspector:inspect-class :class-name class_name))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
 (register-tool
  "inspect_function"
@@ -36,7 +68,16 @@
  :input-schema (list :symbolName "string")
  :output-schema (list :type "object")
  :requires-approval nil)
-(register-tool-handler "inspect_function" (function cl-tron-mcp/inspector:inspect-function))
+(register-tool-handler "inspect_function"
+  (lambda (&key symbol_name)
+    (handler-case
+        (progn
+          (validate-symbol-name "symbol_name" symbol_name :required t)
+          (cl-tron-mcp/inspector:inspect-function :symbol-name symbol_name))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
 (register-tool
  "inspect_package"
@@ -44,7 +85,16 @@
  :input-schema (list :packageName "string")
  :output-schema (list :type "object")
  :requires-approval nil)
-(register-tool-handler "inspect_package" (function cl-tron-mcp/inspector:inspect-package))
+(register-tool-handler "inspect_package"
+  (lambda (&key package_name)
+    (handler-case
+        (progn
+          (validate-package-name "package_name" package_name :required t)
+          (cl-tron-mcp/inspector:inspect-package :package-name package_name))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
 ;;; REPL tools
 (register-tool
@@ -53,7 +103,18 @@
  :input-schema (list :code "string" :package "string")
  :output-schema (list :type "object")
  :requires-approval t)
-(register-tool-handler "repl_eval" (function cl-tron-mcp/repl:repl-eval))
+(register-tool-handler "repl_eval"
+  (lambda (&key code package)
+    (handler-case
+        (progn
+          (validate-string "code" code :required t :min-length 1)
+          (when package
+            (validate-package-name "package" package))
+          (cl-tron-mcp/repl:repl-eval :code code :package package))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
 ;;; Monitor tools
  (register-tool
@@ -111,7 +172,20 @@
  :input-schema (list :functionName "string" :condition "string" :hitCount "integer")
  :output-schema (list :type "object")
  :requires-approval t)
-(register-tool-handler "breakpoint_set" (function cl-tron-mcp/debugger:set-breakpoint))
+(register-tool-handler "breakpoint_set"
+  (lambda (&key function_name condition hit_count)
+    (handler-case
+        (progn
+          (validate-symbol-name "function_name" function_name :required t)
+          (when condition
+            (validate-string "condition" condition))
+          (when hit_count
+            (validate-integer "hit_count" hit_count :min 0))
+          (cl-tron-mcp/debugger:set-breakpoint :function-name function_name :condition condition :hit-count hit_count))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
 (register-tool
  "breakpoint_remove"
@@ -119,7 +193,16 @@
  :input-schema (list :breakpointId "integer")
  :output-schema (list :type "object")
  :requires-approval nil)
-(register-tool-handler "breakpoint_remove" (function cl-tron-mcp/debugger:remove-breakpoint))
+(register-tool-handler "breakpoint_remove"
+  (lambda (&key breakpoint_id)
+    (handler-case
+        (progn
+          (validate-integer "breakpoint_id" breakpoint_id :required t :min 0)
+          (cl-tron-mcp/debugger:remove-breakpoint :breakpoint-id breakpoint_id))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
 (register-tool
  "breakpoint_list"
@@ -135,7 +218,19 @@
  :input-schema (list :frame "integer" :mode "string")
  :output-schema (list :type "object")
  :requires-approval nil)
-(register-tool-handler "step_frame" (function cl-tron-mcp/debugger:step-frame))
+(register-tool-handler "step_frame"
+  (lambda (&key frame mode)
+    (handler-case
+        (progn
+          (when frame
+            (validate-integer "frame" frame :min 0))
+          (when mode
+            (validate-choice "mode" mode '("into" "over" "out")))
+          (cl-tron-mcp/debugger:step-frame :frame frame :mode mode))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
 ;;; Hot-reload tools
 (register-tool
@@ -144,7 +239,18 @@
  :input-schema (list :code "string" :filename "string")
  :output-schema (list :type "object")
  :requires-approval t)
-(register-tool-handler "code_compile_string" (function cl-tron-mcp/hot-reload:compile-and-load))
+(register-tool-handler "code_compile_string"
+  (lambda (&key code filename)
+    (handler-case
+        (progn
+          (validate-string "code" code :required t :min-length 1)
+          (when filename
+            (validate-string "filename" filename))
+          (cl-tron-mcp/hot-reload:compile-and-load :code code :filename filename))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
 (register-tool
  "reload_system"
@@ -152,7 +258,18 @@
  :input-schema (list :systemName "string" :force "boolean")
  :output-schema (list :type "object")
  :requires-approval t)
-(register-tool-handler "reload_system" (function cl-tron-mcp/hot-reload:reload-system))
+(register-tool-handler "reload_system"
+  (lambda (&key system_name force)
+    (handler-case
+        (progn
+          (validate-string "system_name" system_name :required t :min-length 1)
+          (when force
+            (validate-boolean "force" force))
+          (cl-tron-mcp/hot-reload:reload-system :system-name system_name :force force))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
 ;;; Profiler tools
 (register-tool
@@ -177,7 +294,17 @@
   :input-schema (list :format (list :enum (list "flat" "graph" "cumulative")))
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "profile_report" (function cl-tron-mcp/profiler:profile-report))
+ (register-tool-handler "profile_report"
+  (lambda (&key format)
+    (handler-case
+        (progn
+          (when format
+            (validate-choice "format" format '("flat" "graph" "cumulative")))
+          (cl-tron-mcp/profiler:profile-report :format format))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  ;;; Tracer tools
 (register-tool
@@ -186,7 +313,16 @@
  :input-schema (list :functionName "string")
  :output-schema (list :type "object")
  :requires-approval t)
-(register-tool-handler "trace_function" (function cl-tron-mcp/tracer:trace-function))
+(register-tool-handler "trace_function"
+  (lambda (&key function_name)
+    (handler-case
+        (progn
+          (validate-symbol-name "function_name" function_name :required t)
+          (cl-tron-mcp/tracer:trace-function :function-name function_name))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  (register-tool
   "trace_remove"
@@ -194,7 +330,16 @@
   :input-schema (list :functionName "string")
   :output-schema (list :type "object")
   :requires-approval t)
- (register-tool-handler "trace_remove" (function cl-tron-mcp/tracer:trace-remove))
+ (register-tool-handler "trace_remove"
+  (lambda (&key function_name)
+    (handler-case
+        (progn
+          (validate-symbol-name "function_name" function_name :required t)
+          (cl-tron-mcp/tracer:trace-remove :function-name function_name))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  (register-tool
   "trace_list"
@@ -219,7 +364,16 @@
   :input-schema (list :threadId "string")
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "thread_inspect" (function cl-tron-mcp/sbcl:inspect-thread))
+ (register-tool-handler "thread_inspect"
+  (lambda (&key thread_id)
+    (handler-case
+        (progn
+          (validate-string "thread_id" thread_id :required t)
+          (cl-tron-mcp/sbcl:inspect-thread :thread-id thread_id))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  (register-tool
   "thread_backtrace"
@@ -227,7 +381,16 @@
   :input-schema (list :threadId "string")
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "thread_backtrace" (function cl-tron-mcp/sbcl:thread-backtrace))
+ (register-tool-handler "thread_backtrace"
+  (lambda (&key thread_id)
+    (handler-case
+        (progn
+          (validate-string "thread_id" thread_id :required t)
+          (cl-tron-mcp/sbcl:thread-backtrace :thread-id thread_id))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  ;;; Logging tools
  (register-tool
@@ -236,7 +399,21 @@
   :input-schema (list :level (list :enum (list "trace" "debug" "info" "warn" "error" "fatal")) :package "string" :appender "string")
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "log_configure" (function cl-tron-mcp/logging:log-configure))
+ (register-tool-handler "log_configure"
+  (lambda (&key level package appender)
+    (handler-case
+        (progn
+          (when level
+            (validate-choice "level" level '("trace" "debug" "info" "warn" "error" "fatal")))
+          (when package
+            (validate-package-name "package" package))
+          (when appender
+            (validate-string "appender" appender))
+          (cl-tron-mcp/logging:log-configure :level level :package package :appender appender))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  (register-tool
   "log_info"
@@ -244,7 +421,18 @@
   :input-schema (list :message "string" :package "string")
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "log_info" (function cl-tron-mcp/logging:log-info))
+ (register-tool-handler "log_info"
+  (lambda (&key message package)
+    (handler-case
+        (progn
+          (validate-string "message" message :required t)
+          (when package
+            (validate-package-name "package" package))
+          (cl-tron-mcp/logging:log-info :message message :package package))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  (register-tool
   "log_debug"
@@ -252,7 +440,18 @@
   :input-schema (list :message "string" :package "string")
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "log_debug" (function cl-tron-mcp/logging:log-debug))
+ (register-tool-handler "log_debug"
+  (lambda (&key message package)
+    (handler-case
+        (progn
+          (validate-string "message" message :required t)
+          (when package
+            (validate-package-name "package" package))
+          (cl-tron-mcp/logging:log-debug :message message :package package))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  (register-tool
   "log_warn"
@@ -260,7 +459,18 @@
   :input-schema (list :message "string" :package "string")
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "log_warn" (function cl-tron-mcp/logging:log-warn))
+ (register-tool-handler "log_warn"
+  (lambda (&key message package)
+    (handler-case
+        (progn
+          (validate-string "message" message :required t)
+          (when package
+            (validate-package-name "package" package))
+          (cl-tron-mcp/logging:log-warn :message message :package package))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  (register-tool
   "log_error"
@@ -268,7 +478,18 @@
   :input-schema (list :message "string" :package "string")
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "log_error" (function cl-tron-mcp/logging:log-error))
+ (register-tool-handler "log_error"
+  (lambda (&key message package)
+    (handler-case
+        (progn
+          (validate-string "message" message :required t)
+          (when package
+            (validate-package-name "package" package))
+          (cl-tron-mcp/logging:log-error :message message :package package))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  ;;; Cross-reference tools
  (register-tool
@@ -277,7 +498,16 @@
   :input-schema (list :symbolName "string")
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "who_calls" (function cl-tron-mcp/xref:who-calls))
+ (register-tool-handler "who_calls"
+  (lambda (&key symbol_name)
+    (handler-case
+        (progn
+          (validate-symbol-name "symbol_name" symbol_name :required t)
+          (cl-tron-mcp/xref:who-calls :symbol-name symbol_name))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  (register-tool
   "who_references"
@@ -285,7 +515,16 @@
   :input-schema (list :symbolName "string")
  :output-schema (list :type "object")
  :requires-approval nil)
- (register-tool-handler "who_references" (function cl-tron-mcp/xref:who-references))
+ (register-tool-handler "who_references"
+  (lambda (&key symbol_name)
+    (handler-case
+        (progn
+          (validate-symbol-name "symbol_name" symbol_name :required t)
+          (cl-tron-mcp/xref:who-references :symbol-name symbol_name))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  (register-tool
   "who_binds"
@@ -293,7 +532,16 @@
   :input-schema (list :symbolName "string")
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "who_binds" (function cl-tron-mcp/xref:who-binds))
+ (register-tool-handler "who_binds"
+  (lambda (&key symbol_name)
+    (handler-case
+        (progn
+          (validate-symbol-name "symbol_name" symbol_name :required t)
+          (cl-tron-mcp/xref:who-binds :symbol-name symbol_name))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  (register-tool
    "who_sets"
@@ -301,7 +549,16 @@
    :input-schema (list :symbolName "string")
    :output-schema (list :type "object")
    :requires-approval nil)
-  (register-tool-handler "who_sets" (function cl-tron-mcp/xref:who-sets))
+  (register-tool-handler "who_sets"
+  (lambda (&key symbol_name)
+    (handler-case
+        (progn
+          (validate-symbol-name "symbol_name" symbol_name :required t)
+          (cl-tron-mcp/xref:who-sets :symbol-name symbol_name))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
   (register-tool
   "list_callees"
@@ -309,7 +566,16 @@
   :input-schema (list :symbolName "string")
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "list_callees" (function cl-tron-mcp/xref:list-callees))
+ (register-tool-handler "list_callees"
+  (lambda (&key symbol_name)
+    (handler-case
+        (progn
+          (validate-symbol-name "symbol_name" symbol_name :required t)
+          (cl-tron-mcp/xref:list-callees :symbol-name symbol_name))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  ;;; Approval whitelist tools
  (register-tool
@@ -318,7 +584,17 @@
   :input-schema (list :operation "string" :pattern "string")
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "whitelist_add" (function cl-tron-mcp/security:whitelist-add))
+ (register-tool-handler "whitelist_add"
+  (lambda (&key operation pattern)
+    (handler-case
+        (progn
+          (validate-string "operation" operation :required t)
+          (validate-string "pattern" pattern :required t)
+          (cl-tron-mcp/security:whitelist-add :operation operation :pattern pattern))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  (register-tool
   "whitelist_remove"
@@ -326,7 +602,17 @@
   :input-schema (list :operation "string" :pattern "string")
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "whitelist_remove" (function cl-tron-mcp/security:whitelist-remove))
+ (register-tool-handler "whitelist_remove"
+  (lambda (&key operation pattern)
+    (handler-case
+        (progn
+          (validate-string "operation" operation :required t)
+          (validate-string "pattern" pattern :required t)
+          (cl-tron-mcp/security:whitelist-remove :operation operation :pattern pattern))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  (register-tool
   "whitelist_clear"
@@ -334,7 +620,16 @@
   :input-schema (list :operation "string")
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "whitelist_clear" (function cl-tron-mcp/security:whitelist-clear))
+ (register-tool-handler "whitelist_clear"
+  (lambda (&key operation)
+    (handler-case
+        (progn
+          (validate-string "operation" operation :required t)
+          (cl-tron-mcp/security:whitelist-clear :operation operation))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
  (register-tool
   "whitelist_enable"
@@ -342,7 +637,16 @@
   :input-schema (list :enable "boolean")
   :output-schema (list :type "object")
   :requires-approval nil)
- (register-tool-handler "whitelist_enable" (function cl-tron-mcp/security:whitelist-enable))
+ (register-tool-handler "whitelist_enable"
+  (lambda (&key enable)
+    (handler-case
+        (progn
+          (validate-boolean "enable" enable :required t)
+          (cl-tron-mcp/security:whitelist-enable :enable enable))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
    (register-tool
     "whitelist_status"
@@ -368,7 +672,19 @@
      :input-schema (list :host "string" :port "integer")
      :output-schema (list :type "object")
      :requires-approval nil)
-    (register-tool-handler "swank_connect" (function cl-tron-mcp/swank:swank-connect))
+    (register-tool-handler "swank_connect"
+  (lambda (&key host port)
+    (handler-case
+        (progn
+          (when host
+            (validate-string "host" host))
+          (when port
+            (validate-integer "port" port :min 1 :max 65535))
+          (cl-tron-mcp/swank:swank-connect :host host :port port))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
     (register-tool
      "swank_disconnect"
@@ -392,7 +708,18 @@
      :input-schema (list :code "string" :package "string")
      :output-schema (list :type "object")
      :requires-approval t)
-    (register-tool-handler "swank_eval" (function cl-tron-mcp/swank:mcp-swank-eval))
+    (register-tool-handler "swank_eval"
+  (lambda (&key code package)
+    (handler-case
+        (progn
+          (validate-string "code" code :required t :min-length 1)
+          (when package
+            (validate-package-name "package" package))
+          (cl-tron-mcp/swank:mcp-swank-eval :code code :package package))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
     (register-tool
      "swank_compile"
@@ -400,7 +727,20 @@
      :input-schema (list :code "string" :package "string" :filename "string")
      :output-schema (list :type "object")
      :requires-approval t)
-    (register-tool-handler "swank_compile" (function cl-tron-mcp/swank:mcp-swank-compile))
+    (register-tool-handler "swank_compile"
+  (lambda (&key code package filename)
+    (handler-case
+        (progn
+          (validate-string "code" code :required t :min-length 1)
+          (when package
+            (validate-package-name "package" package))
+          (when filename
+            (validate-string "filename" filename))
+          (cl-tron-mcp/swank:mcp-swank-compile :code code :package package :filename filename))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
     (register-tool
      "swank_threads"
@@ -416,7 +756,16 @@
      :input-schema (list :threadId "string")
      :output-schema (list :type "object")
      :requires-approval t)
-    (register-tool-handler "swank_abort" (function cl-tron-mcp/swank:mcp-swank-abort))
+    (register-tool-handler "swank_abort"
+  (lambda (&key thread_id)
+    (handler-case
+        (progn
+          (validate-string "thread_id" thread_id :required t)
+          (cl-tron-mcp/swank:mcp-swank-abort :thread-id thread_id))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
     (register-tool
      "swank_interrupt"
@@ -440,7 +789,16 @@
      :input-schema (list :expression "string")
      :output-schema (list :type "object")
      :requires-approval nil)
-    (register-tool-handler "swank_inspect" (function cl-tron-mcp/swank:mcp-swank-inspect))
+    (register-tool-handler "swank_inspect"
+  (lambda (&key expression)
+    (handler-case
+        (progn
+          (validate-string "expression" expression :required t)
+          (cl-tron-mcp/swank:mcp-swank-inspect :expression expression))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
     (register-tool
      "swank_describe"
@@ -448,7 +806,16 @@
      :input-schema (list :expression "string")
      :output-schema (list :type "object")
      :requires-approval nil)
-    (register-tool-handler "swank_describe" (function cl-tron-mcp/swank:mcp-swank-describe))
+    (register-tool-handler "swank_describe"
+  (lambda (&key expression)
+    (handler-case
+        (progn
+          (validate-string "expression" expression :required t)
+          (cl-tron-mcp/swank:mcp-swank-describe :expression expression))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
     (register-tool
      "swank_autodoc"
@@ -456,7 +823,16 @@
      :input-schema (list :symbol "string")
      :output-schema (list :type "object")
      :requires-approval nil)
-    (register-tool-handler "swank_autodoc" (function cl-tron-mcp/swank:mcp-swank-autodoc))
+    (register-tool-handler "swank_autodoc"
+  (lambda (&key symbol)
+    (handler-case
+        (progn
+          (validate-string "symbol" symbol :required t)
+          (cl-tron-mcp/swank:mcp-swank-autodoc :symbol symbol))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
     (register-tool
      "swank_completions"
@@ -464,7 +840,18 @@
      :input-schema (list :symbol "string" :package "string")
      :output-schema (list :type "object")
      :requires-approval nil)
-     (register-tool-handler "swank_completions" (function cl-tron-mcp/swank:mcp-swank-completions))
+     (register-tool-handler "swank_completions"
+  (lambda (&key symbol package)
+    (handler-case
+        (progn
+          (validate-string "symbol" symbol :required t)
+          (when package
+            (validate-package-name "package" package))
+          (cl-tron-mcp/swank:mcp-swank-completions :symbol symbol :package package))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
    (register-tool
     "swank_get_restarts"
@@ -480,7 +867,16 @@
     :input-schema (list :restart_index "integer")
     :output-schema (list :type "object")
     :requires-approval nil)
-    (register-tool-handler "swank_invoke_restart" (function cl-tron-mcp/swank:swank-invoke-restart))
+    (register-tool-handler "swank_invoke_restart"
+  (lambda (&key restart_index)
+    (handler-case
+        (progn
+          (validate-integer "restart_index" restart_index :required t :min 1)
+          (cl-tron-mcp/swank:swank-invoke-restart :restart-index restart_index))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
    (register-tool
     "swank_continue"
@@ -535,7 +931,21 @@
    :input-schema (list :type "string" :host "string" :port "integer")
    :output-schema (list :type "object")
    :requires-approval nil)
-  (register-tool-handler "repl_connect" (function cl-tron-mcp/unified:repl-connect))
+  (register-tool-handler "repl_connect"
+  (lambda (&key type host port)
+    (handler-case
+        (progn
+          (when type
+            (validate-choice "type" type '("swank")))
+          (when host
+            (validate-string "host" host))
+          (when port
+            (validate-integer "port" port :min 1 :max 65535))
+          (cl-tron-mcp/unified:repl-connect :type type :host host :port port))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
   (register-tool
    "repl_disconnect"
@@ -559,7 +969,18 @@
    :input-schema (list :code "string" :package "string")
    :output-schema (list :type "object")
    :requires-approval t)
-  (register-tool-handler "repl_eval" (function cl-tron-mcp/unified:repl-eval))
+  (register-tool-handler "repl_eval"
+  (lambda (&key code package)
+    (handler-case
+        (progn
+          (validate-string "code" code :required t :min-length 1)
+          (when package
+            (validate-package-name "package" package))
+          (cl-tron-mcp/unified:repl-eval :code code :package package))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
   (register-tool
    "repl_compile"
@@ -567,7 +988,20 @@
    :input-schema (list :code "string" :package "string" :filename "string")
    :output-schema (list :type "object")
    :requires-approval t)
-  (register-tool-handler "repl_compile" (function cl-tron-mcp/unified:repl-compile))
+  (register-tool-handler "repl_compile"
+  (lambda (&key code package filename)
+    (handler-case
+        (progn
+          (validate-string "code" code :required t :min-length 1)
+          (when package
+            (validate-package-name "package" package))
+          (when filename
+            (validate-string "filename" filename))
+          (cl-tron-mcp/unified:repl-compile :code code :package package :filename filename))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
   (register-tool
    "repl_threads"
@@ -599,7 +1033,16 @@
    :input-schema (list :expression "string")
    :output-schema (list :type "object")
    :requires-approval nil)
-  (register-tool-handler "repl_inspect" (function cl-tron-mcp/unified:repl-inspect))
+  (register-tool-handler "repl_inspect"
+  (lambda (&key expression)
+    (handler-case
+        (progn
+          (validate-string "expression" expression :required t)
+          (cl-tron-mcp/unified:repl-inspect :expression expression))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
   (register-tool
    "repl_describe"
@@ -607,7 +1050,16 @@
    :input-schema (list :symbol "string")
    :output-schema (list :type "object")
    :requires-approval nil)
-  (register-tool-handler "repl_describe" (function cl-tron-mcp/unified:repl-describe))
+  (register-tool-handler "repl_describe"
+  (lambda (&key symbol)
+    (handler-case
+        (progn
+          (validate-string "symbol" symbol :required t)
+          (cl-tron-mcp/unified:repl-describe :symbol symbol))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
   (register-tool
    "repl_completions"
@@ -615,7 +1067,18 @@
    :input-schema (list :prefix "string" :package "string")
    :output-schema (list :type "object")
    :requires-approval nil)
-  (register-tool-handler "repl_completions" (function cl-tron-mcp/unified:repl-completions))
+  (register-tool-handler "repl_completions"
+  (lambda (&key prefix package)
+    (handler-case
+        (progn
+          (validate-string "prefix" prefix :required t)
+          (when package
+            (validate-package-name "package" package))
+          (cl-tron-mcp/unified:repl-completions :prefix prefix :package package))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
    (register-tool
     "repl_doc"
@@ -623,7 +1086,16 @@
     :input-schema (list :symbol "string")
     :output-schema (list :type "object")
     :requires-approval nil)
-   (register-tool-handler "repl_doc" (function cl-tron-mcp/unified:repl-doc))
+   (register-tool-handler "repl_doc"
+  (lambda (&key symbol)
+    (handler-case
+        (progn
+          (validate-string "symbol" symbol :required t)
+          (cl-tron-mcp/unified:repl-doc :symbol symbol))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
 ;;; Unified REPL debugger tools
 ;;; These tools work with the debugger in Swank connections.
@@ -634,7 +1106,19 @@
    :input-schema (list :frame "integer" :thread "string")
    :output-schema (list :type "object")
    :requires-approval nil)
-  (register-tool-handler "repl_frame_locals" (function cl-tron-mcp/unified:repl-frame-locals))
+  (register-tool-handler "repl_frame_locals"
+  (lambda (&key frame thread)
+    (handler-case
+        (progn
+          (when frame
+            (validate-integer "frame" frame :min 0))
+          (when thread
+            (validate-string "thread" thread))
+          (cl-tron-mcp/unified:repl-frame-locals :frame frame :thread thread))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
   (register-tool
    "repl_step"
@@ -642,7 +1126,17 @@
    :input-schema (list :frame "integer")
    :output-schema (list :type "object")
    :requires-approval nil)
-  (register-tool-handler "repl_step" (function cl-tron-mcp/unified:repl-step))
+  (register-tool-handler "repl_step"
+  (lambda (&key frame)
+    (handler-case
+        (progn
+          (when frame
+            (validate-integer "frame" frame :min 0))
+          (cl-tron-mcp/unified:repl-step :frame frame))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
   (register-tool
    "repl_next"
@@ -650,7 +1144,17 @@
    :input-schema (list :frame "integer")
    :output-schema (list :type "object")
    :requires-approval nil)
-  (register-tool-handler "repl_next" (function cl-tron-mcp/unified:repl-next))
+  (register-tool-handler "repl_next"
+  (lambda (&key frame)
+    (handler-case
+        (progn
+          (when frame
+            (validate-integer "frame" frame :min 0))
+          (cl-tron-mcp/unified:repl-next :frame frame))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
   (register-tool
    "repl_out"
@@ -658,7 +1162,17 @@
    :input-schema (list :frame "integer")
    :output-schema (list :type "object")
    :requires-approval nil)
-  (register-tool-handler "repl_out" (function cl-tron-mcp/unified:repl-out))
+  (register-tool-handler "repl_out"
+  (lambda (&key frame)
+    (handler-case
+        (progn
+          (when frame
+            (validate-integer "frame" frame :min 0))
+          (cl-tron-mcp/unified:repl-out :frame frame))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
   (register-tool
    "repl_continue"
@@ -674,7 +1188,17 @@
    :input-schema (list :frame "integer")
    :output-schema (list :type "object")
    :requires-approval nil)
-  (register-tool-handler "repl_get_restarts" (function cl-tron-mcp/unified:repl-get-restarts))
+  (register-tool-handler "repl_get_restarts"
+  (lambda (&key frame)
+    (handler-case
+        (progn
+          (when frame
+            (validate-integer "frame" frame :min 0))
+          (cl-tron-mcp/unified:repl-get-restarts :frame frame))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
   (register-tool
    "repl_invoke_restart"
@@ -682,7 +1206,16 @@
    :input-schema (list :restartIndex "integer")
    :output-schema (list :type "object")
    :requires-approval nil)
-  (register-tool-handler "repl_invoke_restart" (function cl-tron-mcp/unified:repl-invoke-restart))
+  (register-tool-handler "repl_invoke_restart"
+  (lambda (&key restart_index)
+    (handler-case
+        (progn
+          (validate-integer "restart_index" restart_index :required t :min 1)
+          (cl-tron-mcp/unified:repl-invoke-restart :restart-index restart_index))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
 ;;; Unified REPL breakpoint tools
   (register-tool
@@ -691,7 +1224,22 @@
    :input-schema (list :function "string" :condition "string" :hitCount "integer" :thread "string")
    :output-schema (list :type "object")
    :requires-approval t)
-  (register-tool-handler "repl_set_breakpoint" (function cl-tron-mcp/unified:repl-set-breakpoint))
+  (register-tool-handler "repl_set_breakpoint"
+  (lambda (&key function condition hit_count thread)
+    (handler-case
+        (progn
+          (validate-string "function" function :required t)
+          (when condition
+            (validate-string "condition" condition))
+          (when hit_count
+            (validate-integer "hit_count" hit_count :min 0))
+          (when thread
+            (validate-string "thread" thread))
+          (cl-tron-mcp/unified:repl-set-breakpoint :function function :condition condition :hit-count hit_count :thread thread))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
   (register-tool
    "repl_remove_breakpoint"
@@ -699,7 +1247,16 @@
    :input-schema (list :breakpointId "integer")
    :output-schema (list :type "object")
    :requires-approval nil)
-  (register-tool-handler "repl_remove_breakpoint" (function cl-tron-mcp/unified:repl-remove-breakpoint))
+  (register-tool-handler "repl_remove_breakpoint"
+  (lambda (&key breakpoint_id)
+    (handler-case
+        (progn
+          (validate-integer "breakpoint_id" breakpoint_id :required t :min 0)
+          (cl-tron-mcp/unified:repl-remove-breakpoint :breakpoint-id breakpoint_id))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
   (register-tool
    "repl_list_breakpoints"
@@ -715,7 +1272,16 @@
    :input-schema (list :breakpointId "integer")
    :output-schema (list :type "object")
    :requires-approval nil)
-  (register-tool-handler "repl_toggle_breakpoint" (function cl-tron-mcp/unified:repl-toggle-breakpoint))
+  (register-tool-handler "repl_toggle_breakpoint"
+  (lambda (&key breakpoint_id)
+    (handler-case
+        (progn
+          (validate-integer "breakpoint_id" breakpoint_id :required t :min 0)
+          (cl-tron-mcp/unified:repl-toggle-breakpoint :breakpoint-id breakpoint_id))
+      (validation-error (e)
+        (list :error t
+              :message (format nil "Validation error: ~a" (validation-error-message e))
+              :parameter (validation-error-parameter e))))))
 
 ;;; Unified REPL help tool
   (register-tool

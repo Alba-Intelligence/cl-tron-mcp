@@ -85,6 +85,8 @@ Example: (swank-sym \"EVAL-AND-GRAB-OUTPUT\") => SWANK:EVAL-AND-GRAB-OUTPUT"
 ;;; These variables track the connection state and are used by all
 ;;; Swank operations. They are modified only by swank-connect and
 ;;; swank-disconnect.
+;;;
+;;; All access to these variables must be protected by *connection-lock*.
 
 (defvar *swank-socket* nil
   "Socket connection to Swank server.")
@@ -100,6 +102,9 @@ Example: (swank-sym \"EVAL-AND-GRAB-OUTPUT\") => SWANK:EVAL-AND-GRAB-OUTPUT"
 
 (defvar *swank-running* nil
   "Control flag for reader thread - set to NIL to stop.")
+
+(defvar *connection-lock* (bordeaux-threads:make-lock "swank-connection")
+  "Lock for synchronizing access to connection state variables.")
 
 ;;; Request tracking (for synchronous RPC calls)
 (defvar *pending-requests* (make-hash-table :test 'eql)
@@ -122,6 +127,8 @@ Example: (swank-sym \"EVAL-AND-GRAB-OUTPUT\") => SWANK:EVAL-AND-GRAB-OUTPUT"
   "Flag indicating if the event processor thread is running.")
 (defvar *event-processor-thread* nil
   "Thread that processes async events.")
+(defvar *max-event-queue-size* 1000
+  "Maximum number of events to keep in the queue before dropping oldest.")
 
 ;;; Debugger state - tracks which thread is in the debugger
 ;;;
@@ -136,6 +143,49 @@ Set by :debug event, cleared by :debug-return event.")
 Swank supports nested debuggers; each level has its own restarts/frames.")
 
 ;;; ============================================================
+;;; Timeout and Heartbeat Configuration
+;;; ============================================================
+
+(defvar *default-eval-timeout* 30
+  "Default timeout for evaluation requests in seconds.")
+
+(defvar *heartbeat-interval* 60
+  "Heartbeat interval in seconds for keepalive pings.")
+
+(defvar *last-activity-time* nil
+  "Timestamp of last activity from Swank server.")
+
+(defvar *heartbeat-thread* nil
+  "Thread that sends periodic heartbeat pings.")
+
+(defvar *heartbeat-running* nil
+  "Control flag for heartbeat thread.")
+
+;;; ============================================================
+;;; Reconnection Configuration
+;;; ============================================================
+
+(defvar *reconnect-enabled* t
+  "Whether automatic reconnection is enabled.")
+
+(defvar *reconnect-max-attempts* 5
+  "Maximum number of reconnection attempts.")
+
+(defvar *reconnect-delay* 5
+  "Initial delay between reconnection attempts in seconds.")
+
+(defvar *reconnect-attempt-count* 0
+  "Current reconnection attempt counter.")
+
+;;; ============================================================
+;;; Output Streaming
+;;; ============================================================
+
+(defvar *output-callback* nil
+  "Callback function called when output is received from Swank.
+The callback receives two arguments: the output string and target.")
+
+;;; ============================================================
 ;;; Connection Management
 ;;; ============================================================
 
@@ -144,38 +194,49 @@ Swank supports nested debuggers; each level has its own restarts/frames.")
 On the SBCL side: (ql:quickload :swank) (swank:create-server :port 4006)
 
 Returns: Connection status or error."
-  (when (and *swank-connected* *swank-socket*)
-    (return-from swank-connect
-      (list :error t :message "Already connected to Swank server")))
-  (handler-case
-      (let ((socket (usocket:socket-connect host port :timeout timeout
-                                            :element-type '(unsigned-byte 8))))
-        (setf *swank-socket* socket
-              *swank-io* (usocket:socket-stream socket)
-              *swank-connected* t
-              *swank-running* t)
-        ;; Start reader thread
-        (setf *swank-reader-thread*
-              (bordeaux-threads:make-thread
-               #'swank-reader-loop
-               :name "swank-reader"))
-        ;; Start event processor thread
-        (setf *event-processor-running* t
-              *event-processor-thread*
-              (bordeaux-threads:make-thread
-               #'swank-event-processor
-               :name "swank-event-processor"))
-        (log-info (format nil "Connected to Swank at ~a:~a" host port))
-        (list :success t
-              :host host :port port
-              :message (format nil "Connected to Swank at ~a:~a" host port)))
-    (error (e)
-      (list :error t :message (format nil "Failed to connect to Swank: ~a" e)))))
+  (bordeaux-threads:with-lock-held (*connection-lock*)
+    (when (and *swank-connected* *swank-socket*)
+      (return-from swank-connect
+        (list :error t :message "Already connected to Swank server")))
+    (handler-case
+        (let ((socket (usocket:socket-connect host port :timeout timeout
+                                              :element-type '(unsigned-byte 8))))
+          (setf *swank-socket* socket
+                *swank-io* (usocket:socket-stream socket)
+                *swank-connected* t
+                *swank-running* t
+                *last-activity-time* (get-unix-time)
+                *reconnect-attempt-count* 0)
+          ;; Start reader thread
+          (setf *swank-reader-thread*
+                (bordeaux-threads:make-thread
+                 #'swank-reader-loop
+                 :name "swank-reader"))
+          ;; Start event processor thread
+          (setf *event-processor-running* t
+                *event-processor-thread*
+                (bordeaux-threads:make-thread
+                 #'swank-event-processor
+                 :name "swank-event-processor"))
+          ;; Start heartbeat thread
+          (setf *heartbeat-running* t
+                *heartbeat-thread*
+                (bordeaux-threads:make-thread
+                 #'heartbeat-loop
+                 :name "swank-heartbeat"))
+          (log-info (format nil "Connected to Swank at ~a:~a" host port))
+          (list :success t
+                :host host :port port
+                :message (format nil "Connected to Swank at ~a:~a" host port)))
+      (error (e)
+        (list :error t :message (format nil "Failed to connect to Swank: ~a" e))))))
 
 (defun swank-disconnect ()
   "Disconnect from the Swank server and stop all threads."
-  (setf *swank-running* nil)
-  (setf *event-processor-running* nil)
+  (bordeaux-threads:with-lock-held (*connection-lock*)
+    (setf *swank-running* nil
+          *event-processor-running* nil
+          *heartbeat-running* nil))
   ;; Wake up event processor
   (bordeaux-threads:with-lock-held (*event-mutex*)
     (bordeaux-threads:condition-notify *event-condition*))
@@ -187,29 +248,44 @@ Returns: Connection status or error."
   ;; Stop event processor
   (when *event-processor-thread*
     (ignore-errors (bordeaux-threads:join-thread *event-processor-thread* :timeout 2)))
+  ;; Stop heartbeat thread
+  (when *heartbeat-thread*
+    (ignore-errors (bordeaux-threads:join-thread *heartbeat-thread* :timeout 2)))
   ;; Close socket
   (when *swank-socket*
     (ignore-errors (usocket:socket-close *swank-socket*)))
-  (setf *swank-socket* nil
-        *swank-io* nil
-        *swank-connected* nil
-        *swank-reader-thread* nil
-        *event-processor-thread* nil)
+  ;; Clear connection state
+  (bordeaux-threads:with-lock-held (*connection-lock*)
+    (setf *swank-socket* nil
+          *swank-io* nil
+          *swank-connected* nil
+          *swank-reader-thread* nil
+          *event-processor-thread* nil
+          *heartbeat-thread* nil
+          *last-activity-time* nil))
+  ;; Clear event queue
+  (bordeaux-threads:with-lock-held (*event-mutex*)
+    (setf (fill-pointer *event-queue*) 0))
   (log-info "Disconnected from Swank server")
   (list :success t :message "Disconnected from Swank server"))
 
 (defun swank-connected-p ()
   "Check if connected to Swank."
-  (and *swank-connected* *swank-socket* *swank-io*))
+  (bordeaux-threads:with-lock-held (*connection-lock*)
+    (and *swank-connected* *swank-socket* *swank-io*)))
 
 (defun swank-status ()
   "Get current Swank connection status."
-  (list :connected (swank-connected-p)
-        :has-connection (not (null *swank-socket*))
-        :reader-thread-alive (and *swank-reader-thread*
-                                  (bordeaux-threads:thread-alive-p *swank-reader-thread*))
-        :event-processor-alive (and *event-processor-thread*
-                                    (bordeaux-threads:thread-alive-p *event-processor-thread*))))
+  (bordeaux-threads:with-lock-held (*connection-lock*)
+    (list :connected (and *swank-connected* *swank-socket* *swank-io*)
+          :has-connection (not (null *swank-socket*))
+          :reader-thread-alive (and *swank-reader-thread*
+                                    (bordeaux-threads:thread-alive-p *swank-reader-thread*))
+          :event-processor-alive (and *event-processor-thread*
+                                      (bordeaux-threads:thread-alive-p *event-processor-thread*))
+          :heartbeat-alive (and *heartbeat-thread*
+                                 (bordeaux-threads:thread-alive-p *heartbeat-thread*))
+          :last-activity *last-activity-time*)))
 
 ;;; ============================================================
 ;;; Message Protocol (using cl-tron-mcp/swank-protocol)
@@ -268,8 +344,9 @@ Returns the parsed S-expression."
               (swank-request-completed-p req) t)
         (bordeaux-threads:condition-notify (swank-request-condition req))))))
 
-(defun wait-for-response (id &key (timeout 30))
-  "Wait for response to request ID with optional TIMEOUT (seconds)."
+(defun wait-for-response (id &key (timeout *default-eval-timeout*))
+  "Wait for response to request ID with optional TIMEOUT (seconds).
+Uses *default-eval-timeout* if no timeout specified."
   (bordeaux-threads:with-lock-held (*request-lock*)
     (let ((req (gethash id *pending-requests*)))
       (unless req
@@ -312,11 +389,37 @@ Returns the parsed S-expression."
                                    (log-error (format nil "Failed to parse message ~S: ~a" raw-message e))
                                    (return)))))
                  (log-debug (format nil "Received: ~s" message))
+                 ;; Update last activity time
+                 (bordeaux-threads:with-lock-held (*connection-lock*)
+                   (setf *last-activity-time* (get-unix-time)))
                  (dispatch-incoming-message message))
              (error (e)
                (log-error (format nil "Swank reader error: ~a" e))
                (return)))
         finally (log-debug "Swank reader thread exiting")))
+
+;;; ============================================================
+;;; Heartbeat/Keepalive Mechanism
+;;; ============================================================
+
+(defun heartbeat-loop ()
+  "Background thread: sends periodic heartbeat pings to detect dead connections."
+  (log-debug "Swank heartbeat thread started")
+  (loop while *heartbeat-running*
+        do (sleep *heartbeat-interval*)
+           (when (swank-connected-p)
+             (handler-case
+                 (let ((last-activity (bordeaux-threads:with-lock-held (*connection-lock*)
+                                        *last-activity-time*)))
+                   (when last-activity
+                     (let ((elapsed (- (get-unix-time) last-activity)))
+                       (when (> elapsed (* *heartbeat-interval* 2))
+                         (log-warn (format nil "No activity from Swank for ~d seconds, attempting reconnection" elapsed))
+                         (when *reconnect-enabled*
+                           (attempt-reconnect))))))
+               (error (e)
+                 (log-error (format nil "Heartbeat error: ~a" e))))))
+  (log-debug "Swank heartbeat thread exiting"))
 
 (defun dispatch-incoming-message (message)
   "Route incoming Swank message to appropriate handler."
@@ -391,11 +494,12 @@ Returns the parsed S-expression."
 ;;; Request Sending
 ;;; ============================================================
 
-(defun send-request (form &key (package "CL-USER") (thread t))
+(defun send-request (form &key (package "CL-USER") (thread t) (timeout *default-eval-timeout*))
   "Send :emacs-rex request and wait for response.
 FORM is the S-expression to evaluate.
 PACKAGE is the package name string.
-THREAD indicates which thread to use (t, :repl-thread, or integer)."
+THREAD indicates which thread to use (t, :repl-thread, or integer).
+TIMEOUT is the maximum time to wait for response in seconds (default: *default-eval-timeout*)."
   (unless (swank-connected-p)
     (return-from send-request
       (list :error t :message "Not connected to Swank server")))
@@ -410,7 +514,7 @@ THREAD indicates which thread to use (t, :repl-thread, or integer)."
     (handler-case
         (progn
           (write-message `(:emacs-rex ,form ,package ,thread ,id))
-          (wait-for-response id :timeout 30))
+          (wait-for-response id :timeout timeout))
       (error (e)
         (bordeaux-threads:with-lock-held (*request-lock*)
           (remhash id *pending-requests*)
@@ -422,7 +526,64 @@ THREAD indicates which thread to use (t, :repl-thread, or integer)."
   "Handle :write-string output from Swank.
 STRING is the output text, TARGET indicates where it should go."
   (declare (ignore target))
+  ;; Call output callback if registered
+  (when *output-callback*
+    (handler-case
+        (funcall *output-callback* string target)
+      (error (e)
+        (log-error (format nil "Output callback error: ~a" e)))))
   (enqueue-output-event string target))
+
+;;; ============================================================
+;;; Asynchronous Evaluation Support
+;;; ============================================================
+
+(defun send-request-async (form &key (package "CL-USER") (thread t))
+  "Send :emacs-rex request asynchronously and return immediately with request ID.
+FORM is the S-expression to evaluate.
+PACKAGE is the package name string.
+THREAD indicates which thread to use (t, :repl-thread, or integer).
+Returns: Request ID on success, or error list on failure."
+  (unless (swank-connected-p)
+    (return-from send-request-async
+      (list :error t :message "Not connected to Swank server")))
+  (let* ((id (make-request-id))
+         (req (make-swank-request :id id
+                                  :condition (bordeaux-threads:make-condition-variable)
+                                  :response nil
+                                  :completed-p nil)))
+    (bordeaux-threads:with-lock-held (*request-lock*)
+      (setf (gethash id *pending-requests*) req
+            *current-request-id* id))
+    (handler-case
+        (progn
+          (write-message `(:emacs-rex ,form ,package ,thread ,id))
+          id)
+      (error (e)
+        (bordeaux-threads:with-lock-held (*request-lock*)
+          (remhash id *pending-requests*)
+          (when (eql *current-request-id* id)
+            (setf *current-request-id* nil)))
+        (list :error t :message (princ-to-string e))))))
+
+(defun get-async-result (id &key (timeout *default-eval-timeout*))
+  "Get the result of an async request by ID.
+TIMEOUT is the maximum time to wait for the result in seconds.
+Returns: Result list if available, or error list if timeout or not found."
+  (bordeaux-threads:with-lock-held (*request-lock*)
+    (let ((req (gethash id *pending-requests*)))
+      (unless req
+        (return-from get-async-result (list :error t :message (format nil "Request ~a not found" id))))
+      (if (swank-request-completed-p req)
+          (progn
+            (remhash id *pending-requests*)
+            (swank-request-response req))
+          (progn
+            (bordeaux-threads:release-lock *request-lock*)
+            (let ((result (wait-for-response id :timeout timeout)))
+              (bordeaux-threads:acquire-lock *request-lock*)
+              (remhash id *pending-requests*)
+              result))))))
 
 ;;; ============================================================
 ;;; Event Queue (for async :debug, :write-string)
@@ -444,6 +605,9 @@ STRING is the output text, TARGET indicates where it should go."
 (defun enqueue-debugger-event (condition restarts frames)
   "Enqueue a debugger event from Swank."
   (bordeaux-threads:with-lock-held (*event-mutex*)
+    ;; Check queue size and remove oldest if needed
+    (when (>= (length *event-queue*) *max-event-queue-size*)
+      (cleanup-old-events))
     (vector-push-extend
      (make-swank-event :type :debug
                        :data (list :condition condition
@@ -456,6 +620,9 @@ STRING is the output text, TARGET indicates where it should go."
 (defun enqueue-output-event (string target)
   "Enqueue output event."
   (bordeaux-threads:with-lock-held (*event-mutex*)
+    ;; Check queue size and remove oldest if needed
+    (when (>= (length *event-queue*) *max-event-queue-size*)
+      (cleanup-old-events))
     (vector-push-extend
      (make-swank-event :type :output
                        :data (list :string string :target target)
@@ -463,21 +630,105 @@ STRING is the output text, TARGET indicates where it should go."
      *event-queue*)
     (bordeaux-threads:condition-notify *event-condition*)))
 
+(defun cleanup-old-events (&optional (max-age 300))
+  "Remove events older than MAX-AGE seconds from the event queue.
+Also removes oldest events if queue exceeds maximum size."
+  (bordeaux-threads:with-lock-held (*event-mutex*)
+    (let ((current-time (get-unix-time))
+          (new-queue (make-array 100 :adjustable t :fill-pointer 0)))
+      (loop for event across *event-queue*
+            for event-age = (- current-time (swank-event-timestamp event))
+            unless (> event-age max-age)
+              do (vector-push-extend event new-queue))
+      ;; If still too large, remove oldest
+      (when (> (length new-queue) *max-event-queue-size*)
+        (let ((start (max 0 (- (length new-queue) *max-event-queue-size*))))
+          (setf new-queue (subseq new-queue start))))
+      (setf *event-queue* new-queue))))
+
 (defun dequeue-event (&optional (timeout 0.1))
   "Dequeue and return next non-debug event, or NIL if timeout.
-Debug events are left in the queue for pop-debugger-event."
-  (declare (ignore timeout))
+Debug events are left in the queue for pop-debugger-event.
+TIMEOUT is the maximum time to wait in seconds."
   (bordeaux-threads:with-lock-held (*event-mutex*)
-    (loop while (and (zerop (length *event-queue*))
-                     *event-processor-running*)
-          do (bordeaux-threads:condition-wait
-               *event-condition* *event-mutex*))
+    (let ((start-time (get-unix-time)))
+      (loop while (and (zerop (length *event-queue*))
+                       *event-processor-running*)
+            do (let ((elapsed (- (get-unix-time) start-time)))
+                 (when (> elapsed timeout)
+                   (return-from dequeue-event nil))
+                 (bordeaux-threads:condition-wait
+                  *event-condition* *event-mutex*
+                  :timeout (- timeout elapsed)))))
     ;; Find and remove a non-debug event
     (loop for i from 0 below (length *event-queue*)
           for event = (aref *event-queue* i)
           unless (eq (swank-event-type event) :debug)
           do (setf *event-queue* (delete event *event-queue* :test #'eq))
              (return event))))
+
+;;; ============================================================
+;;; Reconnection Logic
+;;; ============================================================
+
+(defun attempt-reconnect (&key (host "127.0.0.1") (port 4006))
+  "Attempt to reconnect to Swank server with exponential backoff.
+Returns: Connection status or error."
+  (unless *reconnect-enabled*
+    (return-from attempt-reconnect
+      (list :error t :message "Reconnection is disabled")))
+  (bordeaux-threads:with-lock-held (*connection-lock*)
+    (when *swank-connected*
+      (return-from attempt-reconnect
+        (list :error t :message "Already connected"))))
+  (let ((attempt-count (bordeaux-threads:with-lock-held (*connection-lock*)
+                         (incf *reconnect-attempt-count*))))
+    (when (> attempt-count *reconnect-max-attempts*)
+      (log-error (format nil "Max reconnection attempts (~d) reached" *reconnect-max-attempts*))
+      (bordeaux-threads:with-lock-held (*connection-lock*)
+        (setf *reconnect-attempt-count* 0))
+      (return-from attempt-reconnect
+        (list :error t :message (format nil "Max reconnection attempts (~d) reached" *reconnect-max-attempts*))))
+    (let ((delay (* *reconnect-delay* (expt 2 (1- attempt-count)))))
+      (log-info (format nil "Reconnection attempt ~d/~d, waiting ~d seconds"
+                        attempt-count *reconnect-max-attempts* delay))
+      (sleep delay))
+    (handler-case
+        (let ((result (swank-connect :host host :port port)))
+          (if (getf result :error)
+              (progn
+                (log-error (format nil "Reconnection attempt ~d failed: ~a"
+                                  attempt-count (getf result :message)))
+                result)
+              (progn
+                (log-info (format nil "Reconnection successful on attempt ~d" attempt-count))
+                (bordeaux-threads:with-lock-held (*connection-lock*)
+                  (setf *reconnect-attempt-count* 0))
+                result)))
+      (error (e)
+        (log-error (format nil "Reconnection attempt ~d error: ~a" attempt-count e))
+        (list :error t :message (format nil "Reconnection error: ~a" e))))))
+
+(defun cleanup-on-error ()
+  "Clean up resources on fatal errors.
+Disconnects from Swank and clears pending state."
+  (handler-case
+      (progn
+        (log-warn "Cleaning up after fatal error")
+        (swank-disconnect)
+        ;; Clear pending requests
+        (bordeaux-threads:with-lock-held (*request-lock*)
+          (clrhash *pending-requests*)
+          (setf *current-request-id* nil))
+        ;; Clear event queue
+        (bordeaux-threads:with-lock-held (*event-mutex*)
+          (setf (fill-pointer *event-queue*) 0))
+        ;; Clear debugger state
+        (setf *debugger-thread* nil
+              *debugger-level* 0)
+        (log-info "Cleanup completed"))
+    (error (e)
+      (log-error (format nil "Error during cleanup: ~a" e)))))
 
 (defun swank-event-processor ()
   "Background thread: processes async events (currently just consumes them).
@@ -522,8 +773,11 @@ Output events are just logged."
 Code should be a string. Package is package name.
 Uses swank:eval-and-grab-output which reads the string in the target package,
 so symbols like + are resolved correctly."
-  (unless code
-    (return-from swank-eval (list :error t :message "code is required")))
+  ;; Input validation
+  (unless (and code (stringp code) (plusp (length code)))
+    (return-from swank-eval (list :error t :message "code is required and must be a non-empty string")))
+  (unless (and package (stringp package) (plusp (length package)))
+    (return-from swank-eval (list :error t :message "package is required and must be a non-empty string")))
   ;; Use swank:eval-and-grab-output - it takes a string that gets READ
   ;; in the target package, so symbols like + are resolved correctly.
   ;; We use swank-sym to resolve at runtime.
@@ -534,8 +788,13 @@ so symbols like + are resolved correctly."
   "Compile Lisp code via Swank.
 CODE should be a string containing Lisp code.
 Uses swank:compile-string-for-emacs with simple arguments."
-  (unless code
-    (return-from swank-compile (list :error t :message "code is required")))
+  ;; Input validation
+  (unless (and code (stringp code) (plusp (length code)))
+    (return-from swank-compile (list :error t :message "code is required and must be a non-empty string")))
+  (unless (and package (stringp package) (plusp (length package)))
+    (return-from swank-compile (list :error t :message "package is required and must be a non-empty string")))
+  (unless (and filename (stringp filename) (plusp (length filename)))
+    (return-from swank-compile (list :error t :message "filename is required and must be a non-empty string")))
   ;; swank:compile-string-for-emacs takes (string buffer position filename policy)
   ;; position can be nil, policy can be nil
   (let ((form `(,(swank-sym "COMPILE-STRING-FOR-EMACS") ,code ,filename nil ,filename nil)))
@@ -555,8 +814,13 @@ Uses sb-debug:list-backtrace since swank:backtrace requires debugger context."
 
 (defun swank-eval-in-frame (&key code (frame-index 0) (package "CL-USER"))
   "Evaluate CODE (string) in FRAME-INDEX context."
-  (unless code
-    (return-from swank-eval-in-frame (list :error t :message "code is required")))
+  ;; Input validation
+  (unless (and code (stringp code) (plusp (length code)))
+    (return-from swank-eval-in-frame (list :error t :message "code is required and must be a non-empty string")))
+  (unless (and package (stringp package) (plusp (length package)))
+    (return-from swank-eval-in-frame (list :error t :message "package is required and must be a non-empty string")))
+  (unless (and (integerp frame-index) (>= frame-index 0))
+    (return-from swank-eval-in-frame (list :error t :message "frame-index must be a non-negative integer")))
   (let ((form `(,(swank-sym "EVAL-STRING-IN-FRAME") ,code ,frame-index ,package)))
     (send-request form :package package :thread t)))
 
@@ -696,14 +960,29 @@ Returns (values thread-id level in-debugger-p)."
     (send-request form :package "CL-USER" :thread t)))
 
 (defun swank-interrupt ()
-  "Interrupt current evaluation."
-  (send-request `(,(swank-sym "INTERRUPT")) :package "CL-USER" :thread t))
+  "Interrupt current evaluation.
+Returns success status or error."
+  (handler-case
+      (progn
+        (log-info "Sending interrupt to Swank")
+        (let ((result (send-request `(,(swank-sym "INTERRUPT")) :package "CL-USER" :thread t)))
+          (if (getf result :error)
+              (progn
+                (log-error (format nil "Interrupt failed: ~a" (getf result :message)))
+                result)
+              (progn
+                (log-info "Interrupt sent successfully")
+                result))))
+    (error (e)
+      (log-error (format nil "Interrupt error: ~a" e))
+      (list :error t :message (format nil "Interrupt error: ~a" e)))))
 
 (defun swank-inspect-object (&key expression)
   "Inspect an object via Swank.
 EXPRESSION should be a string that evaluates to an object."
-  (unless expression
-    (return-from swank-inspect-object (list :error t :message "expression is required")))
+  ;; Input validation
+  (unless (and expression (stringp expression) (plusp (length expression)))
+    (return-from swank-inspect-object (list :error t :message "expression is required and must be a non-empty string")))
   (let ((form `(,(swank-sym "EVAL-AND-GRAB-OUTPUT")
                  (,(swank-sym "INSPECT-IN-EMACS") ,expression))))
     (send-request form :package "CL-USER" :thread t)))
@@ -714,23 +993,28 @@ EXPRESSION should be a string that evaluates to an object."
 
 (defun swank-describe (&key symbol)
   "Describe an object via Swank."
-  (unless symbol
-    (return-from swank-describe (list :error t :message "symbol is required")))
+  ;; Input validation
+  (unless (and symbol (stringp symbol) (plusp (length symbol)))
+    (return-from swank-describe (list :error t :message "symbol is required and must be a non-empty string")))
   (send-request `(,(swank-sym "DESCRIBE-SYMBOL") ,symbol) :package "CL-USER" :thread t))
 
 (defun swank-autodoc (&key symbol)
   "Get arglist/documentation for SYMBOL (string).
 Uses eval-and-grab-output to call swank/backend:arglist."
-  (unless symbol
-    (return-from swank-autodoc (list :error t :message "symbol is required")))
+  ;; Input validation
+  (unless (and symbol (stringp symbol) (plusp (length symbol)))
+    (return-from swank-autodoc (list :error t :message "symbol is required and must be a non-empty string")))
   (let ((form `(,(swank-sym "EVAL-AND-GRAB-OUTPUT")
                  (format nil "(swank/backend:arglist (quote ~a))" ,symbol))))
     (send-request form :package "CL-USER" :thread t)))
 
 (defun swank-completions (&key prefix (package "CL-USER"))
   "Get symbol completions for PREFIX in PACKAGE."
-  (unless prefix
-    (return-from swank-completions (list :error t :message "prefix is required")))
+  ;; Input validation
+  (unless (and prefix (stringp prefix) (plusp (length prefix)))
+    (return-from swank-completions (list :error t :message "prefix is required and must be a non-empty string")))
+  (unless (and package (stringp package) (plusp (length package)))
+    (return-from swank-completions (list :error t :message "package is required and must be a non-empty string")))
   (send-request `(,(swank-sym "SIMPLE-COMPLETIONS") ,prefix ,package) :package "CL-USER" :thread t))
 
 ;;; ============================================================

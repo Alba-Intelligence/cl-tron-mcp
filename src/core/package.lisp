@@ -15,4 +15,12 @@
    #:get-tool-descriptor
    #:get-tool-handler
    #:get-config
-   #:set-config))
+   #:set-config
+   #:*config-file-paths*
+   #:*config-loaded*
+   #:*env-var-prefix*
+   #:load-config-file
+   #:load-config-from-env
+   #:load-configuration
+   #:get-config-value
+   #:print-configuration))

@@ -16,6 +16,13 @@
 ;; When tools/call is re-invoked with approval_request_id, we consume and run the tool.
 (defvar *approved-request-ids* (make-hash-table :test 'equal))
 
+;;; Atomic counter for unique request IDs
+(defvar *approval-request-counter* 0
+  "Atomic counter for generating unique approval request IDs.")
+
+(defvar *approval-counter-lock* (bt:make-lock "approval-counter")
+  "Lock for synchronizing access to *approval-request-counter*.")
+
 (defstruct approval-request id operation details timestamp expires response)
 
 (defun operation-requires-approval (operation)
@@ -76,8 +83,14 @@
       (whitelist-check op (list :tool tool-name :arguments arguments)))))
 
 (defun generate-approval-request-id ()
-  "Return a unique string ID for an approval request (JSON-RPC safe)."
-  (format nil "~a-~a" (get-unix-time) (random 1000000)))
+  "Return a unique string ID for an approval request (JSON-RPC safe).
+Uses atomic counter to ensure uniqueness even when called concurrently."
+  (bt:with-lock-held (*approval-counter-lock*)
+    (incf *approval-request-counter*)
+    (format nil "~a-~a-~a"
+            (get-unix-time)
+            *approval-request-counter*
+            (random 10000))))
 
 (defun request-approval (operation details &key (timeout *approval-timeout*))
   (let* ((req-id (generate-approval-request-id))
@@ -94,7 +107,7 @@
 
 (defun approval-response (request-id &optional response)
   "Record user response for request-id. When response is :approved, add to *approved-request-ids*
-   for one-time use when the client re-invokes the tool with approval_request_id."
+   with timestamp for cleanup."
   (bt:with-lock-held (*approval-lock*)
     (let ((request (gethash request-id *pending-approvals*)))
       (unless request
@@ -103,7 +116,7 @@
         (setf (approval-request-response request) response)
         (remhash request-id *pending-approvals*)
         (when (eq response :approved)
-          (setf (gethash request-id *approved-request-ids*) t)))
+          (setf (gethash request-id *approved-request-ids*) (get-unix-time))))
       (approval-request-response request))))
 
 (defun consume-approved-request-id (request-id)
@@ -112,6 +125,43 @@
     (when (gethash request-id *approved-request-ids*)
       (remhash request-id *approved-request-ids*)
       t)))
+
+(defun cleanup-expired-approvals ()
+  "Remove expired approval requests from *pending-approvals*."
+  (bt:with-lock-held (*approval-lock*)
+    (let ((now (get-unix-time))
+          (expired-count 0))
+      (maphash (lambda (req-id request)
+                 (when (> now (approval-request-expires request))
+                   (remhash req-id *pending-approvals*)
+                   (incf expired-count)))
+               *pending-approvals*)
+      (when (> expired-count 0)
+        (cl-tron-mcp/logging:log-info
+         (format nil "Cleaned up ~d expired approval requests" expired-count)))
+      expired-count)))
+
+(defun cleanup-old-approved-requests (&optional (max-age 300))
+  "Remove approved request IDs older than MAX-AGE seconds (default 5 minutes)."
+  (bt:with-lock-held (*approval-lock*)
+    (let ((now (get-unix-time))
+          (expired-count 0))
+      (maphash (lambda (req-id timestamp)
+                 (when (> (- now timestamp) max-age)
+                   (remhash req-id *approved-request-ids*)
+                   (incf expired-count)))
+               *approved-request-ids*)
+      (when (> expired-count 0)
+        (cl-tron-mcp/logging:log-info
+         (format nil "Cleaned up ~d old approved request IDs" expired-count)))
+      expired-count)))
+
+(defun cleanup-all-approvals ()
+  "Clean up expired pending approvals and old approved request IDs."
+  (let ((expired (cleanup-expired-approvals))
+        (old-approved (cleanup-old-approved-requests)))
+    (list :expired-pending expired
+          :expired-approved old-approved)))
 
 (defun check-approval (operation details)
   "Return t if operation is approved (whitelisted). Server-enforced approval uses

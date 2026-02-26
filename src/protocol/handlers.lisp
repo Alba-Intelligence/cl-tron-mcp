@@ -27,6 +27,113 @@
 (defvar *message-handler* nil)
 (defvar *request-id* nil)
 
+(defvar *default-tool-timeout* 30
+  "Default timeout for tool execution in seconds.")
+
+(defvar *pending-requests* (make-hash-table :test 'eql)
+  "Hash table tracking pending requests for cleanup.")
+
+(defvar *request-lock* (bordeaux-threads:make-lock "pending-requests")
+  "Lock for synchronizing access to *pending-requests*.")
+
+;;; ============================================================
+;;; Error Recovery and Cleanup
+;;; ============================================================
+
+(defun cleanup-on-error (error-context &optional (error-condition nil))
+  "Perform cleanup when an error occurs.
+ERROR-CONTEXT is a string describing what operation failed.
+ERROR-CONDITION is the actual condition object (optional)."
+  (handler-case
+      (progn
+        (cl-tron-mcp/logging:log-error
+         (format nil "Error in ~a: ~a"
+                 error-context
+                 (if error-condition
+                     (princ-to-string error-condition)
+                     "unknown")))
+        ;; Disconnect from Swank if connected
+        (when (cl-tron-mcp/swank:swank-connected-p)
+          (cl-tron-mcp/logging:log-info
+           (format nil "Disconnecting from Swank due to error in ~a"
+                   error-context))
+          (cl-tron-mcp/swank:swank-disconnect))
+        ;; Clear pending requests
+        (bordeaux-threads:with-lock-held (*request-lock*)
+          (clrhash *pending-requests*))
+        (cl-tron-mcp/logging:log-info
+         (format nil "Cleanup completed for error in ~a" error-context)))
+    (error (e)
+      (cl-tron-mcp/logging:log-error
+       (format nil "Error during cleanup: ~a" e)))))
+
+(defun validate-string-param (param-name value &key required (min-length 1))
+  "Validate a string parameter.
+Returns T if valid, otherwise returns an error response plist."
+  (when (and required (null value))
+    (return-from validate-string-param
+      (list :valid nil :error (format nil "Missing required parameter: ~a" param-name))))
+  (when (and value (not (stringp value)))
+    (return-from validate-string-param
+      (list :valid nil :error (format nil "Parameter ~a must be a string" param-name))))
+  (when (and value (stringp value) (< (length value) min-length))
+    (return-from validate-string-param
+      (list :valid nil :error (format nil "Parameter ~a must be at least ~d characters" param-name min-length))))
+  (list :valid t))
+
+(defun validate-list-param (param-name value &key required)
+  "Validate a list parameter.
+Returns T if valid, otherwise returns an error response plist."
+  (when (and required (null value))
+    (return-from validate-list-param
+      (list :valid nil :error (format nil "Missing required parameter: ~a" param-name))))
+  (when (and value (not (listp value)))
+    (return-from validate-list-param
+      (list :valid nil :error (format nil "Parameter ~a must be a list" param-name))))
+  (list :valid t))
+
+(defun validate-integer-param (param-name value &key required (min 0))
+  "Validate an integer parameter.
+Returns T if valid, otherwise returns an error response plist."
+  (when (and required (null value))
+    (return-from validate-integer-param
+      (list :valid nil :error (format nil "Missing required parameter: ~a" param-name))))
+  (when (and value (not (integerp value)))
+    (return-from validate-integer-param
+      (list :valid nil :error (format nil "Parameter ~a must be an integer" param-name))))
+  (when (and value (integerp value) (< value min))
+    (return-from validate-integer-param
+      (list :valid nil :error (format nil "Parameter ~a must be >= ~d" param-name min))))
+  (list :valid t))
+
+(defmacro with-timeout ((seconds) &body body)
+  "Execute BODY with a timeout of SECONDS seconds.
+If timeout occurs, a TIMEOUT-ERROR condition is signaled."
+  (let ((timeout-tag (gensym "TIMEOUT-TAG-")))
+    `(handler-case
+         (let ((start-time (get-universal-time)))
+           (unwind-protect
+                (progn ,@body)
+             (when (> (- (get-universal-time) start-time) ,seconds)
+               (error 'timeout-error :message "Operation timed out"))))
+       (timeout-error (e)
+         (declare (ignore e))
+         (error 'timeout-error :message (format nil "Operation timed out after ~d seconds" ,seconds))))))
+
+(define-condition timeout-error (error)
+  ((message :initarg :message :reader timeout-error-message))
+  (:report (lambda (condition stream)
+             (format stream "Timeout: ~a" (timeout-error-message condition)))))
+
+(defun get-unix-time ()
+  "Get current Unix timestamp (seconds since epoch)."
+  #+sbcl
+  (sb-ext:get-time-of-day)
+  #+ccl
+  (ccl:get-time-of-day)
+  #-(or sbcl ccl)
+  (- (/ (get-universal-time) 86400) 2))
+
 ;;; ============================================================
 ;;; Message Dispatch
 ;;; ============================================================
@@ -35,18 +142,22 @@
   "Handle incoming JSON-RPC message.
 Dispatches to appropriate handler based on method name.
 Messages without ID are treated as notifications."
-  (let* ((parsed (if (stringp message) (jonathan:parse message) message))
-         (id (getf parsed :|id|))
-         (method (getf parsed :|method|))
-         (params (getf parsed :|params|)))
-    (handler-case
+  (handler-case
+      (let* ((parsed (if (stringp message) (jonathan:parse message) message))
+             (id (getf parsed :|id|))
+             (method (getf parsed :|method|))
+             (params (getf parsed :|params|)))
         (cond
           ((null id)
            (handle-notification method params))
           (t
-           (handle-request id method params)))
-      (error (e)
-        (make-error-response id -32000 (princ-to-string e))))))
+           (handle-request id method params))))
+    (jonathan.error:<jonathan-error> (e)
+      (cl-tron-mcp/logging:log-error (format nil "JSON parse error: ~a" e))
+      (make-error-response nil -32700 "Parse error"))
+    (error (e)
+      (cl-tron-mcp/logging:log-error (format nil "Error handling message: ~a" e))
+      (make-error-response nil -32603 (princ-to-string e)))))
 
 (defun handle-request (id method params)
   "Handle JSON-RPC 2.0 request.
@@ -145,9 +256,17 @@ Returns list of all available tools with their schemas."
    Denial or invalid approval returns error with message (retry = same tool again)."
   (let ((tool-name (getf params :|name|))
         (arguments (getf params :|arguments|)))
-    (unless tool-name
-      (return-from handle-tool-call
-        (make-error-response id -32602 "Missing tool name")))
+    ;; Validate tool-name
+    (let ((validation (validate-string-param "name" tool-name :required t)))
+      (unless (getf validation :valid)
+        (return-from handle-tool-call
+          (make-error-response id -32602 (getf validation :error)))))
+    ;; Validate arguments is a list if provided
+    (when arguments
+      (let ((validation (validate-list-param "arguments" arguments)))
+        (unless (getf validation :valid)
+          (return-from handle-tool-call
+            (make-error-response id -32602 (getf validation :error))))))
     (handler-case
         (progn
           ;; Re-invocation with approval from client (Option A)
@@ -163,7 +282,7 @@ Returns list of all available tools with their schemas."
                 (t
                  (return-from handle-tool-call
                    (make-error-response id -32001
-                     "Approval expired or already used. Invoke the tool again to request a new approval."))))))
+                                        "Approval expired or already used. Invoke the tool again to request a new approval."))))))
           ;; Tool requires user approval and no whitelist -> return approval_required
           (when (and (cl-tron-mcp/tools:tool-requires-user-approval-p tool-name)
                      (not (cl-tron-mcp/security:whitelist-check-tool tool-name arguments)))
@@ -177,25 +296,65 @@ Returns list of all available tools with their schemas."
                        :|result|
                        (list :|content|
                              (list (list :|type| "text"
-                                        :|text| (jonathan:to-json
-                                                 (list :|approval_required| t
-                                                       :|request_id| (cl-tron-mcp/security:approval-request-id request)
-                                                       :|message| (format nil "User approval required for tool: ~a" tool-name))))))))))
-          ;; Run tool (no approval needed or whitelisted)
-          (handle-tool-call-run tool-name (or arguments (list)) id))
-      (error (e)
-        (make-error-response id -32000 (princ-to-string e))))))
+                                         :|text| (jonathan:to-json
+                                                  (list :|approval_required| t
+                                                        :|request_id| (cl-tron-mcp/security:approval-request-id request)
+                                                        :|message| (format nil "User approval required for tool: ~a" tool-name))))))))))
+            ;; Run tool (no approval needed or whitelisted)
+            (handle-tool-call-run tool-name (or arguments (list)) id))
+          (error (e)
+                 (cleanup-on-error (format nil "tool call: ~a" tool-name) e)
+                 (make-error-response id -32000 (princ-to-string e)))))))
 
 (defun handle-tool-call-run (tool-name arguments id)
-  "Helper: run tool and return JSON-RPC result."
-  (let ((result (cl-tron-mcp/tools:call-tool tool-name arguments)))
-    (jonathan:to-json
-     (list :|jsonrpc| "2.0"
-           :|id| id
-           :|result|
-           (list :|content|
-                 (list (list :|type| "text"
-                            :|text| (format nil "~a" result))))))))
+  "Helper: run tool and return JSON-RPC result with timeout and cleanup."
+  (let ((start-time (get-universal-time))
+        (timeout-seconds *default-tool-timeout*)
+        (result nil)
+        (error-occurred nil))
+    (unwind-protect
+         (handler-case
+             (progn
+               ;; Track this request for cleanup
+               (bordeaux-threads:with-lock-held (*request-lock*)
+                 (setf (gethash id *pending-requests*) t))
+               ;; Check timeout before executing
+               (let ((elapsed (- (get-universal-time) start-time)))
+                 (when (>= elapsed timeout-seconds)
+                   (error 'timeout-error
+                          :message (format nil "Tool execution timeout after ~d seconds" timeout-seconds))))
+               ;; Execute tool
+               (setf result (cl-tron-mcp/tools:call-tool tool-name arguments))
+               ;; Check timeout after execution
+               (let ((elapsed (- (get-universal-time) start-time)))
+                 (when (>= elapsed timeout-seconds)
+                   (error 'timeout-error
+                          :message (format nil "Tool execution timeout after ~d seconds" timeout-seconds))))
+               ;; Return success response
+               (jonathan:to-json
+                (list :|jsonrpc| "2.0"
+                      :|id| id
+                      :|result|
+                      (list :|content|
+                            (list (list :|type| "text"
+                                        :|text| (format nil "~a" result)))))))
+           (timeout-error (e)
+             (setf error-occurred t)
+             (cl-tron-mcp/logging:log-warn
+              (format nil "Tool ~a timed out after ~d seconds"
+                      tool-name timeout-seconds))
+             (make-error-response id -32008 (timeout-error-message e)))
+           (error (e)
+             (setf error-occurred t)
+             (cl-tron-mcp/logging:log-error
+              (format nil "Error executing tool ~a: ~a" tool-name e))
+             (make-error-response id -32000 (princ-to-string e))))
+      ;; Cleanup: remove from pending requests
+      (bordeaux-threads:with-lock-held (*request-lock*)
+        (remhash id *pending-requests*))
+      ;; If error occurred, perform additional cleanup
+      (when error-occurred
+        (cleanup-on-error (format nil "tool call: ~a" tool-name))))))
 
 (defun handle-approval-respond (id params)
   "Handle approval/respond request. Params: request_id (string), approved (boolean), optional message.
@@ -203,9 +362,17 @@ Returns list of all available tools with their schemas."
   (let ((request-id (getf params :|request_id|))
         (approved (getf params :|approved|))
         (message (getf params :|message|)))
-    (unless request-id
+    ;; Validate request_id
+    (let ((validation (validate-string-param "request_id" request-id :required t)))
+      (unless (getf validation :valid)
+        (return-from handle-approval-respond
+          (make-error-response id -32602 (getf validation :error)))))
+    ;; Validate approved is boolean or string
+    (when (and approved (not (or (eq approved t) (eq approved nil)
+                                 (and (stringp approved)
+                                      (or (string= approved "true") (string= approved "false"))))))
       (return-from handle-approval-respond
-        (make-error-response id -32602 "Missing request_id")))
+        (make-error-response id -32602 "approved must be a boolean or 'true'/'false' string")))
     (handler-case
         (let ((response (if (or (eq approved t) (and approved (string= (string approved) "true")))
                             :approved
@@ -217,8 +384,9 @@ Returns list of all available tools with their schemas."
                  :|result| (nconc (list :|recorded| t :|approved| (eq response :approved))
                                   (when (eq response :denied)
                                     (list :|message| (or (when message (string message))
-                                                        "User denied approval. You can retry by invoking the tool again."))))))))
+                                                         "User denied approval. You can retry by invoking the tool again.")))))))
       (error (e)
+        (cleanup-on-error (format nil "approval respond: ~a" request-id) e)
         (make-error-response id -32000 (princ-to-string e))))))
 
 ;;; ============================================================
@@ -236,8 +404,18 @@ These resources help AI agents understand how to use the MCP server."
   "Handle resources/read request.
 Returns contents of a specific documentation file by URI.
 URI format: file://relative/path/to/file.md"
-  (let ((response (cl-tron-mcp/resources:handle-resources-read id params)))
-    (jonathan:to-json response)))
+  ;; Validate uri parameter
+  (let ((uri (getf params :|uri|)))
+    (let ((validation (validate-string-param "uri" uri :required t)))
+      (unless (getf validation :valid)
+        (return-from handle-resources-read
+          (make-error-response id -32602 (getf validation :error)))))
+    (handler-case
+        (let ((response (cl-tron-mcp/resources:handle-resources-read id params)))
+          (jonathan:to-json response))
+      (error (e)
+        (cl-tron-mcp/logging:log-error (format nil "Error reading resource: ~a" e))
+        (make-error-response id -32000 (princ-to-string e))))))
 
 ;;; ============================================================
 ;;; Prompts Handlers
@@ -254,8 +432,18 @@ These prompts help agents understand the correct usage patterns."
   "Handle prompts/get request.
 Returns a specific prompt with step-by-step instructions.
 PROMPT-NAME is passed in params."
-  (let ((response (cl-tron-mcp/prompts:handle-prompts-get id params)))
-    (jonathan:to-json response)))
+  ;; Validate name parameter
+  (let ((name (getf params :|name|)))
+    (let ((validation (validate-string-param "name" name :required t)))
+      (unless (getf validation :valid)
+        (return-from handle-prompts-get
+          (make-error-response id -32602 (getf validation :error)))))
+    (handler-case
+        (let ((response (cl-tron-mcp/prompts:handle-prompts-get id params)))
+          (jonathan:to-json response))
+      (error (e)
+        (cl-tron-mcp/logging:log-error (format nil "Error getting prompt: ~a" e))
+        (make-error-response id -32000 (princ-to-string e))))))
 
 ;;; ============================================================
 ;;; Ping Handler
@@ -276,15 +464,15 @@ Returns pong response for keepalive."
 (defun make-error-response (id code message)
   "Create JSON-RPC error response.
 CODE should be a standard JSON-RPC error code:
-  -32600 : Invalid Request
-  -32601 : Method Not Found
-  -32602 : Invalid Params
-  -32603 : Internal Error
-  -32000 to -32099 : Server-defined errors"
+   -32600 : Invalid Request
+   -32601 : Method Not Found
+   -32602 : Invalid Params
+   -32603 : Internal Error
+   -32000 to -32099 : Server-defined errors"
   (jonathan:to-json
    (list :|jsonrpc| "2.0"
          :|id| id
          :|error| (list :|code| code
-                       :|message| message))))
+                        :|message| message))))
 
 (provide :cl-tron-mcp/protocol-handlers)

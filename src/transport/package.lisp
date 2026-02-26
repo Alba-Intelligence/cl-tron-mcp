@@ -18,4 +18,10 @@
    #:stop-websocket-transport
    #:send-message-via-websocket
    #:*transport*
-   #:*transport-type*))
+   #:*transport-type*
+   #:*max-concurrent-connections*
+   #:*http-request-timeout*
+   #:*rate-limit-enabled*
+   #:*rate-limit-requests-per-minute*
+   #:*max-request-size*
+   #:*http-connection-timeout*))

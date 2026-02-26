@@ -19,6 +19,8 @@
    #:mcp-swank-eval
    #:swank-compile
    #:mcp-swank-compile
+   #:send-request-async
+   #:get-async-result
    ;; Backtrace/Debugging
    #:swank-backtrace
    #:mcp-swank-backtrace
@@ -64,4 +66,17 @@
    ;; Events
    #:pop-debugger-event
    #:swank-event-processor
-   #:handle-swank-event))
+   #:handle-swank-event
+   ;; Configuration
+   #:*default-eval-timeout*
+   #:*heartbeat-interval*
+   #:*reconnect-enabled*
+   #:*reconnect-max-attempts*
+   #:*reconnect-delay*
+   #:*max-event-queue-size*
+   #:*output-callback*
+   ;; Reconnection
+   #:attempt-reconnect
+   #:cleanup-on-error
+   #:cleanup-old-events
+   #:heartbeat-loop))

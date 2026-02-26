@@ -12,7 +12,9 @@
    #:prin1-to-string-for-emacs
    #:swank-protocol-error
    #:swank-read-error
-   #:swank-write-error))
+   #:swank-write-error
+   #:swank-reader-error
+   #:*default-read-timeout*))
 
 (in-package #:cl-tron-mcp/swank-protocol)
 
@@ -30,6 +32,10 @@
 ;;; References:
 ;;; - git_examples/slime/swank/rpc.lisp
 
+;;; Default timeout for socket reads (in seconds)
+(defvar *default-read-timeout* 30
+  "Default timeout for socket read operations in seconds.")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; UTF-8 Encoding/Decoding
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -40,18 +46,10 @@
   (sb-ext:string-to-octets string :external-format :utf-8)
   #+ccl
   (ccl:encode-string-to-octets string :external-format :utf-8)
-  #+(or ecl abcl)
-  (let ((stream (make-array 0 :element-type '(unsigned-byte 8) :adjustable t :fill-pointer 0)))
-    (loop for code across string
-          do (cond ((< code 128)
-                    (vector-push-extend code stream))
-                   (t
-                    (let ((bytes (char-code code)))
-                      (when (>= bytes #x1000)
-                        (vector-push-extend (ldb (byte 3 12) bytes) stream))
-                      (vector-push-extend (ldb (byte 6 6) bytes) stream)
-                      (vector-push-extend (ldb (byte 6 0) bytes) stream)))))
-    stream)
+  #+ecl
+  (ext:string-to-octets string :external-format :utf-8)
+  #+abcl
+  (ext:string-to-octets string :external-format :utf-8)
   #-(or sbcl ccl ecl abcl)
   (error "UTF-8 encoding not implemented for this Lisp"))
 
@@ -64,7 +62,7 @@
   #+ecl
   (ext:octets-to-string octets :external-format :utf-8)
   #+abcl
-  (error "UTF-8 decoding not implemented for this Lisp")
+  (ext:octets-to-string octets :external-format :utf-8)
   #-(or sbcl ccl ecl abcl)
   (error "UTF-8 decoding not supported"))
 
@@ -72,28 +70,39 @@
 ;;; Message Framing
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun read-chunk (stream length)
-  "Read exactly LENGTH bytes from STREAM into a vector."
+(defun read-chunk (stream length &key (timeout *default-read-timeout*))
+  "Read exactly LENGTH bytes from STREAM into a vector.
+If TIMEOUT is provided and exceeded, signals a swank-read-timeout error."
   (let* ((buffer (make-array length :element-type '(unsigned-byte 8)))
-         (count (read-sequence buffer stream)))
-    (cond ((= count length)
-           buffer)
-          ((zerop count)
-           (error 'end-of-file :stream stream))
-          (t
-           (error "Short read: expected ~D bytes, got ~D" length count)))))
+         (start-time (get-universal-time))
+         (timeout-seconds timeout))
+    (loop with total-read = 0
+          while (< total-read length)
+          do (let ((elapsed (- (get-universal-time) start-time)))
+               (when (> elapsed timeout-seconds)
+                 (error 'swank-read-timeout 
+                        :stream stream 
+                        :timeout timeout
+                        :message (format nil "Read timeout after ~d seconds" timeout)))
+               (let ((count (read-sequence buffer stream :start total-read)))
+                 (when (zerop count)
+                   (if (zerop total-read)
+                       (error 'end-of-file :stream stream)
+                       (error "Short read: expected ~D bytes, got ~D" length total-read)))
+                 (incf total-read count)))
+          finally (return buffer))))
 
-(defun parse-header (stream)
+(defun parse-header (stream &key (timeout *default-read-timeout*))
   "Read 6 characters from STREAM and parse as hexadecimal integer."
-  (let ((hex-chars (read-chunk stream 6)))
+  (let ((hex-chars (read-chunk stream 6 :timeout timeout)))
     (parse-integer (map 'string #'code-char hex-chars) :radix 16)))
 
-(defun read-packet (stream)
+(defun read-packet (stream &key (timeout *default-read-timeout*))
   "Read a single Swank message packet from STREAM.
 Returns the decoded S-expression string."
   (handler-case
-      (let* ((length (parse-header stream))
-             (octets (read-chunk stream length))
+      (let* ((length (parse-header stream :timeout timeout))
+             (octets (read-chunk stream length :timeout timeout))
              (string (utf8-to-string octets)))
         string)
     (condition (c)
@@ -143,16 +152,18 @@ This mirrors Swank's prin1-to-string-for-emacs:
     (let ((*package* package))
       (read-from-string string))))
 
-(defun read-message (stream package)
+(defun read-message (stream package &key (timeout *default-read-timeout*))
   "Read and parse a complete Swank message from STREAM.
 Returns the parsed S-expression in PACKAGE."
   (handler-case
-      (let ((packet (read-packet stream)))
+      (let ((packet (read-packet stream :timeout timeout)))
         (read-form packet package))
     (swank-read-error (c)
       (values nil c))
     (reader-error (c)
-      (values nil (make-swank-reader-error :packet (when (boundp 'packet) packet) :cause c)))))
+      (values nil (make-condition 'swank-reader-error 
+                                   :packet packet 
+                                   :cause c)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Conditions
@@ -173,7 +184,23 @@ Returns the parsed S-expression in PACKAGE."
   (:report (lambda (c s)
              (format s "Swank write error while sending ~s: ~a"
                      (swank-write-error-message c)
-                     (swank-write-error-condition c)))))
+                     (swank-read-error-condition c)))))
+
+(define-condition swank-reader-error (swank-protocol-error)
+  ((packet :initarg :packet :reader swank-reader-error-packet)
+   (cause :initarg :cause :reader swank-reader-error-cause))
+  (:report (lambda (c s)
+             (format s "Swank reader error parsing packet ~S: ~a"
+                     (swank-reader-error-packet c)
+                     (swank-reader-error-cause c)))))
+
+(define-condition swank-read-timeout (swank-protocol-error)
+  ((timeout :initarg :timeout :reader swank-read-timeout-timeout)
+   (message :initarg :message :reader swank-read-timeout-message))
+  (:report (lambda (c s)
+             (format s "Swank read timeout after ~a seconds: ~a"
+                     (swank-read-timeout-timeout c)
+                     (swank-read-timeout-message c)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Utilities

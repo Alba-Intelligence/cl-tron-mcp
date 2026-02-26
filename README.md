@@ -39,7 +39,7 @@ Shows the actual JSON-RPC messages that AI clients send to Tron internally. This
 │  SBCL + Swank   │◄───────►│   Tron (MCP)    │◄───────►│   AI Client     │
 │  (Port 4006)    │         │   (stdio)       │         │ (Kilocode, etc) │
 │                 │         │                 │         │                 │
-│  Your code      │         │  86 tools:      │         │  Sends prompts  │
+│  Your code      │         │  85 tools:      │         │  Sends prompts  │
 │  Debugger       │         │   - swank_eval  │         │  Receives       │
 │  Threads        │         │   - inspect     │         │  results        │
 │  State lives    │         │   - profile     │         │                 │
@@ -66,7 +66,7 @@ Shows the actual JSON-RPC messages that AI clients send to Tron internally. This
 | **Monitor**    | Health checks, runtime stats, GC             | [docs/tools/monitor.md](docs/tools/monitor.md)         |
 | **Swank**      | Slime/Portacle integration (21 tools)        | [docs/swank-integration.md](docs/swank-integration.md) |
 
-**86 tools total** across 14 categories.
+**85 tools total** across 14 categories.
 
 ### Quick Tool Examples
 
