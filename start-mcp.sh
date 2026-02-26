@@ -395,6 +395,17 @@ while [[ $# -gt 0 ]]; do
         ACTION="restart"
         shift
         ;;
+    --config)
+        # Run the config generation script
+        shift  # Remove --config from args
+        CONFIG_SCRIPT="$PROOT/create_configs.sh"
+        if [[ -f "$CONFIG_SCRIPT" ]]; then
+            exec "$CONFIG_SCRIPT" "$@"
+        else
+            log_error "Config script not found: $CONFIG_SCRIPT"
+            exit 1
+        fi
+        ;;
     --help | -h)
         cat << 'HELP_EOF'
 Usage: start-mcp.sh [OPTIONS]
@@ -411,6 +422,7 @@ Options:
   --status         Check if server is running
   --stop           Stop a running server
   --restart        Stop existing server and start new one
+  --config         Generate MCP client configuration files
   --help           Show this help
 
 Transport Modes:

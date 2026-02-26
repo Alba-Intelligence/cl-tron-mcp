@@ -148,6 +148,28 @@ You can run the MCP from a **local copy** or from a **clone of the GitHub repo**
 
 The config examples below use **tilde expansion** (`~`) for the standard Quicklisp path. MCP clients support `~` but do not support `$HOME` or other environment variables. Adjust the path if your Quicklisp is in a different location.
 
+**Quick Setup:** Use the config generator script to create all MCP client configurations with absolute paths:
+
+```bash
+# Interactive menu - select which clients to configure
+./create_configs.sh
+
+# Or generate all configs at once
+./create_configs.sh --all
+
+# Or generate a specific client config
+./create_configs.sh --client cursor
+./create_configs.sh --client kilocode
+./create_configs.sh --client vscode
+./create_configs.sh --client opencode
+./create_configs.sh --client claude
+
+# Or use start-mcp.sh --config (same as create_configs.sh)
+./start-mcp.sh --config
+```
+
+The script generates configuration files with absolute paths (no `~` or `$HOME`), which is required for JSON config files.
+
 #### Kilocode
 
 Config file: **`.kilocode/mcp.json`** (project) or global MCP settings. The repo provides **both** Tron variants under different server names so you can **choose one**:

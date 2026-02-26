@@ -1,11 +1,18 @@
 {
     "mcpServers": {
-        "cl-tron-mcp": {
-            "command": "~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
+        "cl-tron-mcp-stdio": {
+            "command": "/home/emmanuel/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
             "args": ["--stdio-only"],
             "env": {},
             "alwaysAllow": [],
             "disabled": false
+        },
+        "cl-tron-mcp": {
+            "command": "/home/emmanuel/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
+            "args": ["--port", "4006"],
+            "env": {},
+            "alwaysAllow": [],
+            "disabled": true
         }
     }
 }

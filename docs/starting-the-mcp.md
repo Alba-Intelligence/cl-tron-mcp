@@ -67,6 +67,35 @@ If your Quicklisp is in a different location, replace the path accordingly. Do n
 
 MCP clients (Cursor, VS Code, Kilocode) support tilde (`~`) expansion but **do not** support environment variables like `$HOME` in the command path. Using `~` allows configs to be portable across machines with the same Quicklisp setup.
 
+### Config Generator Script
+
+For convenience, use the `create_configs.sh` script to generate MCP client configurations with absolute paths:
+
+```bash
+# Interactive menu - select which clients to configure
+./create_configs.sh
+
+# Or generate all configs at once
+./create_configs.sh --all
+
+# Or generate a specific client config
+./create_configs.sh --client cursor
+./create_configs.sh --client kilocode
+./create_configs.sh --client vscode
+./create_configs.sh --client opencode
+./create_configs.sh --client claude
+
+# Or use start-mcp.sh --config (same as create_configs.sh)
+./start-mcp.sh --config
+```
+
+The script generates configuration files with absolute paths (no `~` or `$HOME`), which is required for JSON config files. Supported clients:
+- **Cursor IDE**: `~/.cursor/mcp.json`
+- **Kilocode IDE**: `~/.kilocode/mcp.json`
+- **VS Code**: `~/.vscode/mcp.json`
+- **OpenCode IDE**: `~/.config/opencode/opencode.json`
+- **Claude Desktop**: `~/.config/claude_desktop_config.json`
+
 ## Server Detection and Session Management
 
 For HTTP and combined modes, `start-mcp.sh` includes automatic server detection:
