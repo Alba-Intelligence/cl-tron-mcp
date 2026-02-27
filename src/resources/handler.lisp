@@ -195,19 +195,17 @@ Format: file://relative/path/to/file.md"
 
 (defun list-resources ()
   "Return a list of resource descriptors for all whitelisted files.
-This implements the MCP resources/list operation."
-  (let ((project-root (get-project-root)))
-    (loop for relative-path in *resource-whitelist*
-          for full-path = (merge-pathnames relative-path project-root)
-          for probed = (probe-file full-path)
-          when probed
-            collect (make-resource-descriptor
-                     :uri (make-resource-uri relative-path)
-                     :name (get-resource-name relative-path)
-                     :title (format nil "Documentation: ~a" (get-resource-name relative-path))
-                     :description (format nil "MCP documentation file: ~a" relative-path)
-                     :mime-type (guess-mime-type probed)
-                     :size (file-size probed)))))
+ This implements the MCP resources/list operation.
+Lazy loading: files are not read or probed until resources/read is called."
+  (loop for relative-path in *resource-whitelist*
+        collect (make-resource-descriptor
+                 :uri (make-resource-uri relative-path)
+                 :name (get-resource-name relative-path)
+                 :title (format nil "Documentation: ~a" (get-resource-name relative-path))
+                 :description (format nil "MCP documentation file: ~a" relative-path)
+                 :mime-type "text/markdown"  ; Default, will be updated on read
+                 :size 0)))  ; Placeholder, will be updated on read
+
 
 (defun handle-resources-list (id)
   "Handle MCP resources/list request.

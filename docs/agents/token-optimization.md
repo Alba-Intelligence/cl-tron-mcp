@@ -76,27 +76,28 @@ This document describes the key principles applied to reduce token usage for AI 
 **Principle:** Load resources on-demand rather than upfront.
 
 **Application:**
-- Documentation loaded via `resources/read` instead of including in context
-- Tool categories loaded only when needed
+- Documentation files are not probed or read until `resources/read` is called
+- `resources/list` returns metadata without file system operations
+- File validation and size calculation deferred to read time
 
 **Benefits:**
 - Reduces initial context by 50-70%
+- Eliminates file system overhead during listing
 - Agents only load what they need for their specific task
 
 **Example:**
 ```lisp
-;; Instead of including full documentation in AGENTS.md
-;; Agents use MCP resources:
-
-;; 1. List available docs
+;; resources/list returns metadata without probing files
 (resources/list)
-;; Returns: ["docs/agents/getting-started.md", "docs/agents/workflows.md", ...]
+;; Returns: [{uri: "file://AGENTS.md", name: "AGENTS.md", mime-type: "text/markdown", size: 0}, ...]
 
-;; 2. Read only what's needed
-(resources/read "docs/agents/getting-started.md")
+;; resources/read validates and loads the actual file
+(resources/read "file://AGENTS.md")
+;; Returns: {contents: "...", mime-type: "text/markdown", size: 12345}
 ```
 
 ### 4. Specialized Entry Points
+
 
 **Principle:** Create focused entry points for specific agent types.
 
@@ -178,8 +179,8 @@ This document describes the key principles applied to reduce token usage for AI 
 |----------|-----------|-------------------|--------|
 | 1 | Modularization | 60-80% | ✅ Complete |
 | 2 | Macro Extraction | 40% | ✅ Complete |
-| 3 | Lazy Loading | 50-70% | ⏳ Pending |
-| 4 | Specialized Entry Points | 60-80% | ⏳ Pending |
+| 3 | Lazy Loading | 50-70% | ✅ Complete |
+| 4 | Specialized Entry Points | 60-80% | ✅ Complete |
 | 5 | Consolidation | 30% | ⏳ Pending |
 | 6 | Schema Compression | 20% | ⏳ Pending |
 
