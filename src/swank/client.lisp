@@ -197,7 +197,7 @@ Returns: Connection status or error."
   (bordeaux-threads:with-lock-held (*connection-lock*)
     (when (and *swank-connected* *swank-socket*)
       (return-from swank-connect
-        (list :error t :message "Already connected to Swank server")))
+        (cl-tron-mcp/core:make-error "SWANK_ALREADY_CONNECTED")))
     (handler-case
         (let ((socket (usocket:socket-connect host port :timeout timeout
                                               :element-type '(unsigned-byte 8))))
@@ -229,7 +229,8 @@ Returns: Connection status or error."
                 :host host :port port
                 :message (format nil "Connected to Swank at ~a:~a" host port)))
       (error (e)
-        (list :error t :message (format nil "Failed to connect to Swank: ~a" e))))))
+        (cl-tron-mcp/core:make-error "SWANK_CONNECTION_FAILED"
+                                     :details (list :error (princ-to-string e)))))))
 
 (defun swank-disconnect ()
   "Disconnect from the Swank server and stop all threads."
@@ -500,27 +501,28 @@ FORM is the S-expression to evaluate.
 PACKAGE is the package name string.
 THREAD indicates which thread to use (t, :repl-thread, or integer).
 TIMEOUT is the maximum time to wait for response in seconds (default: *default-eval-timeout*)."
-  (unless (swank-connected-p)
+(unless (swank-connected-p)
     (return-from send-request
-      (list :error t :message "Not connected to Swank server")))
-  (let* ((id (make-request-id))
-         (req (make-swank-request :id id
-                                  :condition (bordeaux-threads:make-condition-variable)
-                                  :response nil
-                                  :completed-p nil)))
-    (bordeaux-threads:with-lock-held (*request-lock*)
-      (setf (gethash id *pending-requests*) req
-            *current-request-id* id))
-    (handler-case
-        (progn
-          (write-message `(:emacs-rex ,form ,package ,thread ,id))
-          (wait-for-response id :timeout timeout))
-      (error (e)
-        (bordeaux-threads:with-lock-held (*request-lock*)
-          (remhash id *pending-requests*)
-          (when (eql *current-request-id* id)
-            (setf *current-request-id* nil)))
-        (list :error t :message (princ-to-string e))))))
+      (cl-tron-mcp/core:make-error "SWANK_NOT_CONNECTED")))
+   (let* ((id (make-request-id))
+          (req (make-swank-request :id id
+                                   :condition (bordeaux-threads:make-condition-variable)
+                                   :response nil
+                                   :completed-p nil)))
+     (bordeaux-threads:with-lock-held (*request-lock*)
+       (setf (gethash id *pending-requests*) req
+             *current-request-id* id))
+     (handler-case
+         (progn
+           (write-message `(:emacs-rex ,form ,package ,thread ,id))
+           (wait-for-response id :timeout timeout))
+       (error (e)
+         (bordeaux-threads:with-lock-held (*request-lock*)
+           (remhash id *pending-requests*)
+           (when (eql *current-request-id* id)
+             (setf *current-request-id* nil)))
+         (cl-tron-mcp/core:make-error "INTERNAL_ERROR"
+                                      :details (list :error (princ-to-string e)))))))
 
 (defun handle-output (string target)
   "Handle :write-string output from Swank.
@@ -544,27 +546,28 @@ FORM is the S-expression to evaluate.
 PACKAGE is the package name string.
 THREAD indicates which thread to use (t, :repl-thread, or integer).
 Returns: Request ID on success, or error list on failure."
-  (unless (swank-connected-p)
+(unless (swank-connected-p)
     (return-from send-request-async
-      (list :error t :message "Not connected to Swank server")))
-  (let* ((id (make-request-id))
-         (req (make-swank-request :id id
-                                  :condition (bordeaux-threads:make-condition-variable)
-                                  :response nil
-                                  :completed-p nil)))
-    (bordeaux-threads:with-lock-held (*request-lock*)
-      (setf (gethash id *pending-requests*) req
-            *current-request-id* id))
-    (handler-case
-        (progn
-          (write-message `(:emacs-rex ,form ,package ,thread ,id))
-          id)
-      (error (e)
-        (bordeaux-threads:with-lock-held (*request-lock*)
-          (remhash id *pending-requests*)
-          (when (eql *current-request-id* id)
-            (setf *current-request-id* nil)))
-        (list :error t :message (princ-to-string e))))))
+      (cl-tron-mcp/core:make-error "SWANK_NOT_CONNECTED")))
+   (let* ((id (make-request-id))
+          (req (make-swank-request :id id
+                                   :condition (bordeaux-threads:make-condition-variable)
+                                   :response nil
+                                   :completed-p nil)))
+     (bordeaux-threads:with-lock-held (*request-lock*)
+       (setf (gethash id *pending-requests*) req
+             *current-request-id* id))
+     (handler-case
+         (progn
+           (write-message `(:emacs-rex ,form ,package ,thread ,id))
+           id)
+       (error (e)
+         (bordeaux-threads:with-lock-held (*request-lock*)
+           (remhash id *pending-requests*)
+           (when (eql *current-request-id* id)
+             (setf *current-request-id* nil)))
+         (cl-tron-mcp/core:make-error "INTERNAL_ERROR"
+                                      :details (list :error (princ-to-string e)))))))
 
 (defun get-async-result (id &key (timeout *default-eval-timeout*))
   "Get the result of an async request by ID.
@@ -573,7 +576,8 @@ Returns: Result list if available, or error list if timeout or not found."
   (bordeaux-threads:with-lock-held (*request-lock*)
     (let ((req (gethash id *pending-requests*)))
       (unless req
-        (return-from get-async-result (list :error t :message (format nil "Request ~a not found" id))))
+        (return-from get-async-result (cl-tron-mcp/core:make-error "REQUEST_NOT_FOUND"
+                                                                  :details (list :request-id id))))
       (if (swank-request-completed-p req)
           (progn
             (remhash id *pending-requests*)
@@ -676,11 +680,11 @@ TIMEOUT is the maximum time to wait in seconds."
 Returns: Connection status or error."
   (unless *reconnect-enabled*
     (return-from attempt-reconnect
-      (list :error t :message "Reconnection is disabled")))
+      (cl-tron-mcp/core:make-error "RECONNECTION_DISABLED")))
   (bordeaux-threads:with-lock-held (*connection-lock*)
     (when *swank-connected*
       (return-from attempt-reconnect
-        (list :error t :message "Already connected"))))
+        (cl-tron-mcp/core:make-error "SWANK_ALREADY_CONNECTED"))))
   (let ((attempt-count (bordeaux-threads:with-lock-held (*connection-lock*)
                          (incf *reconnect-attempt-count*))))
     (when (> attempt-count *reconnect-max-attempts*)
@@ -688,7 +692,8 @@ Returns: Connection status or error."
       (bordeaux-threads:with-lock-held (*connection-lock*)
         (setf *reconnect-attempt-count* 0))
       (return-from attempt-reconnect
-        (list :error t :message (format nil "Max reconnection attempts (~d) reached" *reconnect-max-attempts*))))
+        (cl-tron-mcp/core:make-error "MAX_RECONNECTION_ATTEMPTS"
+                                     :details (list :max-attempts *reconnect-max-attempts*))))
     (let ((delay (* *reconnect-delay* (expt 2 (1- attempt-count)))))
       (log-info (format nil "Reconnection attempt ~d/~d, waiting ~d seconds"
                         attempt-count *reconnect-max-attempts* delay))
@@ -707,7 +712,8 @@ Returns: Connection status or error."
                 result)))
       (error (e)
         (log-error (format nil "Reconnection attempt ~d error: ~a" attempt-count e))
-        (list :error t :message (format nil "Reconnection error: ~a" e))))))
+        (cl-tron-mcp/core:make-error "RECONNECTION_ERROR"
+                                     :details (list :error (princ-to-string e)))))))
 
 (defun cleanup-on-error ()
   "Clean up resources on fatal errors.
@@ -775,9 +781,11 @@ Uses swank:eval-and-grab-output which reads the string in the target package,
 so symbols like + are resolved correctly."
   ;; Input validation
   (unless (and code (stringp code) (plusp (length code)))
-    (return-from swank-eval (list :error t :message "code is required and must be a non-empty string")))
+    (return-from swank-eval (cl-tron-mcp/core:make-error-with-hint "INVALID_CODE_PARAMETER"
+                                                                    :details (list :function "swank-eval"))))
   (unless (and package (stringp package) (plusp (length package)))
-    (return-from swank-eval (list :error t :message "package is required and must be a non-empty string")))
+    (return-from swank-eval (cl-tron-mcp/core:make-error-with-hint "INVALID_PACKAGE_PARAMETER"
+                                                                    :details (list :function "swank-eval"))))
   ;; Use swank:eval-and-grab-output - it takes a string that gets READ
   ;; in the target package, so symbols like + are resolved correctly.
   ;; We use swank-sym to resolve at runtime.
@@ -790,11 +798,14 @@ CODE should be a string containing Lisp code.
 Uses swank:compile-string-for-emacs with simple arguments."
   ;; Input validation
   (unless (and code (stringp code) (plusp (length code)))
-    (return-from swank-compile (list :error t :message "code is required and must be a non-empty string")))
+    (return-from swank-compile (cl-tron-mcp/core:make-error-with-hint "INVALID_CODE_PARAMETER"
+                                                                       :details (list :function "swank-compile"))))
   (unless (and package (stringp package) (plusp (length package)))
-    (return-from swank-compile (list :error t :message "package is required and must be a non-empty string")))
+    (return-from swank-compile (cl-tron-mcp/core:make-error-with-hint "INVALID_PACKAGE_PARAMETER"
+                                                                       :details (list :function "swank-compile"))))
   (unless (and filename (stringp filename) (plusp (length filename)))
-    (return-from swank-compile (list :error t :message "filename is required and must be a non-empty string")))
+    (return-from swank-compile (cl-tron-mcp/core:make-error-with-hint "INVALID_FILENAME_PARAMETER"
+                                                                       :details (list :function "swank-compile"))))
   ;; swank:compile-string-for-emacs takes (string buffer position filename policy)
   ;; position can be nil, policy can be nil
   (let ((form `(,(swank-sym "COMPILE-STRING-FOR-EMACS") ,code ,filename nil ,filename nil)))
@@ -816,11 +827,14 @@ Uses sb-debug:list-backtrace since swank:backtrace requires debugger context."
   "Evaluate CODE (string) in FRAME-INDEX context."
   ;; Input validation
   (unless (and code (stringp code) (plusp (length code)))
-    (return-from swank-eval-in-frame (list :error t :message "code is required and must be a non-empty string")))
+    (return-from swank-eval-in-frame (cl-tron-mcp/core:make-error-with-hint "INVALID_CODE_PARAMETER"
+                                                                           :details (list :function "swank-eval-in-frame"))))
   (unless (and package (stringp package) (plusp (length package)))
-    (return-from swank-eval-in-frame (list :error t :message "package is required and must be a non-empty string")))
+    (return-from swank-eval-in-frame (cl-tron-mcp/core:make-error-with-hint "INVALID_PACKAGE_PARAMETER"
+                                                                           :details (list :function "swank-eval-in-frame"))))
   (unless (and (integerp frame-index) (>= frame-index 0))
-    (return-from swank-eval-in-frame (list :error t :message "frame-index must be a non-negative integer")))
+    (return-from swank-eval-in-frame (cl-tron-mcp/core:make-error-with-hint "INVALID_FRAME_INDEX"
+                                                                           :details (list :function "swank-eval-in-frame"))))
   (let ((form `(,(swank-sym "EVAL-STRING-IN-FRAME") ,code ,frame-index ,package)))
     (send-request form :package package :thread t)))
 
@@ -843,7 +857,7 @@ Returns restarts from the cached debugger event."
           (list :restarts (getf (swank-event-data debug-event) :restarts)
                 :thread *debugger-thread*
                 :level *debugger-level*)
-          (list :error t :message "No debugger event available")))))
+          (cl-tron-mcp/core:make-error "NO_DEBUGGER_EVENT")))))
 
 (defun swank-step (&key (frame-index 0))
   "Step into next expression.
@@ -862,7 +876,7 @@ Returns immediately - caller should check debugger-state to see if still steppin
             (let ((form `(,(swank-sym "INVOKE-NTH-RESTART-FOR-EMACS") ,level ,(1+ step-into-pos))))
               (send-request form :package "CL-USER" :thread thread))
             ;; Not in stepper - return error
-            (list :error t :message "Not in stepper - enter with (step ...) first"))))))
+            (cl-tron-mcp/core:make-error "NOT_IN_STEPPER"))))))
 
 (defun swank-next (&key (frame-index 0))
   "Step over next expression.
@@ -877,7 +891,7 @@ Returns immediately - caller should check debugger-state to see if still steppin
         (if step-next-pos
             (let ((form `(,(swank-sym "INVOKE-NTH-RESTART-FOR-EMACS") ,level ,(1+ step-next-pos))))
               (send-request form :package "CL-USER" :thread thread))
-            (list :error t :message "Not in stepper - enter with (step ...) first"))))))
+            (cl-tron-mcp/core:make-error "NOT_IN_STEPPER"))))))
 
 (defun swank-out (&key (frame-index 0))
   "Step out of current frame.
@@ -892,7 +906,7 @@ Returns immediately - caller should check debugger-state to see if still steppin
         (if step-out-pos
             (let ((form `(,(swank-sym "INVOKE-NTH-RESTART-FOR-EMACS") ,level ,(1+ step-out-pos))))
               (send-request form :package "CL-USER" :thread thread))
-            (list :error t :message "Not in stepper - enter with (step ...) first"))))))
+            (cl-tron-mcp/core:make-error "NOT_IN_STEPPER"))))))
 
 (defun swank-continue ()
   "Continue execution from debugger. Uses debugger thread if in debugger."
@@ -975,14 +989,16 @@ Returns success status or error."
                 result))))
     (error (e)
       (log-error (format nil "Interrupt error: ~a" e))
-      (list :error t :message (format nil "Interrupt error: ~a" e)))))
+      (cl-tron-mcp/core:make-error "INTERRUPT_ERROR"
+                                   :details (list :error (princ-to-string e))))))
 
 (defun swank-inspect-object (&key expression)
   "Inspect an object via Swank.
 EXPRESSION should be a string that evaluates to an object."
   ;; Input validation
   (unless (and expression (stringp expression) (plusp (length expression)))
-    (return-from swank-inspect-object (list :error t :message "expression is required and must be a non-empty string")))
+    (return-from swank-inspect-object (cl-tron-mcp/core:make-error-with-hint "INVALID_EXPRESSION_PARAMETER"
+                                                                             :details (list :function "swank-inspect-object"))))
   (let ((form `(,(swank-sym "EVAL-AND-GRAB-OUTPUT")
                  (,(swank-sym "INSPECT-IN-EMACS") ,expression))))
     (send-request form :package "CL-USER" :thread t)))
@@ -995,7 +1011,8 @@ EXPRESSION should be a string that evaluates to an object."
   "Describe an object via Swank."
   ;; Input validation
   (unless (and symbol (stringp symbol) (plusp (length symbol)))
-    (return-from swank-describe (list :error t :message "symbol is required and must be a non-empty string")))
+    (return-from swank-describe (cl-tron-mcp/core:make-error-with-hint "INVALID_SYMBOL_PARAMETER"
+                                                                        :details (list :function "swank-describe"))))
   (send-request `(,(swank-sym "DESCRIBE-SYMBOL") ,symbol) :package "CL-USER" :thread t))
 
 (defun swank-autodoc (&key symbol)
@@ -1003,7 +1020,8 @@ EXPRESSION should be a string that evaluates to an object."
 Uses eval-and-grab-output to call swank/backend:arglist."
   ;; Input validation
   (unless (and symbol (stringp symbol) (plusp (length symbol)))
-    (return-from swank-autodoc (list :error t :message "symbol is required and must be a non-empty string")))
+    (return-from swank-autodoc (cl-tron-mcp/core:make-error-with-hint "INVALID_SYMBOL_PARAMETER"
+                                                                      :details (list :function "swank-autodoc"))))
   (let ((form `(,(swank-sym "EVAL-AND-GRAB-OUTPUT")
                  (format nil "(swank/backend:arglist (quote ~a))" ,symbol))))
     (send-request form :package "CL-USER" :thread t)))
@@ -1012,9 +1030,11 @@ Uses eval-and-grab-output to call swank/backend:arglist."
   "Get symbol completions for PREFIX in PACKAGE."
   ;; Input validation
   (unless (and prefix (stringp prefix) (plusp (length prefix)))
-    (return-from swank-completions (list :error t :message "prefix is required and must be a non-empty string")))
+    (return-from swank-completions (cl-tron-mcp/core:make-error-with-hint "INVALID_PREFIX_PARAMETER"
+                                                                         :details (list :function "swank-completions"))))
   (unless (and package (stringp package) (plusp (length package)))
-    (return-from swank-completions (list :error t :message "package is required and must be a non-empty string")))
+    (return-from swank-completions (cl-tron-mcp/core:make-error-with-hint "INVALID_PACKAGE_PARAMETER"
+                                                                         :details (list :function "swank-completions"))))
   (send-request `(,(swank-sym "SIMPLE-COMPLETIONS") ,prefix ,package) :package "CL-USER" :thread t))
 
 ;;; ============================================================

@@ -72,13 +72,20 @@ ERROR-CONDITION is the actual condition object (optional)."
 Returns T if valid, otherwise returns an error response plist."
   (when (and required (null value))
     (return-from validate-string-param
-      (list :valid nil :error (format nil "Missing required parameter: ~a" param-name))))
+      (list :valid nil :error (list :code "MISSING_REQUIRED_PARAMETER"
+                                    :message (format nil "Missing required parameter: ~a" param-name)
+                                    :param param-name))))
   (when (and value (not (stringp value)))
     (return-from validate-string-param
-      (list :valid nil :error (format nil "Parameter ~a must be a string" param-name))))
+      (list :valid nil :error (list :code "INVALID_STRING_PARAMETER"
+                                    :message (format nil "Parameter ~a must be a string" param-name)
+                                    :param param-name))))
   (when (and value (stringp value) (< (length value) min-length))
     (return-from validate-string-param
-      (list :valid nil :error (format nil "Parameter ~a must be at least ~d characters" param-name min-length))))
+      (list :valid nil :error (list :code "PARAMETER_TOO_SHORT"
+                                    :message (format nil "Parameter ~a must be at least ~d characters" param-name min-length)
+                                    :param param-name
+                                    :min-length min-length))))
   (list :valid t))
 
 (defun validate-list-param (param-name value &key required)
@@ -86,10 +93,14 @@ Returns T if valid, otherwise returns an error response plist."
 Returns T if valid, otherwise returns an error response plist."
   (when (and required (null value))
     (return-from validate-list-param
-      (list :valid nil :error (format nil "Missing required parameter: ~a" param-name))))
+      (list :valid nil :error (list :code "MISSING_REQUIRED_PARAMETER"
+                                    :message (format nil "Missing required parameter: ~a" param-name)
+                                    :param param-name))))
   (when (and value (not (listp value)))
     (return-from validate-list-param
-      (list :valid nil :error (format nil "Parameter ~a must be a list" param-name))))
+      (list :valid nil :error (list :code "INVALID_LIST_PARAMETER"
+                                    :message (format nil "Parameter ~a must be a list" param-name)
+                                    :param param-name))))
   (list :valid t))
 
 (defun validate-integer-param (param-name value &key required (min 0))
@@ -97,13 +108,20 @@ Returns T if valid, otherwise returns an error response plist."
 Returns T if valid, otherwise returns an error response plist."
   (when (and required (null value))
     (return-from validate-integer-param
-      (list :valid nil :error (format nil "Missing required parameter: ~a" param-name))))
+      (list :valid nil :error (list :code "MISSING_REQUIRED_PARAMETER"
+                                    :message (format nil "Missing required parameter: ~a" param-name)
+                                    :param param-name))))
   (when (and value (not (integerp value)))
     (return-from validate-integer-param
-      (list :valid nil :error (format nil "Parameter ~a must be an integer" param-name))))
+      (list :valid nil :error (list :code "INVALID_INTEGER_PARAMETER"
+                                    :message (format nil "Parameter ~a must be an integer" param-name)
+                                    :param param-name))))
   (when (and value (integerp value) (< value min))
     (return-from validate-integer-param
-      (list :valid nil :error (format nil "Parameter ~a must be >= ~d" param-name min))))
+      (list :valid nil :error (list :code "PARAMETER_TOO_SMALL"
+                                    :message (format nil "Parameter ~a must be >= ~d" param-name min)
+                                    :param param-name
+                                    :min min))))
   (list :valid t))
 
 (defmacro with-timeout ((seconds) &body body)
@@ -468,11 +486,23 @@ CODE should be a standard JSON-RPC error code:
    -32601 : Method Not Found
    -32602 : Invalid Params
    -32603 : Internal Error
-   -32000 to -32099 : Server-defined errors"
-  (jonathan:to-json
-   (list :|jsonrpc| "2.0"
-         :|id| id
-         :|error| (list :|code| code
-                        :|message| message))))
+   -32000 to -32099 : Server-defined errors
+MESSAGE can be a string or a plist with :code, :message, :hint, etc."
+  (let ((error-data (if (listp message) message (list :message message))))
+    (jonathan:to-json
+     (list :|jsonrpc| "2.0"
+           :|id| id
+           :|error| (list* :|code| code
+                           (list :|message| (getf error-data :message))
+                           (when (getf error-data :code)
+                             (list :|errorCode| (getf error-data :code)))
+                           (when (getf error-data :hint)
+                             (list :|hint| (getf error-data :hint)))
+                           (when (getf error-data :param)
+                             (list :|param| (getf error-data :param)))
+                           (when (getf error-data :min-length)
+                             (list :|minLength| (getf error-data :min-length)))
+                           (when (getf error-data :min)
+                             (list :|min| (getf error-data :min))))))))
 
 (provide :cl-tron-mcp/protocol-handlers)

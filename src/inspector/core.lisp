@@ -7,8 +7,8 @@
   (let ((object (cl-tron-mcp/sbcl:lookup-object object-id)))
     (unless object
       (return-from inspect-object
-        (list :error t
-              :message (format nil "Object ~a not found" object-id))))
+        (cl-tron-mcp/core:make-error "OBJECT_NOT_FOUND"
+                                     :details (list :object-id object-id))))
     (inspect-object-recursive object 0 max-depth max-elements)))
 
 (defun inspect-object-recursive (object depth max-depth max-elements)
@@ -62,8 +62,8 @@
   (let ((object (cl-tron-mcp/sbcl:lookup-object object_id)))
     (unless object
       (return-from inspect-slot
-        (list :error t
-              :message (format nil "Object ~a not found" object_id))))
+        (cl-tron-mcp/core:make-error "OBJECT_NOT_FOUND"
+                                     :details (list :object-id object_id))))
     (let ((slot-symbol (intern (string-upcase slot_name) :keyword)))
       (when value
         (setf (slot-value object slot-symbol) value))
@@ -77,8 +77,8 @@
   (let ((class (find-class (intern (string-upcase class_name) :cl) nil)))
     (unless class
       (return-from inspect-class
-        (list :error t
-              :message (format nil "Class ~a not found" class_name))))
+        (cl-tron-mcp/core:make-error "CLASS_NOT_FOUND"
+                                     :details (list :class-name class_name))))
     (list :name (class-name class)
           :direct-superclasses (mapcar #'class-name (closer-mop:class-direct-superclasses class))
           :direct-slots (mapcar (lambda (s)
@@ -105,16 +105,17 @@
                :lambda-list (ignore-errors (multiple-value-list (function-lambda-expression fn))))))
       ((and symbol (macro-function symbol))
        (list :symbol (format nil "~a::~a" package-str (string-upcase symbol-name-only)) :type "macro"))
-      (t
-       (list :error t :message (format nil "~a is not a function" symbol-name))))))
+(t
+        (cl-tron-mcp/core:make-error "NOT_A_FUNCTION"
+                                     :details (list :symbol symbol-name))))))
 
 (defun inspect-package (&key package_name)
   "Inspect package contents."
   (let ((package (find-package (string-upcase package_name))))
     (unless package
       (return-from inspect-package
-        (list :error t
-              :message (format nil "Package ~a not found" package_name))))
+        (cl-tron-mcp/core:make-error "PACKAGE_NOT_FOUND"
+                                     :details (list :package-name package_name))))
     (let ((external-count 0)
           (internal-count 0)
           (use-packages nil)
