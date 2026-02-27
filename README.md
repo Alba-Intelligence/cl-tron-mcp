@@ -306,6 +306,7 @@ cl-tron-mcp/
 | [docs/architecture.md](docs/architecture.md)                     | System architecture and design                               |
 | [docs/swank-integration.md](docs/swank-integration.md)           | Swank protocol details                                       |
 | [docs/mcp-resources-prompts.md](docs/mcp-resources-prompts.md)   | MCP discoverability features                                 |
+| [docs/protocol-handlers.md](docs/protocol-handlers.md)           | JSON-RPC protocol handler documentation                     |
 | [docs/starting-the-mcp.md](docs/starting-the-mcp.md)             | Starting the MCP and troubleshooting                         |
 | [docs/demo-creation.md](docs/demo-creation.md)                   | How to create demo GIFs                                      |
 | [tutorial/e2e-mcp-workflow.md](tutorial/e2e-mcp-workflow.md)     | End-to-end workflow (connect, eval, error, restart, hot-fix) |

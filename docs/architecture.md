@@ -29,6 +29,21 @@ If the MCP is not connected to any Swank session, tools that require it (e.g. `r
 
 ## Implementation
 
+### Protocol Layer
+
+The MCP implements the JSON-RPC 2.0 protocol with modular handlers:
+
+- **Protocol Handlers** (`src/protocol/handlers*.lisp`): Message dispatch, routing, and request handling
+  - `handlers.lisp` - Main entry point with message dispatch
+  - `handlers-utils.lisp` - Validation, error recovery, utilities
+  - `handlers-initialize.lisp` - Initialize handler
+  - `handlers-tools.lisp` - Tools handlers with approval workflow
+  - `handlers-resources.lisp` - Resources handlers
+  - `handlers-prompts.lisp` - Prompts handlers
+  - `handlers-ping.lisp` - Ping handler
+
+See [protocol-handlers.md](protocol-handlers.md) for detailed handler documentation.
+
 ### Swank Client
 
 The MCP implements a full Swank protocol client:
@@ -53,5 +68,6 @@ See [tools/debugger.md](tools/debugger.md) for tool usage.
 
 - [README: Swank Integration](../README.md#swank-integration-recommended-for-agent-workflow) — step-by-step setup.
 - [AGENTS.md: Recommended Workflow](../AGENTS.md#recommended-workflow-one-long-running-lisp-session) — agent-oriented summary.
+- [protocol-handlers.md](protocol-handlers.md) — JSON-RPC protocol handler documentation.
 - [swank-integration.md](swank-integration.md) — Swank protocol implementation details.
 - [docs/tools/](tools/) — tool documentation (debugger, inspector, hot-reload, etc.).

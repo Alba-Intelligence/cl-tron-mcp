@@ -161,50 +161,10 @@ Returns the parsed S-expression in PACKAGE."
     (swank-read-error (c)
       (values nil c))
     (reader-error (c)
-      (values nil (make-condition 'swank-reader-error 
-                                   :packet packet 
-                                   :cause c)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Conditions
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define-condition swank-protocol-error (error)
-  ((stream :initarg :stream :reader swank-protocol-error-stream))
-  (:report (lambda (c s)
-             (format s "Swank protocol error on stream ~a" (swank-protocol-error-stream c)))))
-
-(define-condition swank-read-error (swank-protocol-error)
-  ((condition :initarg :condition :reader swank-read-error-condition))
-  (:report (lambda (c s)
-             (format s "Swank read error: ~a" (swank-read-error-condition c)))))
-
-(define-condition swank-write-error (swank-protocol-error)
-  ((message :initarg :message :reader swank-write-error-message))
-  (:report (lambda (c s)
-             (format s "Swank write error while sending ~s: ~a"
-                     (swank-write-error-message c)
-                     (swank-read-error-condition c)))))
-
-(define-condition swank-reader-error (swank-protocol-error)
-  ((packet :initarg :packet :reader swank-reader-error-packet)
-   (cause :initarg :cause :reader swank-reader-error-cause))
-  (:report (lambda (c s)
-             (format s "Swank reader error parsing packet ~S: ~a"
-                     (swank-reader-error-packet c)
-                     (swank-reader-error-cause c)))))
-
-(define-condition swank-read-timeout (swank-protocol-error)
-  ((timeout :initarg :timeout :reader swank-read-timeout-timeout)
-   (message :initarg :message :reader swank-read-timeout-message))
-  (:report (lambda (c s)
-             (format s "Swank read timeout after ~a seconds: ~a"
-                     (swank-read-timeout-timeout c)
-                     (swank-read-timeout-message c)))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Utilities
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+      (let ((packet (read-packet stream :timeout timeout)))
+        (values nil (make-condition 'swank-reader-error 
+                                     :packet packet 
+                                     :cause c))))))
 
 (defun skip-whitespace (stream)
   "Skip whitespace characters on STREAM."

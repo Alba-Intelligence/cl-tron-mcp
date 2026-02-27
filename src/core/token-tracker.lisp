@@ -22,7 +22,7 @@
   (cond
     ((stringp response)
      (count-tokens response))
-    ((or (numberp response) (booleanp response))
+    ((or (numberp response) (or (eq response t) (eq response nil)))
      1)
     ((hash-table-p response)
      (let ((total 0))
