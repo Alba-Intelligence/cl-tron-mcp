@@ -1,5 +1,7 @@
 # SBCL Debugging MCP Repository Guidelines
 
+![Token Efficiency](https://img.shields.io/badge/token_efficiency-49.5%25_savings-brightgreen)
+
 This document provides guidelines for AI agents working on the SBCL Debugging MCP project - a Model Context Protocol server that enables deep debugging, introspection, profiling, and hot code reloading for SBCL Common Lisp applications.
 
 ## Quick Start
@@ -32,6 +34,201 @@ This guide has been modularized for better token efficiency. Each section is now
 - **[Transport & Logging](docs/agents/transport-logging.md)** - Transport modes, stdio requirements, and logging
 - **[Troubleshooting](docs/agents/troubleshooting.md)** - Common issues and solutions
 - **[Token Optimization](docs/agents/token-optimization.md)** - Principles for reducing token usage
+
+## Choosing the Right Agent
+
+This guide helps you select the appropriate specialized agent for your task. Tron provides three specialized agent personas, each optimized for specific workflows.
+
+### Decision Matrix
+
+| Your Goal | Use This Agent | Why |
+|-----------|----------------|-----|
+| Debug an error in SBCL | SBCL Debugging Expert | Specialized in error analysis, stack frame inspection, and restart navigation |
+| Fix a bug without restarting | Hot Reload Specialist | Expert in live code modification and hot-swapping definitions |
+| Improve performance | Performance Engineer | Specialized in profiling, bottleneck identification, and optimization |
+| Inspect objects or data structures | SBCL Debugging Expert | Provides deep introspection capabilities for runtime state |
+| Trace function execution | SBCL Debugging Expert | Can set up function tracing and analyze call patterns |
+| Monitor production system | Performance Engineer | Provides health checks, runtime stats, and production monitoring |
+| Learn how to use Tron | Any agent (start with `discover-mcp` prompt) | All agents can guide you through MCP discovery |
+
+### Agent Profiles
+
+#### SBCL Debugging Expert
+
+**Primary Use Case:** Deep debugging and error analysis in SBCL applications.
+
+**Trigger Conditions:**
+- You encounter an error or exception
+- You need to inspect stack frames or local variables
+- You want to understand the current debugger state
+- You need to navigate available restarts
+- You want to trace function execution
+
+**Key Capabilities:**
+- Stack frame inspection and navigation
+- Local variable examination
+- Restart analysis and invocation
+- Breakpoint management
+- Function tracing
+
+**Prompt:** `sbcl-debugging-expert`
+
+#### Hot Reload Specialist
+
+**Primary Use Case:** Live code modification without restarting the SBCL session.
+
+**Trigger Conditions:**
+- You need to fix a bug in running code
+- You want to test changes immediately
+- You need to reload a system or package
+- You're developing with a rapid iteration cycle
+- You want to preserve application state while updating code
+
+**Key Capabilities:**
+- Compile and load code strings
+- Reload ASDF systems
+- Hot-swap function definitions
+- Verify code changes
+- Manage compilation errors
+
+**Prompt:** `hot-reload-specialist`
+
+#### Performance Engineer
+
+**Primary Use Case:** Performance analysis and optimization of SBCL applications.
+
+**Trigger Conditions:**
+- Your application is slow or unresponsive
+- You need to identify performance bottlenecks
+- You want to profile function execution
+- You need to monitor resource usage
+- You're optimizing critical code paths
+
+**Key Capabilities:**
+- Statistical profiling
+- Function-level performance analysis
+- Runtime statistics
+- Health monitoring
+- Thread analysis
+
+**Prompt:** `performance-engineer`
+
+### Agent Collaboration Patterns
+
+Some workflows benefit from using multiple agents in sequence:
+
+#### 1. Debug → Fix → Profile
+
+```
+SBCL Debugging Expert → Hot Reload Specialist → Performance Engineer
+```
+
+**Workflow:**
+1. Start with **SBCL Debugging Expert** to identify the issue using stack traces and local variable inspection
+2. Use **Hot Reload Specialist** to apply the fix without restarting
+3. Use **Performance Engineer** to verify the improvement and ensure no regressions
+
+**Use Case:** Fixing a performance bug in a running application
+
+#### 2. Inspect → Modify → Verify
+
+```
+SBCL Debugging Expert → Hot Reload Specialist → SBCL Debugging Expert
+```
+
+**Workflow:**
+1. Use **SBCL Debugging Expert** to inspect the current state and understand the code structure
+2. Use **Hot Reload Specialist** to compile and load the modified code
+3. Return to **SBCL Debugging Expert** to verify the changes work correctly
+
+**Use Case:** Iterative development with live testing
+
+#### 3. Profile → Optimize → Validate
+
+```
+Performance Engineer → Hot Reload Specialist → Performance Engineer
+```
+
+**Workflow:**
+1. Use **Performance Engineer** to profile the application and identify bottlenecks
+2. Use **Hot Reload Specialist** to apply optimizations
+3. Return to **Performance Engineer** to validate performance improvements
+
+**Use Case:** Performance optimization cycle
+
+### Example Workflows
+
+#### Debugging a Runtime Error
+
+```lisp
+;; 1. Connect to SBCL and inspect the error
+(cl-tron-mcp/tools:debugger_frames)
+(cl-tron-mcp/tools:debugger_restarts)
+
+;; 2. Examine local variables in the failing frame
+(cl-tron-mcp/tools:repl_frame_locals :frame-id 0)
+
+;; 3. Fix the issue with hot reload
+(cl-tron-mcp/tools:code_compile_string :code "(defun my-fixed-function ...)")
+
+;; 4. Verify the fix works
+(cl-tron-mcp/tools:repl_eval :code "(my-fixed-function)")
+```
+
+#### Performance Optimization
+
+```lisp
+;; 1. Start profiling
+(cl-tron-mcp/tools:profile_start)
+
+;; 2. Run the code to profile
+;; ... (execute your application code) ...
+
+;; 3. Stop profiling and analyze results
+(cl-tron-mcp/tools:profile_stop)
+
+;; 4. Apply optimizations with hot reload
+(cl-tron-mcp/tools:code_compile_string :code "(defun optimized-function ...)")
+
+;; 5. Verify improvement
+(cl-tron-mcp/tools:runtime_stats)
+```
+
+### Quick Reference
+
+- **First time using Tron?** Start with the `getting-started` prompt
+- **Need help discovering features?** Use the `discover-mcp` prompt
+- **Debugging an error?** Use `sbcl-debugging-expert`
+- **Fixing code without restart?** Use `hot-reload-specialist`
+- **Improving performance?** Use `performance-engineer`
+
+For detailed workflow examples, see [docs/agents/workflows.md](docs/agents/workflows.md).
+
+## Token Optimization Refactoring
+
+### Overview
+
+In February 2026, a comprehensive token optimization refactoring was completed to reduce token usage by ~50% while maintaining full functionality.
+
+### Key Improvements
+
+1. **Tool Description Extraction** - Moved verbose tool descriptions to external documentation (`docs/tools/`)
+2. **Dynamic Help Generation** - Refactored help functions to use tool registry dynamically
+3. **Error Code Consolidation** - Implemented error codes with lazy-loaded hints
+4. **Token Measurement Infrastructure** - Added token tracking and benchmarking capabilities
+
+### Benchmark Results
+
+- **Total Token Savings:** 49.5% (2501 → 1263 tokens)
+- **Average Reduction:** 60.7% across 5 scenarios
+
+See [reports/token-benchmark-report.md](reports/token-benchmark-report.md) for detailed results.
+
+### Documentation
+
+- [Token Optimization Guide](docs/agents/token-optimization.md)
+- [Benchmark Report](reports/token-benchmark-report.md)
+- [Tool Documentation](docs/tools/)
 
 ### Quick Reference
 
@@ -375,3 +572,4 @@ Expected response:
 - **Tools**: 86 tools implemented across 14 categories
 - **Transport**: Combined (default: stdio + HTTP), stdio-only, http-only; WebSocket (placeholder)
 - **MCP Clients**: Verified working with OpenCode, Cursor, VS Code
+- **Token Optimization**: 49.5% token savings achieved through refactoring (Feb 2026)
