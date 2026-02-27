@@ -4,23 +4,26 @@
 (in-package :cl-tron-mcp/tools)
 
 (define-simple-tool "profile_start"
-  "Start deterministic profiling. All function calls will be timed. Use to find performance bottlenecks. Remember to call profile_stop when done."
+  "Start profiling"
   :input-schema nil
   :output-schema (list :type "object")
   :requires-approval t
+  :documentation-uri "file://docs/tools/profile-start.md"
   :function cl-tron-mcp/profiler:profile-start)
 
 (define-simple-tool "profile_stop"
-  "Stop profiling and return report. Call after running the code you want to profile. Returns timing data for all functions called during profiling."
+  "Stop profiling"
   :input-schema nil
   :output-schema (list :type "object")
   :requires-approval t
+  :documentation-uri "file://docs/tools/profile-stop.md"
   :function cl-tron-mcp/profiler:profile-stop)
 
 (define-validated-tool "profile_report"
-  "Get profiling report in specified format. Formats: flat (simple list), graph (call tree), cumulative (total time per function). Use after profile_start/stop."
+  "Get profiling report"
   :input-schema (list :format (list :enum (list "flat" "graph" "cumulative")))
   :output-schema (list :type "object")
   :requires-approval nil
+  :documentation-uri "file://docs/tools/profile-report.md"
   :validation ((when format (validate-choice "format" format '("flat" "graph" "cumulative"))))
   :body (cl-tron-mcp/profiler:profile-report :format format))

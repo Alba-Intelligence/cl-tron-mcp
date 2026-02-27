@@ -4,6 +4,10 @@
   (:use :cl)
   (:export
    #:*tool-registry*
+   #:tool-entry
+   #:tool-entry-name
+   #:tool-entry-descriptor
+   #:tool-entry-handler
    #:define-tool
    #:register-tool
    #:list-tool-descriptors

@@ -9,7 +9,7 @@
   descriptor
   handler)
 
-(defun register-tool (name description &key input-schema output-schema requires-approval concurrency)
+(defun register-tool (name description &key input-schema output-schema requires-approval documentation-uri concurrency)
   "Register a tool with descriptor and handler.
    requires-approval t means approvalLevel \"user\" (human must approve); nil means \"none\" (auto-run)."
   (let ((descriptor (make-hash-table :test 'equal)))
@@ -19,6 +19,7 @@
     (setf (gethash :outputSchema descriptor) (or output-schema (make-hash-table :test 'equal)))
     (setf (gethash :requiresApproval descriptor) (or requires-approval nil))
     (setf (gethash :approvalLevel descriptor) (if requires-approval "user" "none"))
+    (setf (gethash :documentationUri descriptor) documentation-uri)
     (setf (gethash :concurrency descriptor) (or concurrency "sequential"))
     (setf (gethash name *tool-registry*)
           (make-tool-entry :name name
