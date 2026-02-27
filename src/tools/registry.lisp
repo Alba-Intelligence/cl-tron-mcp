@@ -67,3 +67,23 @@ The plist keys are JSON-style (e.g., :|port|) and converted to proper keywords (
                            for keyword = (intern (string-upcase (string key)) :keyword)
                            append (list keyword value))))
       (apply handler args-list))))
+
+(defun load-all-tools ()
+  "Load all tool category modules to trigger registration."
+  (dolist (file '("src/tools/macros.lisp"
+                  "src/tools/inspector-tools.lisp"
+                  "src/tools/debugger-tools.lisp"
+                  "src/tools/repl-tools.lisp"
+                  "src/tools/hot-reload-tools.lisp"
+                  "src/tools/profiler-tools.lisp"
+                  "src/tools/tracer-tools.lisp"
+                  "src/tools/thread-tools.lisp"
+                  "src/tools/monitor-tools.lisp"
+                  "src/tools/logging-tools.lisp"
+                  "src/tools/xref-tools.lisp"
+                  "src/tools/security-tools.lisp"
+                  "src/tools/swank-tools.lisp"
+                  "src/tools/unified-tools.lisp"))
+    (let ((full-path (merge-pathnames file (asdf:system-source-directory :cl-tron-mcp))))
+      (when (probe-file full-path)
+        (load full-path)))))

@@ -63,7 +63,17 @@ This is called when the module is loaded."
          ;; Core documentation
          "AGENTS.md"
          "README.md"
-         
+
+         ;; Modular agent documentation
+         "docs/agents/index.md"
+         "docs/agents/getting-started.md"
+         "docs/agents/workflows.md"
+         "docs/agents/tool-reference.md"
+         "docs/agents/conventions.md"
+         "docs/agents/transport-logging.md"
+         "docs/agents/troubleshooting.md"
+         "docs/agents/token-optimization.md"
+
          ;; Tool documentation
          "docs/tools/debugger.md"
          "docs/tools/inspector.md"
@@ -71,7 +81,7 @@ This is called when the module is loaded."
          "docs/tools/profiler.md"
          "docs/tools/threads.md"
          "docs/tools/monitor.md"
-         
+
          ;; Architecture and integration
          "docs/architecture.md"
          "docs/starting-the-mcp.md"
