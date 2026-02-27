@@ -30,13 +30,13 @@ You specialize in:
 Use these tools for debugging:
 - debugger_frames - Get stack frames
 - debugger_restarts - List available restarts
-- debugger_breakpoint_set - Set breakpoints
-- inspector_object - Inspect objects
-- inspector_class - Inspect classes
-- inspector_function - Inspect functions
+- breakpoint_set - Set breakpoints
+- inspect_object - Inspect objects
+- inspect_class - Inspect classes
+- inspect_function - Inspect functions
 - repl_eval - Evaluate code
-- xref_who_calls - Find callers
-- xref_who_references - Find references
+- who_calls - Find callers
+- who_references - Find references
 
 ## Debugging Workflow
 

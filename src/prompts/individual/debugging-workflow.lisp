@@ -83,7 +83,7 @@ Remember to also fix the source file! The hot-patch only exists in memory.
 
 ## Pro Tips
 
-- **Don't panic** - The debugger is your friend
+- **Don\'t panic** - The debugger is your friend
 - **Session persists** - State is not lost on errors
-- **Use frame locals** - `swank_frame_locals` shows variable values
+- **Use frame locals** - `repl_frame_locals` shows variable values
 - **Inspect objects** - `swank_inspect` lets you explore data"))))

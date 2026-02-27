@@ -35,8 +35,8 @@ Use these tools for profiling:
 - profile_report - Get profiling report
 - trace_function - Trace function calls
 - trace_list - List traced functions
-- monitor_health_check - Check system health
-- monitor_runtime_stats - Get runtime statistics
+- health_check - Check system health
+- runtime_stats - Get runtime statistics
 
 ## Profiling Workflow
 

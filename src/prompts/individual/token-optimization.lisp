@@ -63,8 +63,8 @@ tools/list
 ```
 
 Then filter for relevant tools:
-- Debugging: debugger_*, inspector_*, repl_*
-- Profiling: profiler_*, tracer_*, monitor_*
+- Debugging: debugger_*, inspect_*, repl_*
+- Profiling: profile_*, trace_*, health_check, runtime_stats
 - Hot-reload: code_compile_string, reload_system
 
 ### Principle 4: Read Modular Documentation

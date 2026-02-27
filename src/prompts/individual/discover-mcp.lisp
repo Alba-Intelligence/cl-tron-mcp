@@ -45,10 +45,10 @@ Returns step-by-step instructions to check/start Swank, connect, and verify.
 
 | Order | Method         | Purpose                          |
 |-------|----------------|----------------------------------|
-| 1     | resources/list | Documentation URIs              |
+| 1     | resources/list | Documentation URIs               |
 | 2     | resources/read | Read AGENTS.md (full guide)      |
 | 3     | prompts/list   | Workflow names                   |
-| 4     | prompts/get    | getting-started (connection)      |
+| 4     | prompts/get    | getting-started (connection)     |
 | 5     | tools/list     | All tools and parameters         |
 
 No user explanation is required. This MCP is fully discoverable."))))
