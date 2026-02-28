@@ -107,7 +107,7 @@
        (list :symbol (format nil "~a::~a" package-str (string-upcase symbol-name-only)) :type "macro"))
 (t
         (cl-tron-mcp/core:make-error "NOT_A_FUNCTION"
-                                     :details (list :symbol symbol-name))))))
+                                     :details (list :symbol symbol_name))))))
 
 (defun inspect-package (&key package_name)
   "Inspect package contents."

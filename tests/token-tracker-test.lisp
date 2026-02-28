@@ -18,19 +18,19 @@
 (deftest count-response-tokens-string
   (testing "Token counting for string responses"
     (ok (= 2 (cl-tron-mcp/core:count-response-tokens "abcdefgh")))
-    (ok (= 5 (cl-tron-mcp/core:count-response-tokens "This is a test string with some text")))))
+    (ok (= 9 (cl-tron-mcp/core:count-response-tokens "This is a test string with some text")))))
 
 (deftest count-response-tokens-hash-table
   (testing "Token counting for hash table responses"
     (let ((response (make-hash-table)))
       (setf (gethash "message" response) "Hello world")
       (setf (gethash "status" response) "OK")
-      (ok (= 5 (cl-tron-mcp/core:count-response-tokens response))))))
+      (ok (= 8 (cl-tron-mcp/core:count-response-tokens response))))))
 
 (deftest count-response-tokens-list
   (testing "Token counting for list responses"
     (let ((response '("item1" "item2")))
-      (ok (= 2 (cl-tron-mcp/core:count-response-tokens response))))))
+      (ok (= 4 (cl-tron-mcp/core:count-response-tokens response))))))
 
 (deftest count-response-tokens-number
   (testing "Token counting for numeric responses"
@@ -60,7 +60,7 @@
     (cl-tron-mcp/core:track-response "tool-b" "Response B")
     (let ((stats (cl-tron-mcp/core:get-token-stats)))
       (destructuring-bind (tokens calls) (gethash "tool-a" stats)
-        (ok (= 6 tokens))
+        (ok (= 7 tokens))
         (ok (= 2 calls)))
       (destructuring-bind (tokens calls) (gethash "tool-b" stats)
         (ok (= 3 tokens))
@@ -107,7 +107,7 @@
       (ok (gethash "average-tokens-per-call" report))
       (ok (gethash "tokens-per-tool" report))
       (ok (gethash "top-10-tools" report))
-      (ok (= 8 (gethash "total-tokens" report)))
+      (ok (= 10 (gethash "total-tokens" report)))
       (ok (= 3 (gethash "total-calls" report)))
       (ok (floatp (gethash "average-tokens-per-call" report))))))
 

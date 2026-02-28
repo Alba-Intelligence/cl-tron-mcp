@@ -40,7 +40,7 @@
   :requires-approval nil
   :documentation-uri "file://docs/tools/inspect-function.md"
   :validation ((validate-symbol-name "symbol_name" symbol_name :required t))
-  :body (cl-tron-mcp/inspector:inspect-function :symbol-name symbol_name))
+  :body (cl-tron-mcp/inspector:inspect-function :symbol_name symbol_name))
 
 (define-validated-tool "inspect_package"
   "Inspect package symbols"

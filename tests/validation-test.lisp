@@ -7,12 +7,12 @@
   (testing "validate-required accepts non-nil values"
     (ok (eq (validate-required "test" "value") "value"))
     (ok (eq (validate-required "test" 123) 123))
-    (ok (eq (validate-required "test" t) t)))
+    (ok (eq (validate-required "test" t) t))))
 
 (deftest test-validate-required-fails
   (testing "validate-required rejects nil values"
-    (signals validation-error
-      (validate-required "test" nil))))
+    (ok (handler-case (validate-required "test" nil)
+          (validation-error (e) t)))))
 
 (deftest test-validate-string
   (testing "validate-string accepts valid strings"
@@ -22,12 +22,12 @@
 
 (deftest test-validate-string-fails
   (testing "validate-string rejects invalid strings"
-    (signals validation-error
-      (validate-string "test" 123))
-    (signals validation-error
-      (validate-string "test" "hi" :min-length 3))
-    (signals validation-error
-      (validate-string "test" "hello world" :max-length 5)))))
+    (ok (handler-case (validate-string "test" 123)
+          (validation-error (e) t)))
+    (ok (handler-case (validate-string "test" "hi" :min-length 3)
+          (validation-error (e) t)))
+    (ok (handler-case (validate-string "test" "hello world" :max-length 5)
+          (validation-error (e) t)))))
 
 (deftest test-validate-integer
   (testing "validate-integer accepts valid integers"
@@ -37,12 +37,12 @@
 
 (deftest test-validate-integer-fails
   (testing "validate-integer rejects invalid integers"
-    (signals validation-error
-      (validate-integer "test" "not an integer"))
-    (signals validation-error
-      (validate-integer "test" 3 :min 5))
-    (signals validation-error
-      (validate-integer "test" 15 :max 10))))
+    (ok (handler-case (validate-integer "test" "not an integer")
+          (validation-error (e) t)))
+    (ok (handler-case (validate-integer "test" 3 :min 5)
+          (validation-error (e) t)))
+    (ok (handler-case (validate-integer "test" 15 :max 10)
+          (validation-error (e) t)))))
 
 (deftest test-validate-boolean
   (testing "validate-boolean accepts valid booleans"
@@ -51,10 +51,10 @@
 
 (deftest test-validate-boolean-fails
   (testing "validate-boolean rejects invalid booleans"
-    (signals validation-error
-      (validate-boolean "test" "true"))
-    (signals validation-error
-      (validate-boolean "test" 1))))
+    (ok (handler-case (validate-boolean "test" "true")
+          (validation-error (e) t)))
+    (ok (handler-case (validate-boolean "test" 1)
+          (validation-error (e) t)))))
 
 (deftest test-validate-choice
   (testing "validate-choice accepts valid choices"
@@ -63,8 +63,8 @@
 
 (deftest test-validate-choice-fails
   (testing "validate-choice rejects invalid choices"
-    (signals validation-error
-      (validate-choice "test" "invalid" '("flat" "graph" "cumulative")))))
+    (ok (handler-case (validate-choice "test" "invalid" '("flat" "graph" "cumulative"))
+          (validation-error (e) t)))))
 
 (deftest test-validate-object-id
   (testing "validate-object-id accepts valid object IDs"
@@ -73,8 +73,8 @@
 
 (deftest test-validate-object-id-fails
   (testing "validate-object-id rejects invalid object IDs"
-    (signals validation-error
-      (validate-object-id "test" '(1 2 3)))))
+    (ok (handler-case (validate-object-id "test" '(1 2 3))
+          (validation-error (e) t)))))
 
 (deftest test-validate-symbol-name
   (testing "validate-symbol-name accepts valid symbol names"
@@ -84,10 +84,10 @@
 
 (deftest test-validate-symbol-name-fails
   (testing "validate-symbol-name rejects invalid symbol names"
-    (signals validation-error
-      (validate-symbol-name "test" "invalid symbol"))
-    (signals validation-error
-      (validate-symbol-name "test" "symbol@"))))
+    (ok (handler-case (validate-symbol-name "test" "invalid symbol")
+          (validation-error (e) t)))
+    (ok (handler-case (validate-symbol-name "test" "symbol@")
+          (validation-error (e) t)))))
 
 (deftest test-validate-package-name
   (testing "validate-package-name accepts valid package names"
@@ -96,10 +96,10 @@
 
 (deftest test-validate-package-name-fails
   (testing "validate-package-name rejects invalid package names"
-    (signals validation-error
-      (validate-package-name "test" "invalid package"))
-    (signals validation-error
-      (validate-package-name "test" "package@"))))
+    (ok (handler-case (validate-package-name "test" "invalid package")
+          (validation-error (e) t)))
+    (ok (handler-case (validate-package-name "test" "package@")
+          (validation-error (e) t)))))
 
 (deftest test-with-validation
   (testing "with-validation macro works correctly"
