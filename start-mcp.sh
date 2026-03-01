@@ -10,7 +10,7 @@
 #   and health endpoint. If healthy, exits successfully without starting a new instance.
 #
 # Session Management:
-#   The PID file contains JSON metadata: pid, port, transport, started timestamp.
+#   The PID file contains JSON metadata: pid, port, transport, started, user, command, ppid.
 #   Use --restart to stop an existing instance and start a new one.
 #
 # Transport Modes:
@@ -29,7 +29,9 @@
 #   ./start-mcp.sh --http-only --port 9000
 #   ./start-mcp.sh --use-sbcl         # Combined with SBCL
 #   ./start-mcp.sh --status           # Check if server is running
-#   ./start-mcp.sh --stop             # Stop a running server
+#   ./start-mcp.sh --stop             # Stop a running server (graceful)
+#   ./start-mcp.sh --stop --force     # Force kill a non-responsive server
+#   ./start-mcp.sh --kill-port 4006   # Kill any process on port 4006
 #   ./start-mcp.sh --restart          # Stop existing and start new
 #   ./start-mcp.sh --help            # Show full options and examples
 #
@@ -65,9 +67,13 @@ PORT="4006"
 PORT_GIVEN=""
 LISP_CHOICE=""
 ACTION="start"
+FORCE_STOP=false
 
 # HTTP/WebSocket default port (avoid 4005 which is usually Swank)
 HTTP_DEFAULT_PORT="4006"
+
+# Grace period for graceful shutdown (seconds)
+GRACE_PERIOD=10
 
 # ============================================================================
 # Helper Functions
@@ -83,6 +89,10 @@ log_error() {
 
 log_debug() {
     [[ "${TRON_DEBUG:-}" == "1" ]] && echo "[DEBUG] $1" >&2 || true
+}
+
+log_warn() {
+    echo "WARNING: $1" >&2
 }
 
 # Check if a process with given PID is running
@@ -126,12 +136,24 @@ check_server_health() {
 }
 
 # ============================================================================
-# PID File Management (JSON format)
+# PID File Management (Enhanced JSON format)
 # ============================================================================
 
 # Get current timestamp (seconds since epoch)
 get_timestamp() {
     date +%s
+}
+
+# Generate a unique ID for this server instance
+generate_unique_id() {
+    if command -v uuidgen &>/dev/null; then
+        uuidgen | tr -d '-'
+    elif [[ -f /proc/sys/kernel/random/uuid ]]; then
+        cat /proc/sys/kernel/random/uuid | tr -d '-'
+    else
+        # Fallback: use timestamp + random
+        echo "$(date +%s)$RANDOM"
+    fi
 }
 
 # Read PID file and extract field
@@ -164,22 +186,52 @@ get_pid_started() {
     get_pid_field "started"
 }
 
-# Write PID file with JSON metadata
+# Get user from PID file
+get_pid_user() {
+    get_pid_field "user"
+}
+
+# Get command from PID file
+get_pid_command() {
+    get_pid_field "command"
+}
+
+# Get unique_id from PID file
+get_pid_unique_id() {
+    get_pid_field "unique_id"
+}
+
+# Get parent PID from PID file
+get_pid_ppid() {
+    get_pid_field "ppid"
+}
+
+# Write PID file with enhanced JSON metadata
 write_pid_file() {
     local pid="$1"
     local port="$2"
     local transport="$3"
     local started=$(get_timestamp)
+    local user="${USER:-$(whoami 2>/dev/null || echo 'unknown')}"
+    local ppid="$$"
+    local unique_id=$(generate_unique_id)
+    
+    # Store first few chars of command for verification (truncate to avoid JSON issues)
+    local cmd_short="${0##*/} (transport: $transport, port: $port)"
     
     cat > "$PID_FILE" << EOF
 {
   "pid": $pid,
   "port": $port,
   "transport": "$transport",
-  "started": $started
+  "started": $started,
+  "user": "$user",
+  "command": "$cmd_short",
+  "ppid": $ppid,
+  "unique_id": "$unique_id"
 }
 EOF
-    log_debug "Wrote PID file: pid=$pid, port=$port, transport=$transport"
+    log_debug "Wrote PID file: pid=$pid, port=$port, transport=$transport, user=$user, unique_id=$unique_id"
 }
 
 # Remove PID file
@@ -196,6 +248,153 @@ get_http_port() {
         echo "$HTTP_DEFAULT_PORT"
     fi
 }
+
+# ============================================================================
+# Process Verification (Safety Checks)
+# ============================================================================
+
+# Verify that a PID is actually our server process
+verify_process() {
+    local pid="$1"
+    local stored_user="$2"
+    local stored_command="$3"
+    
+    # Check if process exists
+    if ! is_process_running "$pid"; then
+        log_debug "Process $pid does not exist"
+        return 1
+    fi
+    
+    # Check if we can read /proc (Linux)
+    if [[ -d "/proc/$pid" ]]; then
+        # Get actual process command line
+        local actual_cmd=""
+        if [[ -f "/proc/$pid/cmdline" ]]; then
+            actual_cmd=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | head -c 200)
+        fi
+        
+        # Get process user
+        local actual_user=""
+        if [[ -f "/proc/$pid/status" ]]; then
+            actual_user=$(grep "^Uid:" "/proc/$pid/status" 2>/dev/null | awk '{print $3}')
+            # Convert UID to username if possible
+            if [[ -n "$actual_user" ]] && command -v id &>/dev/null; then
+                actual_user=$(id -nu "$actual_user" 2>/dev/null || echo "$actual_user")
+            fi
+        fi
+        
+        log_debug "Verification: pid=$pid, stored_user=$stored_user, actual_user=$actual_user"
+        log_debug "Verification: cmd='$actual_cmd', stored='$stored_command'"
+        
+        # Verify it's a Lisp process (sbcl, ecl, or similar)
+        if [[ "$actual_cmd" == *"sbcl"* ]] || [[ "$actual_cmd" == *"ecl"* ]] || \
+           [[ "$actual_cmd" == *"cl-tron"* ]] || [[ -z "$stored_command" ]]; then
+            # Accept if it looks like our process or if we have no stored command
+            return 0
+        fi
+        
+        # If user matches, trust it
+        if [[ -n "$stored_user" ]] && [[ "$stored_user" == "$actual_user" ]]; then
+            return 0
+        fi
+        
+        log_warn "Process $pid verification failed - may not be our server"
+        log_warn "  Expected user: $stored_user, Actual: $actual_user"
+        return 1
+    fi
+    
+    # For non-Linux or if /proc unavailable, just check if process exists
+    log_debug "Cannot verify process $pid via /proc, relying on PID existence"
+    return 0
+}
+
+# ============================================================================
+# Port-Based Process Discovery
+# ============================================================================
+
+# Find PID of process listening on a specific port
+find_pid_by_port() {
+    local port="$1"
+    local pid=""
+    
+    # Try lsof first (most reliable)
+    if command -v lsof &>/dev/null; then
+        pid=$(lsof -t -i ":${port}" 2>/dev/null | head -1)
+        if [[ -n "$pid" ]]; then
+            echo "$pid"
+            return 0
+        fi
+    fi
+    
+    # Try ss
+    if command -v ss &>/dev/null; then
+        pid=$(ss -tlnp 2>/dev/null | grep ":${port} " | grep -o 'pid=[0-9]*' | head -1 | cut -d= -f2)
+        if [[ -n "$pid" ]]; then
+            echo "$pid"
+            return 0
+        fi
+    fi
+    
+    # Try netstat
+    if command -v netstat &>/dev/null; then
+        pid=$(netstat -tlnp 2>/dev/null | grep ":${port} " | grep -o 'pid=[0-9]*' | head -1 | cut -d= -f2)
+        if [[ -n "$pid" ]]; then
+            echo "$pid"
+            return 0
+        fi
+    fi
+    
+    return 1
+}
+
+# Kill process by port (for orphaned servers)
+kill_by_port() {
+    local port="$1"
+    local force="$2"
+    local pid
+    
+    pid=$(find_pid_by_port "$port")
+    
+    if [[ -z "$pid" ]]; then
+        log_info "No process found listening on port $port"
+        return 1
+    fi
+    
+    log_info "Found process $pid listening on port $port"
+    
+    if [[ "$force" == "true" ]]; then
+        log_info "Force killing process $pid..."
+        kill -9 "$pid" 2>/dev/null || true
+    else
+        log_info "Sending SIGTERM to process $pid..."
+        kill "$pid" 2>/dev/null || true
+        
+        # Wait for graceful termination
+        local count=0
+        while is_process_running "$pid" && [[ $count -lt "$GRACE_PERIOD" ]]; do
+            sleep 1
+            ((count++))
+        done
+        
+        if is_process_running "$pid"; then
+            log_info "Process $pid did not terminate gracefully, force killing..."
+            kill -9 "$pid" 2>/dev/null || true
+        fi
+    fi
+    
+    # Verify port is now free
+    if ! is_port_in_use "$port"; then
+        log_info "Port $port is now free"
+        return 0
+    else
+        log_error "Port $port is still in use after kill attempt"
+        return 1
+    fi
+}
+
+# ============================================================================
+# Server Status and Stop Functions
+# ============================================================================
 
 # Check if server is already running (for HTTP/combined modes)
 check_server_status() {
@@ -234,10 +433,11 @@ check_server_status() {
     fi
 }
 
-# Stop a running server
+# Stop a running server (enhanced with verification)
 stop_server() {
     local pid
     local status
+    local stored_user stored_command
     
     pid=$(get_server_pid)
     status=$(check_server_status) || true
@@ -248,24 +448,53 @@ stop_server() {
         return 0
     fi
     
+    # Get stored verification info
+    stored_user=$(get_pid_user)
+    stored_command=$(get_pid_command)
+    
     if [[ -n "$pid" ]] && is_process_running "$pid"; then
+        # Verify this is our process before killing
+        if ! verify_process "$pid" "$stored_user" "$stored_command"; then
+            log_error "Process verification failed. Refusing to kill process $pid"
+            log_error "This may be a stale PID file or the wrong process."
+            log_error "Use --kill-port to forcefully kill by port, or manually verify."
+            return 1
+        fi
+        
         log_info "Stopping server (PID: $pid)..."
-        kill "$pid" 2>/dev/null || true
-        # Wait for process to terminate
-        local count=0
-        while is_process_running "$pid" && [[ $count -lt 10 ]]; do
-            sleep 1
-            ((count++))
-        done
-        # Force kill if still running
-        if is_process_running "$pid"; then
-            log_info "Force killing server..."
+        
+        if [[ "$FORCE_STOP" == "true" ]]; then
+            # Force kill mode - skip graceful shutdown
+            log_info "Force killing server (--force specified)..."
             kill -9 "$pid" 2>/dev/null || true
+        else
+            # Graceful termination
+            kill "$pid" 2>/dev/null || true
+            # Wait for process to terminate
+            local count=0
+            while is_process_running "$pid" && [[ $count -lt "$GRACE_PERIOD" ]]; do
+                sleep 1
+                ((count++))
+            done
+            # Force kill if still running
+            if is_process_running "$pid"; then
+                log_info "Server did not terminate gracefully, force killing..."
+                kill -9 "$pid" 2>/dev/null || true
+            fi
+        fi
+    else
+        log_warn "Process $pid not running, but port may still be in use"
+        # Try to clean up port anyway
+        local port=$(get_pid_port)
+        if [[ -n "$port" ]] && is_port_in_use "$port"; then
+            log_info "Attempting to free port $port..."
+            kill_by_port "$port" "$FORCE_STOP"
         fi
     fi
     
     remove_pid_file
     log_info "Server stopped."
+    return 0
 }
 
 # Pre-flight checks
@@ -391,6 +620,15 @@ while [[ $# -gt 0 ]]; do
         ACTION="stop"
         shift
         ;;
+    --force)
+        FORCE_STOP=true
+        shift
+        ;;
+    --kill-port)
+        ACTION="kill-port"
+        PORT="$2"
+        shift 2
+        ;;
     --restart)
         ACTION="restart"
         shift
@@ -420,8 +658,11 @@ Options:
   --port PORT      HTTP/WebSocket port (default: 4006)
   --websocket      Use WebSocket transport
   --status         Check if server is running
-  --stop           Stop a running server
+  --stop           Stop a running server gracefully
+  --stop --force   Force kill a non-responsive server (skip graceful shutdown)
+  --kill-port PORT Kill any process listening on specified port
   --restart        Stop existing server and start new one
+  --restart --force Force stop before restart
   --config         Generate MCP client configuration files
   --help           Show this help
 
@@ -439,12 +680,15 @@ Server Detection:
   For HTTP/combined modes, the script checks if a server is already running.
   If a healthy server is found, it exits successfully without starting a new one.
   
-  PID file: .tron-server.pid (JSON format with pid, port, transport, started)
+  PID file: .tron-server.pid (JSON format with pid, port, transport, user, command, unique_id)
 
 Session Management:
   --status         Show server status (running/stopped, PID, port)
-  --stop           Stop a running server gracefully
+  --stop           Stop a running server gracefully (SIGTERM, then SIGKILL after 10s)
+  --stop --force   Force kill immediately (SIGKILL)
+  --kill-port PORT Kill any process using the specified port (bypasses PID file)
   --restart        Stop any existing server and start a new one
+  --restart --force Force stop before restart
 
 Examples:
   start-mcp.sh                      # Combined (long-running HTTP on 4006)
@@ -452,8 +696,17 @@ Examples:
   start-mcp.sh --http-only          # HTTP only on port 4006
   start-mcp.sh --http-only --port 9000
   start-mcp.sh --status             # Check server status
-  start-mcp.sh --stop               # Stop running server
+  start-mcp.sh --stop               # Stop running server gracefully
+  start-mcp.sh --stop --force       # Force kill non-responsive server
+  start-mcp.sh --kill-port 4006     # Kill whatever is on port 4006
   start-mcp.sh --restart            # Restart server
+  start-mcp.sh --restart --force    # Force restart
+
+Troubleshooting:
+  - Server won't stop:     ./start-mcp.sh --stop --force
+  - Port stuck:            ./start-mcp.sh --kill-port 4006
+  - Stuck PID file:        ./start-mcp.sh --kill-port 4006 (then remove .tron-server.pid manually if needed)
+  - Debug:                TRON_DEBUG=1 ./start-mcp.sh ...
 
 MCP Client Config (Cursor ~/.cursor/mcp.json):
   {
@@ -491,6 +744,8 @@ if [[ "$ACTION" == "status" ]]; then
     port=$(get_pid_port)
     transport=$(get_pid_transport)
     started=$(get_pid_started)
+    user=$(get_pid_user)
+    unique_id=$(get_pid_unique_id)
     
     # If no port from PID file, use http-port.txt or default
     if [[ -z "$port" ]]; then
@@ -503,23 +758,28 @@ if [[ "$ACTION" == "status" ]]; then
         log_info "  PID: $pid"
         log_info "  Port: $port"
         [[ -n "$transport" ]] && log_info "  Transport: $transport"
+        [[ -n "$user" ]] && log_info "  User: $user"
+        [[ -n "$unique_id" ]] && log_info "  Instance: $unique_id"
         [[ -n "$started" ]] && log_info "  Started: $(date -d @$started 2>/dev/null || date -r $started 2>/dev/null)"
         exit 0
         ;;
     running-external)
         log_info "Server is RUNNING (external instance)"
         log_info "  Port: $port"
+        log_info "  Use --kill-port to stop it"
         exit 0
         ;;
     unhealthy)
         log_info "Server is UNHEALTHY"
         log_info "  PID: $pid"
         log_info "  Port: $port"
-        log_info "  Use --restart to start a new instance"
+        [[ -n "$user" ]] && log_info "  User: $user"
+        log_info "  Use --stop --force to force stop, or --restart"
         exit 1
         ;;
     port-in-use)
         log_info "Port $port is IN USE by another process"
+        log_info "  Use --kill-port $port to stop it"
         exit 1
         ;;
     stopped)
@@ -535,11 +795,21 @@ if [[ "$ACTION" == "stop" ]]; then
     exit $?
 fi
 
+# Handle --kill-port action
+if [[ "$ACTION" == "kill-port" ]]; then
+    log_info "Killing process on port $PORT..."
+    kill_by_port "$PORT" "$FORCE_STOP"
+    exit $?
+fi
+
 # Handle --restart action
 if [[ "$ACTION" == "restart" ]]; then
     status=$(check_server_status) || true
     if [[ "$status" == "running" ]] || [[ "$status" == "unhealthy" ]]; then
         stop_server
+    elif [[ "$status" == "port-in-use" ]]; then
+        log_info "Port in use but no PID file - attempting to free port..."
+        kill_by_port "$(get_http_port)" "$FORCE_STOP"
     fi
     # Continue to start a new instance
 fi
@@ -566,7 +836,7 @@ if [[ "$TRANSPORT" != "stdio" ]]; then
         ;;
     port-in-use)
         log_error "Port $(get_http_port) is in use by another process."
-        log_error "Use '--port <different-port>' or stop the conflicting process."
+        log_error "Use '--port <different-port>' or '--kill-port <port>' to stop the conflicting process."
         exit 1
         ;;
     esac

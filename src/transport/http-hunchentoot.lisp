@@ -37,12 +37,15 @@
 (defvar *http-acceptor* nil
   "Hunchentoot acceptor for HTTP transport.")
 
+(defvar *http-running* nil
+  "Flag indicating whether the HTTP server is running.")
+
 (defun check-rate-limit (ip-address)
   "Check if IP-ADDRESS has exceeded rate limit.
 Returns T if allowed, NIL if rate limited."
   (unless *rate-limit-enabled*
     (return-from check-rate-limit t))
-  
+
   (bt:with-lock-held (*request-count-lock*)
     (let* ((now (get-universal-time))
            (entry (gethash ip-address *request-counts*))
@@ -73,7 +76,7 @@ Returns (values json-body-string status-code)."
                (list :|jsonrpc| "2.0" :|id| nil :|error|
                      (list :|code| -32602 :|message| "Request too large")))
               413)))
-  
+
   (let ((message (ignore-errors (jonathan:parse body))))
     (if (not message)
         (values "{}" 400)
@@ -111,14 +114,14 @@ Returns (values json-body-string status-code)."
 
 (hunchentoot:define-easy-handler (mcp-rpc :uri "/rpc" :default-request-type :post) ()
   (setf (hunchentoot:content-type*) "application/json")
-  
+
   (let ((ip-address (hunchentoot:remote-addr*)))
     (unless (check-rate-limit ip-address)
       (setf (hunchentoot:return-code*) 429)
       (return-from mcp-rpc
         (jonathan:to-json
          (list :|error| (list :|message| "Rate limit exceeded"))))))
-  
+
   (let ((body (hunchentoot:raw-post-data :force-text t)))
     (if (or (null body) (zerop (length body)))
         (progn (setf (hunchentoot:return-code*) hunchentoot:+http-bad-request+) "")
@@ -132,14 +135,14 @@ Returns (values json-body-string status-code)."
 
 (hunchentoot:define-easy-handler (mcp-lisply-eval :uri "/lisply/lisp-eval" :default-request-type :post) ()
   (setf (hunchentoot:content-type*) "application/json")
-  
+
   (let ((ip-address (hunchentoot:remote-addr*)))
     (unless (check-rate-limit ip-address)
       (setf (hunchentoot:return-code*) 429)
       (return-from mcp-lisply-eval
         (jonathan:to-json
          (list :|error| (list :|message| "Rate limit exceeded"))))))
-  
+
   (let ((body (hunchentoot:raw-post-data :force-text t)))
     (if (or (null body) (zerop (length body)))
         (progn (setf (hunchentoot:return-code*) hunchentoot:+http-bad-request+) "")
@@ -163,7 +166,7 @@ Returns (values json-body-string status-code)."
   (when *http-acceptor*
     (cl-tron-mcp/logging:log-info (format nil "[MCP] HTTP server already running on port ~d" port))
     (return-from start-http-transport))
-  
+
   (setf *http-acceptor*
         (make-instance 'hunchentoot:easy-acceptor
                        :port port
@@ -177,9 +180,8 @@ Returns (values json-body-string status-code)."
                        :input-chunking-p t
                        :read-timeout *http-request-timeout*
                        :write-timeout *http-request-timeout*
-                       :persistent-connections-p t
-                       :max-connections *max-concurrent-connections*))
-  
+                       :persistent-connections-p t))
+
   (setf hunchentoot:*dispatch-table* (mcp-dispatch-table))
   (cl-tron-mcp/logging:log-info (format nil "[MCP] HTTP server starting on http://127.0.0.1:~d (Hunchentoot)" port))
   (hunchentoot:start *http-acceptor*)
