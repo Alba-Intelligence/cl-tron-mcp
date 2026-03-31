@@ -18,7 +18,7 @@ in
       # roswell
 
       git
-      openssl
+      openssl_legacy
 
       # Basic utilities
       ripgrep # Text search utility
@@ -60,6 +60,8 @@ in
 
   # https://devenv.sh/basics/
   enterShell = ''
+    export LD_LIBRARY_PATH=${pkgs.lib.getLib pkgs.openssl_legacy}/lib:$LD_LIBRARY_PATH
+
     hello         # Run scripts directly
     git --version # Use packages
     echo
