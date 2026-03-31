@@ -290,3 +290,64 @@ protocol: Fix JSON-RPC lowercase key issue
 4. **Documentation**:
    - Updated tool docs if applicable
    - Examples added for new features
+---
+
+## Validation System for Tool Authors
+
+All MCP tools should validate their inputs. The `src/tools/validation.lisp` module provides ready-to-use validators.
+
+### Choosing the Right Macro
+
+| Use case | Macro |
+|---|---|
+| No parameters | `define-simple-tool` |
+| Parameters with validation | `define-validated-tool` |
+
+### Built-in Validators
+
+| Function | Validates |
+|---|---|
+| `validate-string` | Non-empty string |
+| `validate-integer` | Integer, optional `:min`/`:max` |
+| `validate-boolean` | `t` or `nil` |
+| `validate-choice` | Member of `:choices` list |
+| `validate-symbol-name` | `"pkg::sym"` format |
+| `validate-package-name` | Known package name |
+| `validate-object-id` | Registered object integer ID |
+| `validate-url` | HTTP/HTTPS URL string |
+| `validate-uri` | `scheme:path` URI string |
+| `validate-list` | List, optional `:min-length`/`:max-length`/`:element-validator` |
+
+### Writing a Validated Tool
+
+```lisp
+(define-validated-tool "my_tool"
+  "Do something useful"
+  :input-schema (list :symbol "string"
+                      :depth "integer"
+                      :verbose "boolean")
+  :output-schema (list :type "object")
+  :requires-approval nil
+  :validators (list
+               (list :param :symbol
+                     :validator #'validate-symbol-name
+                     :message "symbol must be pkg::name format")
+               (list :param :depth
+                     :validator (lambda (v) (validate-integer v :min 1 :max 10))
+                     :message "depth must be 1-10")
+               (list :param :verbose
+                     :validator #'validate-boolean
+                     :message "verbose must be t or nil"))
+  :function #'my-handler-function)
+```
+
+### Error Response Convention
+
+Validators signal `validation-error` which is caught by `define-validated-tool` and returned as:
+```json
+{"error": true, "type": "VALIDATION_ERROR", "message": "..."}
+```
+
+### Security Note
+
+Always validate at the tool boundary — never trust that MCP clients have validated input. The `define-validated-tool` macro runs validators before the handler function is called, so your handler can assume parameters are well-formed.

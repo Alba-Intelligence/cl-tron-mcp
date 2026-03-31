@@ -23,7 +23,7 @@
 (defvar *approval-counter-lock* (bt:make-lock "approval-counter")
   "Lock for synchronizing access to *approval-request-counter*.")
 
-(defstruct approval-request id operation details timestamp expires response)
+(defstruct approval-request id operation details timestamp expires response actor approved-at)
 
 (defun operation-requires-approval (operation)
   (member operation *approval-required-operations*))
@@ -55,9 +55,26 @@
 (defun whitelist-status ()
   (list :enabled *whitelist-enabled*))
 
+(defun whitelist-match-p (pattern details)
+  "Return t if DETAILS matches PATTERN.
+PATTERN can be a string (substring match on tool name), a keyword (operation match),
+a function (called with details), or t (wildcard)."
+  (cond
+    ((eq pattern t) t)
+    ((functionp pattern) (funcall pattern details))
+    ((stringp pattern)
+     (let ((tool-name (getf details :tool "")))
+       (search pattern (or tool-name "") :test #'string-equal)))
+    (t nil)))
+
 (defun whitelist-check (operation details)
-  (declare (ignore operation details))
-  *whitelist-enabled*)
+  "Return t if OPERATION with DETAILS is whitelisted (no user approval needed).
+Checks stored patterns for the given operation."
+  (when *whitelist-enabled*
+    (bt:with-lock-held (*approval-lock*)
+      (let ((patterns (gethash operation *approval-whitelist*)))
+        (some (lambda (pattern) (whitelist-match-p pattern details))
+              (or patterns '()))))))
 
 ;; Map MCP tool name (string) to approval operation keyword for whitelist lookup.
 (defparameter *tool-name-to-operation*
@@ -92,7 +109,8 @@ Uses atomic counter to ensure uniqueness even when called concurrently."
             *approval-request-counter*
             (random 10000))))
 
-(defun request-approval (operation details &key (timeout *approval-timeout*))
+(defun request-approval (operation details &key (timeout *approval-timeout*) (actor "unknown"))
+  "Create an approval request. ACTOR identifies who/what is requesting approval."
   (let* ((req-id (generate-approval-request-id))
          (now (get-unix-time))
          (request (make-approval-request
@@ -100,20 +118,23 @@ Uses atomic counter to ensure uniqueness even when called concurrently."
                    :operation operation
                    :details details
                    :timestamp now
-                   :expires (+ now timeout))))
+                   :expires (+ now timeout)
+                   :actor actor)))
     (bt:with-lock-held (*approval-lock*)
       (setf (gethash req-id *pending-approvals*) request))
     request))
 
-(defun approval-response (request-id &optional response)
-  "Record user response for request-id. When response is :approved, add to *approved-request-ids*
-   with timestamp for cleanup."
+(defun approval-response (request-id &optional response &key (actor "user"))
+  "Record user response for request-id. ACTOR identifies who approved/denied.
+When response is :approved, add to *approved-request-ids* with timestamp for cleanup."
   (bt:with-lock-held (*approval-lock*)
     (let ((request (gethash request-id *pending-approvals*)))
       (unless request
         (error "Approval request ~a not found" request-id))
       (when response
         (setf (approval-request-response request) response)
+        (setf (approval-request-approved-at request) (get-unix-time))
+        (setf (approval-request-actor request) actor)
         (remhash request-id *pending-approvals*)
         (when (eq response :approved)
           (setf (gethash request-id *approved-request-ids*) (get-unix-time))))

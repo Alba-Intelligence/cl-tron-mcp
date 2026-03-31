@@ -4,7 +4,7 @@
 (in-package :cl-tron-mcp/tools)
 
 (define-validated-tool "inspect_object"
-  "Inspect object by ID"
+  "Deeply inspect a runtime object by registry ID"
   :input-schema (list :objectId "string" :maxDepth "integer")
   :output-schema (list :type "object")
   :requires-approval nil
@@ -14,7 +14,7 @@
   :body (cl-tron-mcp/inspector:inspect-object :object-id object_id :max-depth max_depth))
 
 (define-validated-tool "inspect_slot"
-  "Get or set slot value"
+  "Read or write a named slot on an inspected object"
   :input-schema (list :objectId "string" :slotName "string" :value "string")
   :output-schema (list :type "object")
   :requires-approval nil
@@ -25,7 +25,7 @@
   :body (cl-tron-mcp/inspector:inspect-slot :object-id object_id :slot-name slot_name :value value))
 
 (define-validated-tool "inspect_class"
-  "Inspect CLOS class"
+  "Inspect a CLOS class: slots, superclasses, and methods"
   :input-schema (list :className "string")
   :output-schema (list :type "object")
   :requires-approval nil
@@ -34,7 +34,7 @@
   :body (cl-tron-mcp/inspector:inspect-class :class-name class_name))
 
 (define-validated-tool "inspect_function"
-  "Inspect function definition"
+  "Inspect a function: arglist, source, type, and documentation"
   :input-schema (list :symbolName "string")
   :output-schema (list :type "object")
   :requires-approval nil
@@ -43,7 +43,7 @@
   :body (cl-tron-mcp/inspector:inspect-function :symbol_name symbol_name))
 
 (define-validated-tool "inspect_package"
-  "Inspect package symbols"
+  "List all exported and internal symbols in a package"
   :input-schema (list :packageName "string")
   :output-schema (list :type "object")
   :requires-approval nil

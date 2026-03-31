@@ -75,6 +75,9 @@
    #:*reconnect-delay*
    #:*max-event-queue-size*
    #:*output-callback*
+   ;; Input handling
+   #:swank-provide-input
+   #:mcp-swank-send-input
    ;; Reconnection
    #:attempt-reconnect
    #:cleanup-on-error

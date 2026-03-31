@@ -4,7 +4,7 @@
 (in-package :cl-tron-mcp/tools)
 
 (define-simple-tool "thread_list"
-  "List all threads"
+  "List all active threads with name and state"
   :input-schema nil
   :output-schema (list :type "object")
   :requires-approval nil
@@ -12,7 +12,7 @@
   :function cl-tron-mcp/sbcl:list-threads)
 
 (define-validated-tool "thread_inspect"
-  "Inspect thread details"
+  "Get detailed state and metadata for a specific thread"
   :input-schema (list :threadId "string")
   :output-schema (list :type "object")
   :requires-approval nil
@@ -21,7 +21,7 @@
   :body (cl-tron-mcp/sbcl:inspect-thread :thread-id thread_id))
 
 (define-validated-tool "thread_backtrace"
-  "Get thread backtrace"
+  "Get the call stack backtrace of a specific thread"
   :input-schema (list :threadId "string")
   :output-schema (list :type "object")
   :requires-approval nil

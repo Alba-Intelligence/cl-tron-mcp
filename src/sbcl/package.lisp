@@ -6,6 +6,7 @@
     ;; Safe evaluation
     #:safe-eval
     #:safe-compile
+    #:eval-with-output
     ;; Thread management
     #:find-thread
     #:list-threads
@@ -16,4 +17,11 @@
     ;; Object registry
     #:get-object-id
     #:lookup-object
-    #:*object-registry*))
+    #:register-object
+    #:clear-object-registry
+    #:evict-expired-objects
+    #:evict-lru-objects
+    #:maybe-evict-objects
+    #:*object-registry*
+    #:*object-registry-max-age*
+    #:*object-registry-max-size*))

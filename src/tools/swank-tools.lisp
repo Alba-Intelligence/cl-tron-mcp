@@ -176,3 +176,14 @@
   :requires-approval nil
   :documentation-uri "file://docs/tools/swank-debugger-state.md"
   :function cl-tron-mcp/swank:swank-debugger-state)
+(define-validated-tool "swank_send_input"
+  "Send input string to a pending Swank :read-string request"
+  :input-schema (list :input "string")
+  :output-schema (list :type "object")
+  :requires-approval nil
+  :documentation-uri "file://docs/tools/swank-send-input.md"
+  :validators (list
+               (list :param :input
+                     :validator #'cl-tron-mcp/tools:validate-string
+                     :message "input must be a non-empty string"))
+  :function cl-tron-mcp/swank:mcp-swank-send-input)

@@ -4,7 +4,7 @@
 (in-package :cl-tron-mcp/tools)
 
 (define-simple-tool "debugger_frames"
-  "Get debugger stack frames"
+  "Get current debugger stack frames with source locations"
   :input-schema nil
   :output-schema (list :type "object")
   :requires-approval nil
@@ -12,7 +12,7 @@
   :function cl-tron-mcp/debugger:get-debugger-frames)
 
 (define-simple-tool "debugger_restarts"
-  "List debugger restarts"
+  "List available restarts in the current debugger context"
   :input-schema nil
   :output-schema (list :type "object")
   :requires-approval nil
@@ -20,7 +20,7 @@
   :function cl-tron-mcp/debugger:list-restarts)
 
 (define-validated-tool "breakpoint_set"
-  "Set a breakpoint"
+  "Set a breakpoint on a named function with optional condition"
   :input-schema (list :functionName "string" :condition "string" :hitCount "integer")
   :output-schema (list :type "object")
   :requires-approval t
@@ -31,16 +31,16 @@
   :body (cl-tron-mcp/debugger:set-breakpoint :function-name function_name :condition condition :hit-count hit_count))
 
 (define-validated-tool "breakpoint_remove"
-  "Remove a breakpoint"
+  "Remove a breakpoint by ID"
   :input-schema (list :breakpointId "integer")
   :output-schema (list :type "object")
-  :requires-approval nil
+  :requires-approval t
   :documentation-uri "file://docs/tools/breakpoint-remove.md"
   :validation ((validate-integer "breakpoint_id" breakpoint_id :required t :min 0))
   :body (cl-tron-mcp/debugger:remove-breakpoint :breakpoint-id breakpoint_id))
 
 (define-simple-tool "breakpoint_list"
-  "List all breakpoints"
+  "List all active breakpoints with ID, location, and condition"
   :input-schema nil
   :output-schema (list :type "object")
   :requires-approval nil
@@ -48,7 +48,7 @@
   :function cl-tron-mcp/debugger:list-breakpoints)
 
 (define-validated-tool "step_frame"
-  "Step execution in frame"
+  "Step through execution in a stack frame (into, over, or out)"
   :input-schema (list :frame "integer" :mode "string")
   :output-schema (list :type "object")
   :requires-approval nil

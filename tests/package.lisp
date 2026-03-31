@@ -12,4 +12,6 @@
                 #:validate-object-id
                 #:validate-symbol-name
                 #:validate-package-name
-                #:with-validation))
+                #:with-validation)
+  (:import-from :cl-tron-mcp/sbcl
+                #:register-object))

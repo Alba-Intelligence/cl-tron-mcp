@@ -26,4 +26,7 @@
    #:validate-object-id
    #:validate-symbol-name
    #:validate-package-name
+   #:validate-url
+   #:validate-uri
+   #:validate-list
    #:with-validation))

@@ -7,7 +7,7 @@
   :author "Emmanuel Rialland [alba.intelligence@gmail.com]"
   :licence "Apache"
   :serial t
-  :depends-on (:jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket :hunchentoot :cl-ppcre)
+  :depends-on (:jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket :hunchentoot :cl-ppcre :flexi-streams)
  :components ((:file "src/core/package")
                   (:file "src/core/version")
                   (:file "src/logging/package")
@@ -28,7 +28,10 @@
                  (:file "src/xref/core")
  (:file "src/swank/package")
                   (:file "src/swank/protocol")
-                  (:file "src/swank/client")
+                  (:file "src/swank/swank-connection")
+                  (:file "src/swank/swank-rpc")
+                  (:file "src/swank/swank-events")
+                  (:file "src/swank/swank-api")
                   (:file "src/unified/package")
                   (:file "src/unified/client")
                   (:file "src/resources/package")
@@ -112,4 +115,10 @@
                   (:file "tests/swank-test")
                   (:file "tests/swank-integration-test")
                   (:file "tests/mcp-e2e-test")
-                  (:file "tests/token-tracker-test")))
+                  (:file "tests/token-tracker-test")
+                  (:file "tests/monitor-test")
+                  (:file "tests/inspector-test")
+                  (:file "tests/hot-reload-test")
+                  (:file "tests/profiler-test")
+                  (:file "tests/xref-test")
+                  (:file "tests/logging-test")))

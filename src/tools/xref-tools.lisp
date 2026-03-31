@@ -4,7 +4,7 @@
 (in-package :cl-tron-mcp/tools)
 
 (define-validated-tool "who_calls"
-  "Find function callers"
+  "Find all functions that call the named function"
   :input-schema (list :symbolName "string")
   :output-schema (list :type "object")
   :requires-approval nil
@@ -13,7 +13,7 @@
   :body (cl-tron-mcp/xref:who-calls :symbol-name symbol_name))
 
 (define-validated-tool "who_references"
-  "Find variable references"
+  "Find all code locations that reference a global variable"
   :input-schema (list :symbolName "string")
   :output-schema (list :type "object")
   :requires-approval nil
@@ -22,7 +22,7 @@
   :body (cl-tron-mcp/xref:who-references :symbol-name symbol_name))
 
 (define-validated-tool "who_binds"
-  "Find variable bindings"
+  "Find all code locations that bind a variable with let or similar"
   :input-schema (list :symbolName "string")
   :output-schema (list :type "object")
   :requires-approval nil
@@ -31,7 +31,7 @@
   :body (cl-tron-mcp/xref:who-binds :symbol-name symbol_name))
 
 (define-validated-tool "who_sets"
-  "Find variable modifications"
+  "Find all code locations that assign to a global variable"
   :input-schema (list :symbolName "string")
   :output-schema (list :type "object")
   :requires-approval nil
@@ -40,7 +40,7 @@
   :body (cl-tron-mcp/xref:who-sets :symbol-name symbol_name))
 
 (define-validated-tool "list_callees"
-  "List called functions"
+  "List all functions called by the named function"
   :input-schema (list :symbolName "string")
   :output-schema (list :type "object")
   :requires-approval nil

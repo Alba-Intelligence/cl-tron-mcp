@@ -9,8 +9,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### Swank Client Improvements
-- **Thread Safety**: Added thread-safe access to Swank client global state using locks
+#### Security Hardening
+- **Whitelist pattern matching**: Fixed `whitelist-check` to actually match stored patterns. Supports string substring, function predicate, and wildcard (`t`) patterns via new `whitelist-match-p`
+- **Log sanitization**: Added `sanitize-arguments` and `*sensitive-parameter-names*` to redact secrets (`:password`, `:token`, `:secret`, `:api-key`) from audit log entries
+- **Audit log bounds**: Replaced unbounded audit log array with a circular buffer capped at `*audit-log-max-size*` (default 5000); trims oldest 25% when limit is reached
+- **Approval actor tracking**: Added `:actor` and `:approved-at` fields to `approval-request` struct for enterprise compliance
+
+#### Reliability & Consistency
+- **Eval timeout**: `safe-eval` now spawns a thread and enforces the `timeout` parameter using `bt:destroy-thread` on expiry
+- **Object registry eviction**: Added TTL-based (`*object-registry-max-age*` = 3600s) and LRU eviction (`*object-registry-max-size*` = 1000) to the debug-internals object registry, preventing memory leaks in long sessions
+- **Thread state model**: `thread-state` now returns `:blocked` (mutex wait), `:waiting` (condition variable), or `:sleeping` in addition to `:running`/`:dead` on SBCL
+- **Breakpoint approval**: `breakpoint_remove` now requires user approval, consistent with `breakpoint_set`
+- **GC validation**: `gc_run` converted to `define-validated-tool` with integer validation (0–7) for the `:generation` parameter
+- **Tool registry**: `load-all-tools` made a documented no-op; tool files are already loaded by ASDF in the correct order
+- **HTTP stop signal**: Replaced `sleep 1` busy-wait loop in HTTP watchdog with a condition variable (`*http-stop-condition*`), eliminating unnecessary CPU wake-ups
+
+#### Swank Client Refactoring
+- **Module split**: Monolithic `src/swank/client.lisp` (1152 LOC) split into four focused files:
+  - `swank-connection.lisp` — connection state, connect/disconnect, protocol I/O, `get-unix-time`
+  - `swank-rpc.lisp` — request-response correlation, reader loop, heartbeat, message dispatch
+  - `swank-events.lisp` — event queue, reconnection with exponential backoff, event processor
+  - `swank-api.lisp` — high-level RPC operations (eval, compile, backtrace, stepping, etc.), MCP wrappers
+- **Input handling**: Implemented `:read-string` handler in `dispatch-incoming-message`. Pending requests are stored in `*pending-input-requests*`; the new `swank_send_input` tool / `swank-provide-input` function sends `(:emacs-return-string ...)` back to Swank
+
+#### Validation
+- Added `validate-url`, `validate-uri`, and `validate-list` validators to `src/tools/validation.lisp`
+
+#### New Tool
+- **`swank_send_input`**: Respond to a pending Swank `:read-string` request with a user-supplied string
+
+#### Tool Descriptions
+- Expanded terse 1–3 word descriptions to actionable 5–10 word descriptions across inspector, debugger, monitor, thread, tracer, and xref tool categories
+
+#### WebSocket Transport
+- `start-websocket-transport` now raises a clear error ("WebSocket transport not implemented. Use :stdio-only or :http-only.") instead of silently doing nothing
+
+#### Test Coverage
+- Added `tests/security-test.lisp` tests: audit log bounds, log sanitization, whitelist add/remove/pattern/wildcard/disable
+- Added `tests/monitor-test.lisp`: health-check, runtime-stats, system-info, gc-run (valid + invalid generation)
+- Added `tests/inspector-test.lisp`: inspect-class, inspect-function, inspect-package, inspect-object
+- Added `tests/hot-reload-test.lisp`: compile-and-load (valid + invalid), reload-system (unknown system), get-source-location
+- Added `tests/profiler-test.lisp`: profile-start, profile-stop, profile-report, profile-reset
+- Added `tests/xref-test.lisp`: who-calls, who-references, list-callees, who-binds, who-sets
+- Added `tests/logging-test.lisp`: log-configure, log-info/debug/warn/error, log-level
+
+### Fixed
+- `src/security/approval.lisp`: whitelist patterns were stored but never matched — `whitelist-check` always returned the global enable flag
+- `cl-tron-mcp.asd`: added missing `:flexi-streams` dependency
+- `src/sbcl/eval.lisp`: `timeout` parameter was accepted but silently ignored
+
 - **Timeout Support**: Added configurable timeout for Swank evaluations (default 30 seconds)
 - **Async Evaluation**: Implemented asynchronous evaluation support with callback-based results
 - **Heartbeat/Keepalive**: Added heartbeat mechanism to detect and recover from stale connections

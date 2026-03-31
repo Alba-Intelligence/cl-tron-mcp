@@ -16,7 +16,7 @@
 # Transport Modes:
 #   - stdio-only: Short-lived, exits when MCP client disconnects
 #   - http-only: Long-running HTTP server
-#   - combined: Long-running HTTP server (stdio handled via HTTP client pattern)
+#  - combined: Long-running server with BOTH HTTP and stdio - recommended
 #
 # Lisp selection (first match):
 #   1. CLI: --use-sbcl or --use-ecl (error if that Lisp is not installed)
@@ -670,11 +670,13 @@ Transport Modes:
   --stdio-only     Short-lived process for MCP client communication
                    Process exits when the MCP client disconnects
   
-  --http-only      Long-running HTTP server
-                   Stays alive until stopped with Ctrl+C or --stop
+  combined (default)  Long-running server with BOTH HTTP and stdio
+                   - HTTP on port (for MCP clients via HTTP)
+                   - stdio on main thread (for MCP clients via stdio)
+                   - Recommended for most use cases
   
-  combined (default)  Long-running HTTP server (same as --http-only)
-                   MCP clients should use streamable HTTP transport
+  --http-only      Long-running HTTP server only (no stdio)
+                   Use this if you only need HTTP transport
 
 Server Detection:
   For HTTP/combined modes, the script checks if a server is already running.
@@ -961,7 +963,7 @@ elif [[ "$TRANSPORT" == "combined" ]]; then
 (%boot-log "4: load done")
 (let ((port (parse-integer (with-open-file (f #p"$PROOT/http-port.txt") (read-line f)))))
   (%boot-log (format nil "5: port=~a calling start-server" port))
-  (cl-tron-mcp/core:start-server :transport :http-only :port port))
+  (cl-tron-mcp/core:start-server :transport :combined :port port))
 (%boot-log "6: start-server returned")
 #+sbcl (sb-ext:exit :code 0)
 #+ecl (ext:quit 0)

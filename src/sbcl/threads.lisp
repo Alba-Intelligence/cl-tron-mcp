@@ -31,10 +31,20 @@
             :state (thread-state thr)))))
 
 (defun thread-state (thread)
-  "Get thread state keyword."
-  (if (bt:thread-alive-p thread)
-      :running
-      :dead))
+  "Get thread state keyword: :running, :sleeping, :waiting, :blocked, or :dead."
+  (cond
+    ((not (bt:thread-alive-p thread)) :dead)
+    #+sbcl
+    ((sb-thread:thread-waiting-for thread)
+     (let ((waiting-for (sb-thread:thread-waiting-for thread)))
+       (typecase waiting-for
+         (sb-thread:mutex :blocked)
+         (t :waiting))))
+    #+sbcl
+    ((let ((state (sb-thread:thread-state thread)))
+       (string= (symbol-name state) "WAITING"))
+     :sleeping)
+    (t :running)))
 
 (defun inspect-thread (thread-id)
   "Get detailed information about a thread."

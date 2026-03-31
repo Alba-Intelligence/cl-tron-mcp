@@ -127,6 +127,59 @@ Raises validation-error if validation fails."
              :message "Invalid package name")))
   value)
 
+(defun validate-url (name value &key required)
+  "Validate that VALUE is a well-formed URL (http, https, ftp, or file scheme).
+Raises validation-error if validation fails."
+  (validate-string name value :required required :min-length 1)
+  (when (and value (stringp value))
+    (unless (cl-ppcre:scan
+             "^(https?|ftp|file)://[^\\s]+"
+             value)
+      (error 'validation-error
+             :parameter name
+             :message "Invalid URL (expected http://, https://, ftp://, or file://)")))
+  value)
+
+(defun validate-uri (name value &key required)
+  "Validate that VALUE is a non-empty URI string (any scheme).
+Raises validation-error if validation fails."
+  (validate-string name value :required required :min-length 1)
+  (when (and value (stringp value))
+    (unless (cl-ppcre:scan "^[a-zA-Z][a-zA-Z0-9+\\-.]*:" value)
+      (error 'validation-error
+             :parameter name
+             :message "Invalid URI (must have a scheme like http:, file:, etc.)")))
+  value)
+
+(defun validate-list (name value &key required (min-length 0) max-length element-validator)
+  "Validate that VALUE is a list with optional length and per-element constraints.
+ELEMENT-VALIDATOR, if provided, is called as (element-validator element-name element-value)
+for each element. Raises validation-error if validation fails."
+  (when (and required (null value))
+    (error 'validation-error
+           :parameter name
+           :message "Required parameter is missing"))
+  (when (and value (not (listp value)))
+    (error 'validation-error
+           :parameter name
+           :message (format nil "Expected list, got ~a" (type-of value))))
+  (when (and value (listp value))
+    (when (< (length value) min-length)
+      (error 'validation-error
+             :parameter name
+             :message (format nil "List too short (minimum ~d elements)" min-length)))
+    (when (and max-length (> (length value) max-length))
+      (error 'validation-error
+             :parameter name
+             :message (format nil "List too long (maximum ~d elements)" max-length)))
+    (when element-validator
+      (loop for i from 0
+            for element in value
+            do (funcall element-validator
+                        (format nil "~a[~d]" name i)
+                        element))))
+  value)
+
 (defmacro with-validation ((&rest validations) &body body)
   "Execute BODY with input validation.
 VALIDATIONS is a list of (function-name parameter-name &rest args)."

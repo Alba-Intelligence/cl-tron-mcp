@@ -25,6 +25,7 @@ scripts/http-boot.lisp
 startup.log
 system-index.txt
 
+devenv.lock
 flake.lock
 git_examples
 tmp
@@ -37,3 +38,14 @@ tmp
 
 # Server PID file
 .tron-server.pid
+
+# Devenv
+.devenv*
+devenv.local.nix
+devenv.local.yaml
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml

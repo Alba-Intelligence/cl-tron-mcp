@@ -1,12 +1,8 @@
 ;;;; src/transport/http-hunchentoot.lisp - HTTP transport via Hunchentoot
 ;;;; Replaces the usocket-based HTTP transport so responses are delivered
-;;;; correctly. Requires :hunchentoot in the system dependencies.
+;;;; correctly. Requires :hunchentoot and :flexi-streams in the system dependencies.
 
 (in-package :cl-tron-mcp/transport)
-
-#+quicklisp
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (ql:quickload '(:hunchentoot :flexi-streams) :silent t))
 
 ;;; HTTP Transport Configuration
 (defvar *max-concurrent-connections* 100
@@ -39,6 +35,12 @@
 
 (defvar *http-running* nil
   "Flag indicating whether the HTTP server is running.")
+
+(defvar *http-stop-mutex* (bt:make-lock "http-stop")
+  "Mutex for the HTTP stop condition variable.")
+
+(defvar *http-stop-condition* (bt:make-condition-variable :name "http-stop-cv")
+  "Condition variable signalled when the HTTP server should stop.")
 
 (defun check-rate-limit (ip-address)
   "Check if IP-ADDRESS has exceeded rate limit.
@@ -189,13 +191,19 @@ Returns (values json-body-string status-code)."
   (setf *http-running* t)
   (if block
       (progn
-        (loop while *http-running* do (bt:thread-yield) (sleep 1))
+        (bt:with-lock-held (*http-stop-mutex*)
+          (loop while *http-running*
+                do (bt:condition-wait *http-stop-condition* *http-stop-mutex*
+                                      :timeout 5)))
         (hunchentoot:stop *http-acceptor*)
         (setf *http-acceptor* nil)
         (setf *http-running* nil))
       (bt:make-thread
        (lambda ()
-         (loop while *http-running* do (bt:thread-yield) (sleep 1))
+         (bt:with-lock-held (*http-stop-mutex*)
+           (loop while *http-running*
+                 do (bt:condition-wait *http-stop-condition* *http-stop-mutex*
+                                       :timeout 5)))
          (when *http-acceptor*
            (ignore-errors (hunchentoot:stop *http-acceptor*))
            (setf *http-acceptor* nil))
@@ -204,7 +212,9 @@ Returns (values json-body-string status-code)."
 
 (defun stop-http-transport ()
   "Stop the Hunchentoot HTTP server."
-  (setf *http-running* nil)
+  (bt:with-lock-held (*http-stop-mutex*)
+    (setf *http-running* nil)
+    (bt:condition-notify *http-stop-condition*))
   (when *http-acceptor*
     (ignore-errors (hunchentoot:stop *http-acceptor*))
     (setf *http-acceptor* nil))
