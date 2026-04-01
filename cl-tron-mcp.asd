@@ -34,6 +34,7 @@
                   (:file "src/swank/swank-rpc")
                   (:file "src/swank/swank-events")
                   (:file "src/swank/swank-api")
+                   (:file "src/swank/process-manager")
                   (:file "src/unified/package")
                   (:file "src/unified/client")
                   (:file "src/resources/package")
@@ -83,6 +84,7 @@
                    (:file "src/tools/xref-tools")
                    (:file "src/tools/security-tools")
                    (:file "src/tools/swank-tools")
+                    (:file "src/tools/process-tools")
  (:file "src/tools/unified-tools")
    (:file "src/tools/register-tools")
                     (:file "src/protocol/package")
@@ -123,7 +125,8 @@
                   (:file "tests/hot-reload-test")
                   (:file "tests/profiler-test")
                   (:file "tests/xref-test")
-                  (:file "tests/logging-test")))
+                  (:file "tests/logging-test")
+                   (:file "tests/process-manager-test")))
 
 (asdf:defsystem :cl-tron-mcp/tests/integration
   :name "cl-tron-mcp Integration Tests"

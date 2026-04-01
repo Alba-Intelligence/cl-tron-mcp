@@ -83,4 +83,11 @@
    #:attempt-reconnect
    #:cleanup-on-error
    #:cleanup-old-events
-   #:heartbeat-loop))
+   #:heartbeat-loop
+   ;; Process management
+   #:launch-sbcl-with-swank
+   #:kill-managed-process
+   #:managed-process-status
+   #:list-managed-processes
+   #:port-available-p
+   #:*managed-processes*))

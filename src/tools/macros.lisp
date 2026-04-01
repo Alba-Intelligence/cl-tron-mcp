@@ -7,8 +7,9 @@
   "Define a tool with validation wrapper.
    VALIDATION is a list of validation forms.
    BODY is the actual implementation."
-  (let ((params (when validation (loop for (func param . args) in validation
-                                       collect (intern (string-upcase param))))))
+  (let ((params (when validation (remove-duplicates
+                                  (loop for (func param . args) in validation
+                                        collect (intern (string-upcase param)))))))
     `(progn
        (register-tool ,name ,description
                       :input-schema ,input-schema

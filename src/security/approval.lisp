@@ -4,7 +4,7 @@
 
 (defparameter *approval-required-operations*
   '(:eval :compile-file :modify-running-code :terminate-thread
-    :set-breakpoint :trace-function :modify-restarts))
+    :set-breakpoint :trace-function :modify-restarts :launch-process))
 
 (defvar *pending-approvals* (make-hash-table :test 'equal))
 (defvar *approval-lock* (bt:make-lock "approval"))
@@ -92,7 +92,8 @@ Checks stored patterns for the given operation."
                     ("trace_function" . :trace-function) ("trace_remove" . :trace-function)
                     ("breakpoint_set" . :set-breakpoint) ("repl_set_breakpoint" . :set-breakpoint)
                     ("swank_abort" . :terminate-thread) ("swank_interrupt" . :terminate-thread)
-                    ("repl_abort" . :terminate-thread)))
+                    ("repl_abort" . :terminate-thread)
+                    ("swank_launch" . :launch-process) ("swank_kill" . :launch-process)))
       (setf (gethash (car pair) h) (cdr pair)))
     h))
 
