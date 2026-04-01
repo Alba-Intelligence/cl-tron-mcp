@@ -5,7 +5,7 @@
 (defun repl-eval (code &key (package :cl-user) (timeout 30) (print-level 10) (print-length 100))
   "Evaluate Lisp code in REPL context."
   (let ((*package* (or (find-package package)
-                      (error "Package ~a not found" package))))
+                       (error "Package ~a not found" package))))
     (handler-case
         (let ((*print-level* print-level)
               (*print-length* print-length)

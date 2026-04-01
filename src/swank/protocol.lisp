@@ -122,8 +122,8 @@ If TIMEOUT is provided and exceeded, signals a swank-read-timeout error."
           while (< total-read length)
           do (let ((elapsed (- (get-universal-time) start-time)))
                (when (> elapsed timeout-seconds)
-                 (error 'swank-read-timeout 
-                        :stream stream 
+                 (error 'swank-read-timeout
+                        :stream stream
                         :timeout timeout
                         :message (format nil "Read timeout after ~d seconds" timeout)))
                (let ((count (read-sequence buffer stream :start total-read)))
@@ -204,9 +204,9 @@ Returns the parsed S-expression in PACKAGE."
       (values nil c))
     (reader-error (c)
       (let ((packet (read-packet stream :timeout timeout)))
-        (values nil (make-condition 'swank-reader-error 
-                                     :packet packet 
-                                     :cause c))))))
+        (values nil (make-condition 'swank-reader-error
+                                    :packet packet
+                                    :cause c))))))
 
 (defun skip-whitespace (stream)
   "Skip whitespace characters on STREAM."

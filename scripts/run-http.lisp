@@ -7,17 +7,17 @@
 
 (defun http-dbg (msg)
   (ignore-errors
-    (let ((root (or *http-project-root* *default-pathname-defaults*)))
-      (ensure-directories-exist (merge-pathnames "reports/" root))
-      (let ((log-path (merge-pathnames "reports/http-startup.log" root)))
-        (with-open-file (f log-path :direction :output :if-exists :append :if-does-not-exist :create)
-          (write-line (format nil "~a ~a" (get-universal-time) msg) f))))))
+   (let ((root (or *http-project-root* *default-pathname-defaults*)))
+     (ensure-directories-exist (merge-pathnames "reports/" root))
+     (let ((log-path (merge-pathnames "reports/http-startup.log" root)))
+       (with-open-file (f log-path :direction :output :if-exists :append :if-does-not-exist :create)
+         (write-line (format nil "~a ~a" (get-universal-time) msg) f))))))
 
 (let ((project-root (if *load-pathname*
-                       (make-pathname :directory (append (pathname-directory (truename *load-pathname*))
-                                                         (list :up))
-                                      :defaults (truename *load-pathname*))
-                       *default-pathname-defaults*)))
+                        (make-pathname :directory (append (pathname-directory (truename *load-pathname*))
+                                                          (list :up))
+                                       :defaults (truename *load-pathname*))
+                        *default-pathname-defaults*)))
   (setq *http-project-root* (truename (merge-pathnames "" project-root)))
   (let ((port-file (merge-pathnames "http-port.txt" *http-project-root*)))
     (http-dbg "run-http: entered")

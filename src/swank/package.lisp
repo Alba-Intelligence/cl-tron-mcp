@@ -4,10 +4,10 @@
   (:use :cl)
   (:nicknames :cl-tron-mcp/swank/client)
   (:shadowing-import-from :cl-tron-mcp/logging
-    #:log-info
-    #:log-debug
-    #:log-warn
-    #:log-error)
+                          #:log-info
+                          #:log-debug
+                          #:log-warn
+                          #:log-error)
   (:export
    ;; Connection
    #:swank-connect

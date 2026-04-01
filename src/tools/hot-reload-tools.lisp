@@ -14,8 +14,8 @@
                (when package (validate-string "package" package)))
   :body (if (cl-tron-mcp/unified:repl-connected-p)
             (cl-tron-mcp/unified:repl-compile :code code
-                                               :package (or package "CL-USER")
-                                               :filename (or filename "repl"))
+                                              :package (or package "CL-USER")
+                                              :filename (or filename "repl"))
             (cl-tron-mcp/hot-reload:compile-and-load :code code :filename filename)))
 
 (define-validated-tool "reload_system"

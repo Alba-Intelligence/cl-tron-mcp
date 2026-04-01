@@ -39,10 +39,10 @@ Returns a new plist with sensitive parameter values replaced by \"[REDACTED]\"."
     ((listp args)
      (loop for (key val) on args by #'cddr
            when key
-           append (list key (if (and (or (symbolp key) (stringp key))
-                                     (sensitive-param-p key))
-                                "[REDACTED]"
-                                val))))
+             append (list key (if (and (or (symbolp key) (stringp key))
+                                       (sensitive-param-p key))
+                                  "[REDACTED]"
+                                  val))))
     (t args)))
 
 (defun log-operation (operation tool &key (user "unknown") resource approved-p duration result)

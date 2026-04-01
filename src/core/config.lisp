@@ -65,14 +65,14 @@ Returns number of variables loaded."
           (error (e)
             (cl-tron-mcp/logging:log-warn (format nil "Invalid CL_TRON_MCP_PORT: ~a" e))))
         (incf loaded)))
-    
+
     (let ((transport (uiop:getenv (concatenate 'string *env-var-prefix* "TRANSPORT"))))
       (when transport
         (let ((transport-key (intern (string-upcase transport) :keyword)))
           (when (member transport-key '(:stdio :http :combined :websocket))
             (set-config :transport transport-key)
             (incf loaded)))))
-    
+
     (let ((timeout (uiop:getenv (concatenate 'string *env-var-prefix* "APPROVAL_TIMEOUT"))))
       (when timeout
         (handler-case
@@ -80,17 +80,17 @@ Returns number of variables loaded."
           (error (e)
             (cl-tron-mcp/logging:log-warn (format nil "Invalid CL_TRON_MCP_APPROVAL_TIMEOUT: ~a" e))))
         (incf loaded)))
-    
+
     (let ((debug (uiop:getenv (concatenate 'string *env-var-prefix* "DEBUG"))))
       (when debug
         (set-config :debug (or (string= debug "true") (string= debug "1")))
         (incf loaded)))
-    
+
     (let ((host (uiop:getenv (concatenate 'string *env-var-prefix* "SWANK_HOST"))))
       (when host
         (set-config :swank-host host)
         (incf loaded)))
-    
+
     (let ((port (uiop:getenv (concatenate 'string *env-var-prefix* "SWANK_PORT"))))
       (when port
         (handler-case
@@ -98,14 +98,14 @@ Returns number of variables loaded."
           (error (e)
             (cl-tron-mcp/logging:log-warn (format nil "Invalid CL_TRON_MCP_SWANK_PORT: ~a" e))))
         (incf loaded)))
-    
+
     (let ((level (uiop:getenv (concatenate 'string *env-var-prefix* "LOG_LEVEL"))))
       (when level
         (let ((level-key (intern (string-upcase level) :keyword)))
           (when (member level-key '(:debug :info :warn :error))
             (set-config :log-level level-key)
             (incf loaded)))))
-    
+
     loaded))
 
 (defun load-configuration ()
@@ -117,17 +117,17 @@ Returns T if configuration was loaded successfully."
   (when *config-loaded*
     (cl-tron-mcp/logging:log-info "Configuration already loaded")
     (return-from load-configuration t))
-  
+
   (cl-tron-mcp/logging:log-info "Loading configuration...")
-  
+
   (dolist (path *config-file-paths*)
     (when (load-config-file path)
       (return)))
-  
+
   (let ((env-count (load-config-from-env)))
     (when (> env-count 0)
       (cl-tron-mcp/logging:log-info (format nil "Loaded ~d configuration values from environment" env-count))))
-  
+
   (setf *config-loaded* t)
   (cl-tron-mcp/logging:log-info "Configuration loaded successfully")
   t)
@@ -138,9 +138,9 @@ Also checks environment variables for the key."
   (let ((value (gethash key *config*)))
     (if value
         value
-        (let ((env-var-name (concatenate 'string 
-                                        *env-var-prefix*
-                                        (substitute #\_ #\- (string-upcase key)))))
+        (let ((env-var-name (concatenate 'string
+                                         *env-var-prefix*
+                                         (substitute #\_ #\- (string-upcase key)))))
           (let ((env-value (uiop:getenv env-var-name)))
             (if env-value
                 env-value

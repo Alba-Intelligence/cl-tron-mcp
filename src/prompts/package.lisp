@@ -30,15 +30,15 @@
    ;; Prompt listing
    #:list-prompts
    #:prompt-descriptor
-   
+
    ;; Prompt retrieval
    #:get-prompt
    #:prompt-not-found-error
-   
+
    ;; MCP handlers
    #:handle-prompts-list
    #:handle-prompts-get
-   
+
    ;; Prompt definitions
    #:define-prompt
    #:*prompt-registry*))

@@ -44,10 +44,10 @@
 ;; CL-TRON-MCP Tool: inspect_object
 ;; Inspect the factorial function definition:
 #{
-  "tool": "inspect_function",
-  "arguments": {
-    "symbolName": "tutorial::factorial"
-  }
+"tool": "inspect_function",
+"arguments": {
+"symbolName": "tutorial::factorial"
+}
 }#
 
 ;; This returns information about the function type, lambda list, etc.
@@ -60,10 +60,10 @@
 ;; Trace the factorial function to see the call stack:
 
 #{
-  "tool": "trace_function",
-  "arguments": {
-    "functionName": "tutorial::factorial"
-  }
+"tool": "trace_function",
+"arguments": {
+"functionName": "tutorial::factorial"
+}
 }#
 
 ;; Now call the function and observe the trace output:
@@ -73,18 +73,18 @@
 ;; Check which functions are being traced:
 
 #{
-  "tool": "trace_list",
-  "arguments": {}
+"tool": "trace_list",
+"arguments": {}
 }#
 
 ;; CL-TRON-MCP Tool: trace_remove
 ;; Remove the trace when done:
 
 #{
-  "tool": "trace_remove",
-  "arguments": {
-    "functionName": "tutorial::factorial"
-  }
+"tool": "trace_remove",
+"arguments": {
+"functionName": "tutorial::factorial"
+}
 }#
 
 ;; ============================================================================
@@ -95,20 +95,20 @@
 ;; Find all functions that call factorial:
 
 #{
-  "tool": "who_calls",
-  "arguments": {
-    "symbolName": "tutorial::factorial"
-  }
+"tool": "who_calls",
+"arguments": {
+"symbolName": "tutorial::factorial"
+}
 }#
 
 ;; CL-TRON-MCP Tool: list_callees
 ;; Find all functions that factorial calls:
 
 #{
-  "tool": "list_callees",
-  "arguments": {
-    "symbolName": "tutorial::factorial"
-  }
+"tool": "list_callees",
+"arguments": {
+"symbolName": "tutorial::factorial"
+}
 }#
 
 ;; ============================================================================
@@ -119,19 +119,19 @@
 ;; Get the current stack frames:
 
 #{
-  "tool": "debugger_frames",
-  "arguments": {
-    "start": 0,
-    "end": 10
-  }
+"tool": "debugger_frames",
+"arguments": {
+"start": 0,
+"end": 10
+}
 }#
 
 ;; CL-TRON-MCP Tool: debugger_restarts
 ;; List available restarts:
 
 #{
-  "tool": "debugger_restarts",
-  "arguments": {}
+"tool": "debugger_restarts",
+"arguments": {}
 }#
 
 ;; ============================================================================
@@ -142,19 +142,19 @@
 ;; Evaluate Lisp code in the context of your package:
 
 #{
-  "tool": "repl_eval",
-  "arguments": {
-    "code": "(in-package :tutorial)",
-    "package": "CL-USER"
-  }
+"tool": "repl_eval",
+"arguments": {
+"code": "(in-package :tutorial)",
+"package": "CL-USER"
+}
 }#
 
 #{
-  "tool": "repl_eval",
-  "arguments": {
-    "code": "(format t \"Testing factorial: ~d~%\" (factorial 5))",
-    "package": "TUTORIAL"
-  }
+"tool": "repl_eval",
+"arguments": {
+"code": "(format t \"Testing factorial: ~d~%\" (factorial 5))",
+"package": "TUTORIAL"
+}
 }#
 
 ;; ============================================================================
@@ -165,22 +165,22 @@
 ;; Configure logging for the tutorial package:
 
 #{
-  "tool": "log_configure",
-  "arguments": {
-    "level": "debug",
-    "package": "tutorial"
-  }
+"tool": "log_configure",
+"arguments": {
+"level": "debug",
+"package": "tutorial"
+}
 }#
 
 ;; CL-TRON-MCP Tool: log_debug
 ;; Add debug logging:
 
 #{
-  "tool": "log_debug",
-  "arguments": {
-    "message": "Calculating factorial",
-    "package": "tutorial"
-  }
+"tool": "log_debug",
+"arguments": {
+"message": "Calculating factorial",
+"package": "tutorial"
+}
 }#
 
 ;; ============================================================================
@@ -191,17 +191,17 @@
 ;; Fix the bug and reload the function:
 
 #{
-  "tool": "code_compile_string",
-  "arguments": {
-    "code": "(in-package :tutorial)
+"tool": "code_compile_string",
+"arguments": {
+"code": "(in-package :tutorial)
 (defun factorial (n)
   \"Calculate factorial of N. Now handles negative numbers correctly!\"
   (cond
     ((plusp n) (* n (factorial (1- n))))
     ((zerop n) 1)
     (t (error \"Factorial undefined for negative numbers: ~d\" n))))",
-    "filename": "factorial.lisp"
-  }
+"filename": "factorial.lisp"
+}
 }#
 
 ;; ============================================================================
@@ -212,24 +212,24 @@
 ;; Get comprehensive system information:
 
 #{
-  "tool": "system_info",
-  "arguments": {}
+"tool": "system_info",
+"arguments": {}
 }#
 
 ;; CL-TRON-MCP Tool: runtime_stats
 ;; Get runtime statistics:
 
 #{
-  "tool": "runtime_stats",
-  "arguments": {}
+"tool": "runtime_stats",
+"arguments": {}
 }#
 
 ;; CL-TRON-MCP Tool: health_check
 ;; Check the MCP server health:
 
 #{
-  "tool": "health_check",
-  "arguments": {}
+"tool": "health_check",
+"arguments": {}
 }#
 
 ;; ============================================================================
@@ -240,18 +240,18 @@
 ;; List all threads:
 
 #{
-  "tool": "thread_list",
-  "arguments": {}
+"tool": "thread_list",
+"arguments": {}
 }#
 
 ;; CL-TRON-MCP Tool: thread_inspect
 ;; Inspect a specific thread:
 
 #{
-  "tool": "thread_inspect",
-  "arguments": {
-    "threadId": "main thread"
-  }
+"tool": "thread_inspect",
+"arguments": {
+"threadId": "main thread"
+}
 }#
 
 ;; ============================================================================
@@ -265,19 +265,19 @@
 ;; Add a pattern to whitelist:
 
 #{
-  "tool": "whitelist_add",
-  "arguments": {
-    "operation": "eval",
-    "pattern": "tutorial::factorial*"
-  }
+"tool": "whitelist_add",
+"arguments": {
+"operation": "eval",
+"pattern": "tutorial::factorial*"
+}
 }#
 
 ;; CL-TRON-MCP Tool: whitelist_status
 ;; Check whitelist status:
 
 #{
-  "tool": "whitelist_status",
-  "arguments": {}
+"tool": "whitelist_status",
+"arguments": {}
 }#
 
 ;; ============================================================================
@@ -288,8 +288,8 @@
 ;; Start profiling:
 
 #{
-  "tool": "profile_start",
-  "arguments": {}
+"tool": "profile_start",
+"arguments": {}
 }#
 
 ;; Run some computations:
@@ -299,18 +299,18 @@
 ;; Stop profiling:
 
 #{
-  "tool": "profile_stop",
-  "arguments": {}
+"tool": "profile_stop",
+"arguments": {}
 }#
 
 ;; CL-TRON-MCP Tool: profile_report
 ;; Get profiling report:
 
 #{
-  "tool": "profile_report",
-  "arguments": {
-    "format": "flat"
-  }
+"tool": "profile_report",
+"arguments": {
+"format": "flat"
+}
 }#
 
 ;; ============================================================================

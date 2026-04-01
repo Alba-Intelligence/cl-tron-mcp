@@ -79,8 +79,8 @@ Debug events remain in the queue for pop-debugger-event."
     (loop for i from 0 below (length *event-queue*)
           for event = (aref *event-queue* i)
           unless (eq (swank-event-type event) :debug)
-          do (setf *event-queue* (delete event *event-queue* :test #'eq))
-             (return event))))
+            do (setf *event-queue* (delete event *event-queue* :test #'eq))
+               (return event))))
 
 ;;; ============================================================
 ;;; Reconnection (circuit breaker with exponential backoff)
@@ -114,7 +114,7 @@ Returns connection status plist or error plist."
           (if (getf result :error)
               (progn
                 (log-error (format nil "Reconnection attempt ~d failed: ~a"
-                                  attempt-count (getf result :message)))
+                                   attempt-count (getf result :message)))
                 result)
               (progn
                 (log-info (format nil "Reconnection successful on attempt ~d" attempt-count))
@@ -177,10 +177,10 @@ Returns NIL if no debug event is queued."
   (bordeaux-threads:with-lock-held (*event-mutex*)
     (loop for i from (1- (length *event-queue*)) downto 0
           when (eq (swank-event-type (aref *event-queue* i)) :debug)
-          do (let* ((event (aref *event-queue* i))
-                    (data (swank-event-data event)))
-               (setf *event-queue*
-                     (delete (aref *event-queue* i) *event-queue* :test #'eq))
-               (return (values (getf data :condition)
-                               (getf data :restarts)
-                               (getf data :frames)))))))
+            do (let* ((event (aref *event-queue* i))
+                      (data (swank-event-data event)))
+                 (setf *event-queue*
+                       (delete (aref *event-queue* i) *event-queue* :test #'eq))
+                 (return (values (getf data :condition)
+                                 (getf data :restarts)
+                                 (getf data :frames)))))))

@@ -32,12 +32,12 @@ PROMPT-NAME is passed in params."
                                -32602
                                (getf validation :error)))))
     (handler-case (let ((response (cl-tron-mcp/prompts:handle-prompts-get id
-                                                                       params)))
+                                                                          params)))
                     (jonathan:to-json response))
       (error (e)
-             (cl-tron-mcp/logging:log-error (format nil "Error getting prompt: ~a" e))
-             (make-error-response id
-                                  -32000
-                                  (princ-to-string e))))))
+        (cl-tron-mcp/logging:log-error (format nil "Error getting prompt: ~a" e))
+        (make-error-response id
+                             -32000
+                             (princ-to-string e))))))
 
 (provide :cl-tron-mcp/protocol-handlers-prompts)

@@ -8,7 +8,7 @@
   "Evaluate Lisp code safely with optional timeout and error handling.
 When TIMEOUT is positive, evaluation is interrupted if it exceeds TIMEOUT seconds."
   (let ((*package* (or (find-package package)
-                        (error "Package ~a not found" package))))
+                       (error "Package ~a not found" package))))
     (handler-case
         (flet ((do-eval ()
                  (let ((form (read-from-string code)))

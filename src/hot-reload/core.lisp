@@ -58,10 +58,10 @@ This is the local fallback; when Swank is connected, use repl-compile instead."
                   :message (format nil "Function ~a not found" function-name))))
         (let ((old-def (symbol-function symbol)))
           (unwind-protect
-              (progn
-                (eval (read-from-string new-code))
-                (list :success t
-                      :function function-name))
+               (progn
+                 (eval (read-from-string new-code))
+                 (list :success t
+                       :function function-name))
             (setf (symbol-function symbol) old-def))))
     (error (e)
       (list :error t
@@ -75,7 +75,7 @@ This is the local fallback; when Swank is connected, use repl-compile instead."
         (list :error t
               :message (format nil "Symbol ~a not found" symbol-name))))
     (list :symbol symbol-name
-           :type type)))
+          :type type)))
 
 (defun get-package-source-files (package)
   "Get list of source files for package. Placeholder implementation."

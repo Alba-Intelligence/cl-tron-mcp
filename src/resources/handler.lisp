@@ -128,7 +128,7 @@ URI should be in format: file://relative/path/to/file.md"
            (when (and resolved
                       (path-in-directory-p resolved project-root))
              resolved))))
-      
+
       ;; Handle bare relative paths (for convenience)
       ((not (find #\: uri))
        (let ((full-path (merge-pathnames uri project-root)))
@@ -136,7 +136,7 @@ URI should be in format: file://relative/path/to/file.md"
            (when (and resolved
                       (path-in-directory-p resolved project-root))
              resolved))))
-      
+
       (t nil))))
 
 (defun path-in-directory-p (path directory)
@@ -217,11 +217,11 @@ Returns plist suitable for JSON serialization."
           (list :|resources|
                 (loop for res in resources
                       collect (list :|uri| (resource-descriptor-uri res)
-                                   :|name| (resource-descriptor-name res)
-                                   :|title| (resource-descriptor-title res)
-                                   :|description| (resource-descriptor-description res)
-                                   :|mimeType| (resource-descriptor-mime-type res)
-                                   :|size| (resource-descriptor-size res)))))))
+                                    :|name| (resource-descriptor-name res)
+                                    :|title| (resource-descriptor-title res)
+                                    :|description| (resource-descriptor-description res)
+                                    :|mimeType| (resource-descriptor-mime-type res)
+                                    :|size| (resource-descriptor-size res)))))))
 
 ;;; ============================================================
 ;;; Resource Reading (resources/read)
@@ -240,13 +240,13 @@ Signals RESOURCE-ACCESS-DENIED-ERROR if the resource is not whitelisted."
       (error 'resource-access-denied-error
              :uri uri
              :reason "Resource not in whitelist"))
-    
+
     (let ((resolved-path (resolve-resource-path uri)))
       (unless resolved-path
         (error 'resource-not-found-error
                :uri uri
                :message "File not found or outside project directory"))
-      
+
       (with-open-file (stream resolved-path :direction :input :external-format :utf-8)
         (let ((contents (make-string (file-length stream))))
           (read-sequence contents stream)
@@ -267,29 +267,29 @@ Returns plist suitable for JSON serialization."
                 :|result|
                 (list :|contents|
                       (list (list :|uri| uri
-                                 :|mimeType| mime-type
-                                 :|text| contents
-                                 :|size| size)))))
+                                  :|mimeType| mime-type
+                                  :|text| contents
+                                  :|size| size)))))
       (resource-not-found-error (e)
         (list :|jsonrpc| "2.0"
               :|id| id
               :|error|
               (list :|code| -32002
-                   :|message| (format nil "Resource not found: ~a"
-                                      (resource-not-found-uri e)))))
+                    :|message| (format nil "Resource not found: ~a"
+                                       (resource-not-found-uri e)))))
       (resource-access-denied-error (e)
         (list :|jsonrpc| "2.0"
               :|id| id
               :|error|
               (list :|code| -32003
-                   :|message| (format nil "Access denied: ~a"
-                                      (resource-access-denied-reason e)))))
+                    :|message| (format nil "Access denied: ~a"
+                                       (resource-access-denied-reason e)))))
       (error (e)
         (list :|jsonrpc| "2.0"
               :|id| id
               :|error|
               (list :|code| -32603
-                   :|message| (princ-to-string e)))))))
+                    :|message| (princ-to-string e)))))))
 
 ;;; ============================================================
 ;;; Module Documentation
@@ -300,10 +300,10 @@ Returns plist suitable for JSON serialization."
   (list :module "cl-tron-mcp/resources"
         :description "MCP Resources implementation for exposing documentation"
         :operations (list
-                    (list :name "resources/list"
-                          :description "List all available documentation resources")
-                    (list :name "resources/read"
-                          :description "Read contents of a specific resource by URI"))
+                     (list :name "resources/list"
+                           :description "List all available documentation resources")
+                     (list :name "resources/read"
+                           :description "Read contents of a specific resource by URI"))
         :whitelisted-files *resource-whitelist*))
 
 (provide :cl-tron-mcp/resources)

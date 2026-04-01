@@ -18,7 +18,7 @@
   "Return arguments plist without approval_request_id and approved (for passing to tool handler)."
   (loop for
         (k v)
-        on
+          on
         arguments
         by
         #'cddr
@@ -35,7 +35,7 @@ Returns approval_required response if approval needed, nil otherwise."
               tool-name)
              (not (cl-tron-mcp/security:whitelist-check-tool
                    tool-name arguments)))
-    (let ((request (cl-tron-mcp/security:request-approval 
+    (let ((request (cl-tron-mcp/security:request-approval
                     (or (cl-tron-mcp/security:tool-name-to-operation
                          tool-name)
                         :eval)
@@ -65,13 +65,13 @@ Returns nil if no approval params present."
                    (string= (string approved)
                             "true")))
       (cond
-       ((cl-tron-mcp/security:consume-approved-request-id (string approval-request-id))
-        (return-from handle-approval-reinvocation
-          (handle-tool-call-run tool-name
-                                (arguments-without-approval-params arguments)
-                                id)))
-       (t (return-from handle-approval-reinvocation
-            (make-error-response id -32001 "Approval expired or already used. Invoke the tool again to request a new approval."))))))
+        ((cl-tron-mcp/security:consume-approved-request-id (string approval-request-id))
+         (return-from handle-approval-reinvocation
+           (handle-tool-call-run tool-name
+                                 (arguments-without-approval-params arguments)
+                                 id)))
+        (t (return-from handle-approval-reinvocation
+             (make-error-response id -32001 "Approval expired or already used. Invoke the tool again to request a new approval."))))))
   nil)
 
 (defun execute-tool-with-timeout (tool-name arguments id)
@@ -84,48 +84,48 @@ Returns JSON-RPC response with result or error."
         (error-occurred nil))
     (cl-tron-mcp/core:trace-log "executing tool ~a" tool-name)
     (unwind-protect
-        (handler-case (progn
-                        ;; Track this request for cleanup
-                        (bordeaux-threads:with-lock-held (*request-lock*)
-                                                         (setf (gethash id *pending-requests*) t))
-                        ;; Check timeout before executing
-                        (let ((elapsed (- (get-universal-time)
-                                          start-time)))
-                          (when (>= elapsed timeout-seconds)
-                            (error 'timeout-error
-                                   :message (format nil "Tool execution timeout after ~d seconds"
-                                                    timeout-seconds))))
-                        ;; Execute tool
-                        (setf result (cl-tron-mcp/tools:call-tool tool-name arguments))
-                        ;; Check timeout after execution
-                        (let ((elapsed (- (get-universal-time)
-                                          start-time)))
-                          (when (>= elapsed timeout-seconds)
-                            (error 'timeout-error
-                                   :message (format nil "Tool execution timeout after ~d seconds"
-                                                    timeout-seconds))))
-                        ;; Return success response
-                        (jonathan:to-json (list :|jsonrpc| "2.0"
-                                                :|id| id
-                                                :|result| (list :|content| (list (list :|type| "text"
-                                                                                       :|text| (format nil "~a" result)))))))
-          (timeout-error (e)
-                         (setf error-occurred t)
-                         (cl-tron-mcp/logging:log-warn (format nil "Tool ~a timed out after ~d seconds"
-                                                               tool-name timeout-seconds))
-                         (make-error-response id
-                                              -32008
-                                              (timeout-error-message e)))
-          (error (e)
-                 (setf error-occurred t)
-                 (cl-tron-mcp/logging:log-error (format nil "Error executing tool ~a: ~a"
-                                                        tool-name e))
-                 (make-error-response id
-                                      -32000
-                                      (princ-to-string e))))
+         (handler-case (progn
+                         ;; Track this request for cleanup
+                         (bordeaux-threads:with-lock-held (*request-lock*)
+                           (setf (gethash id *pending-requests*) t))
+                         ;; Check timeout before executing
+                         (let ((elapsed (- (get-universal-time)
+                                           start-time)))
+                           (when (>= elapsed timeout-seconds)
+                             (error 'timeout-error
+                                    :message (format nil "Tool execution timeout after ~d seconds"
+                                                     timeout-seconds))))
+                         ;; Execute tool
+                         (setf result (cl-tron-mcp/tools:call-tool tool-name arguments))
+                         ;; Check timeout after execution
+                         (let ((elapsed (- (get-universal-time)
+                                           start-time)))
+                           (when (>= elapsed timeout-seconds)
+                             (error 'timeout-error
+                                    :message (format nil "Tool execution timeout after ~d seconds"
+                                                     timeout-seconds))))
+                         ;; Return success response
+                         (jonathan:to-json (list :|jsonrpc| "2.0"
+                                                 :|id| id
+                                                 :|result| (list :|content| (list (list :|type| "text"
+                                                                                        :|text| (format nil "~a" result)))))))
+           (timeout-error (e)
+             (setf error-occurred t)
+             (cl-tron-mcp/logging:log-warn (format nil "Tool ~a timed out after ~d seconds"
+                                                   tool-name timeout-seconds))
+             (make-error-response id
+                                  -32008
+                                  (timeout-error-message e)))
+           (error (e)
+             (setf error-occurred t)
+             (cl-tron-mcp/logging:log-error (format nil "Error executing tool ~a: ~a"
+                                                    tool-name e))
+             (make-error-response id
+                                  -32000
+                                  (princ-to-string e))))
       ;; Cleanup: remove from pending requests
       (bordeaux-threads:with-lock-held (*request-lock*)
-                                       (remhash id *pending-requests*))
+        (remhash id *pending-requests*))
       ;; Record metrics
       (let ((latency-ms (round (* 1000 (/ (- (get-internal-real-time) start-tick)
                                           internal-time-units-per-second)))))
@@ -185,11 +185,11 @@ Returns list of all available tools with their schemas."
                                                    (list))
                                                id))
       (error (e)
-             (cleanup-on-error (format nil "tool call: ~a" tool-name)
-                               e)
-             (make-error-response id
-                                  -32000
-                                  (princ-to-string e))))))
+        (cleanup-on-error (format nil "tool call: ~a" tool-name)
+                          e)
+        (make-error-response id
+                             -32000
+                             (princ-to-string e))))))
 
 (defun handle-tool-call-run (tool-name arguments id)
   "Helper: run tool and return JSON-RPC result with timeout and cleanup.
@@ -220,25 +220,25 @@ DEPRECATED: Use execute-tool-with-timeout instead."
       (return-from handle-approval-respond
         (make-error-response id -32602 "approved must be a boolean or 'true'/'false' string")))
     (handler-case (let ((response (if (or (eq approved t)
-                                           (and approved
-                                                (string= (string approved)
-                                                         "true")))
-                                       :approved :denied)))
+                                          (and approved
+                                               (string= (string approved)
+                                                        "true")))
+                                      :approved :denied)))
                     (cl-tron-mcp/security:approval-response (string request-id)
                                                             response)
                     (jonathan:to-json (list :|jsonrpc| "2.0"
                                             :|id| id
                                             :|result| (nconc (list :|recorded| t
                                                                    :|approved| (eq response :approved))
-                                                              (when (eq response :denied)
-                                                                (list :|message| (or (when message
-                                                                                       (string message))
-                                                                                     "User denied approval. You can retry by invoking the tool again.")))))))
+                                                             (when (eq response :denied)
+                                                               (list :|message| (or (when message
+                                                                                      (string message))
+                                                                                    "User denied approval. You can retry by invoking the tool again.")))))))
       (error (e)
-             (cleanup-on-error (format nil "approval respond: ~a" request-id)
-                               e)
-             (make-error-response id
-                                  -32000
-                                  (princ-to-string e))))))
+        (cleanup-on-error (format nil "approval respond: ~a" request-id)
+                          e)
+        (make-error-response id
+                             -32000
+                             (princ-to-string e))))))
 
 (provide :cl-tron-mcp/protocol-handlers-tools)

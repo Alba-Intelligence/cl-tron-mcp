@@ -26,10 +26,10 @@ NEW: See comprehensive tutorials:
   (format t "   ~a ~a~%" (getf r :lisp-implementation) (getf r :lisp-version))
   (format t "   Threads: ~d  Packages: ~d~%" (getf r :threads-count) (getf r :packages-count)))
 
-;; 2. Runtime Stats  
+;; 2. Runtime Stats
 (format t "~%[2] Runtime Stats~%")
 (let ((r (funcall (intern "RUNTIME-STATS" "CL-TRON-MCP/MONITOR"))))
-  (format t "   Threads: ~d  Memory: ~d MB~%" 
+  (format t "   Threads: ~d  Memory: ~d MB~%"
           (getf r :thread-count)
           (getf (getf r :memory) :total-mb)))
 

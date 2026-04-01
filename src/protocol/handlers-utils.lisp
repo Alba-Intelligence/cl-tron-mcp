@@ -15,7 +15,7 @@
 ;;; ============================================================
 
 (defun cleanup-on-error (error-context &optional
-                                       (error-condition nil))
+                                         (error-condition nil))
   "Perform cleanup when an error occurs.
 ERROR-CONTEXT is a string describing what operation failed.
 ERROR-CONDITION is the actual condition object (optional)."
@@ -25,7 +25,7 @@ ERROR-CONDITION is the actual condition object (optional)."
                                                          error-context
                                                          (if error-condition
                                                              (princ-to-string error-condition)
-                                                           "unknown")))
+                                                             "unknown")))
                   ;; Disconnect from Swank if connected
                   (when (cl-tron-mcp/swank:swank-connected-p)
                     (cl-tron-mcp/logging:log-info (format nil "Disconnecting from Swank due to error in ~a"
@@ -33,20 +33,20 @@ ERROR-CONDITION is the actual condition object (optional)."
                     (cl-tron-mcp/swank:swank-disconnect))
                   ;; Clear pending requests
                   (bordeaux-threads:with-lock-held (*request-lock*)
-                                                   (clrhash *pending-requests*))
+                    (clrhash *pending-requests*))
                   (cl-tron-mcp/logging:log-info (format nil "Cleanup completed for error in ~a"
                                                         error-context)))
     (error (e)
-           (cl-tron-mcp/logging:log-error (format nil "Error during cleanup: ~a" e)))))
+      (cl-tron-mcp/logging:log-error (format nil "Error during cleanup: ~a" e)))))
 
 ;;; ============================================================
 ;;; Parameter Validation
 ;;; ============================================================
 
 (defun validate-string-param (param-name value
-                                         &key
-                                         required
-                                         (min-length 1))
+                              &key
+                                required
+                                (min-length 1))
   "Validate a string parameter.
 Returns T if valid, otherwise returns an error response plist."
   (progn
@@ -101,9 +101,9 @@ Returns T if valid, otherwise returns an error response plist."
     (list :valid t)))
 
 (defun validate-integer-param (param-name value
-                                           &key
-                                           required
-                                           (min 0))
+                               &key
+                                 required
+                                 (min 0))
   "Validate an integer parameter.
 Returns T if valid, otherwise returns an error response plist."
   (progn
@@ -166,30 +166,30 @@ Returns T if valid, otherwise returns an error response plist."
 ;;; ============================================================
 
 (defmacro with-timeout ((seconds) &body
-                         body)
+                                    body)
   "Execute BODY with a timeout of SECONDS seconds.
 If timeout occurs, a TIMEOUT-ERROR condition is signaled."
   (let ((timeout-tag (gensym "TIMEOUT-TAG-")))
     `(handler-case (let ((start-time (get-universal-time)))
                      (unwind-protect
-                         (progn ,@body)
+                          (progn ,@body)
                        (when (> (- (get-universal-time)
                                    start-time) ,seconds)
                          (error 'timeout-error :message "Operation timed out"))))
        (timeout-error (e)
-                      (declare (ignore e))
-                      (error 'timeout-error
-                             :message (format nil "Operation timed out after ~d seconds"
-                                              ,seconds))))))
+         (declare (ignore e))
+         (error 'timeout-error
+                :message (format nil "Operation timed out after ~d seconds"
+                                 ,seconds))))))
 
 (define-condition timeout-error
-                    (error)
-                    ((message :initarg :message
-                              :reader timeout-error-message))
-                    (:report (lambda (condition stream)
-                               (format stream
-                                       "Timeout: ~a"
-                                       (timeout-error-message condition)))))
+    (error)
+  ((message :initarg :message
+            :reader timeout-error-message))
+  (:report (lambda (condition stream)
+             (format stream
+                     "Timeout: ~a"
+                     (timeout-error-message condition)))))
 
 (defun get-unix-time ()
   "Get current Unix timestamp (seconds since epoch)."
@@ -217,7 +217,7 @@ CODE should be a standard JSON-RPC error code:
 MESSAGE can be a string or a plist with :code, :message, :hint, etc."
   (let ((error-data (if (listp message)
                         message
-                      (list :message message))))
+                        (list :message message))))
     (jonathan:to-json (list :|jsonrpc| "2.0"
                             :|id| id
                             :|error| (list* :|code| code

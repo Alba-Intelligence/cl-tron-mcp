@@ -39,61 +39,61 @@
    (list :name "inspect_object"
          :description "Inspect a Lisp object and return its structure, type, and value. This tool provides detailed introspection capabilities for any Lisp object, including its class, slots, and values. Useful for understanding the internal structure of complex objects during debugging sessions. Returns a structured representation with type information, slot names, and their current values."
          :inputSchema (list :type "object"
-                           :properties (list :objectId (list :type "string"
-                                                             :description "The object ID to inspect"))
-                           :required (list "objectId"))
+                            :properties (list :objectId (list :type "string"
+                                                              :description "The object ID to inspect"))
+                            :required (list "objectId"))
          :outputSchema (list :type "object"
-                            :properties (list :result (list :type "object"
-                                                          :description "The inspection result")))
+                             :properties (list :result (list :type "object"
+                                                             :description "The inspection result")))
          :requiresApproval nil)
    (list :name "debugger_frames"
          :description "Get the current debugger stack frames. This tool retrieves all active stack frames from the debugger, providing frame indices, function names, source locations, and local variables. Essential for understanding the call chain leading to an error. Each frame includes detailed information about the function call, source file, line number, and available local variables for inspection."
          :inputSchema (list :type "object"
-                           :properties (list :maxFrames (list :type "integer"
-                                                              :description "Maximum number of frames to return"
-                                                              :default 20))
-                           :required (list))
+                            :properties (list :maxFrames (list :type "integer"
+                                                               :description "Maximum number of frames to return"
+                                                               :default 20))
+                            :required (list))
          :outputSchema (list :type "object"
-                            :properties (list :frames (list :type "array"
-                                                           :items (list :type "object"))))
+                             :properties (list :frames (list :type "array"
+                                                             :items (list :type "object"))))
          :requiresApproval nil)
    (list :name "repl_eval"
          :description "Evaluate Lisp code in the connected REPL. This tool allows you to execute arbitrary Lisp code and receive the result. Supports evaluation in different packages. Useful for testing code snippets, inspecting runtime state, and performing live debugging. The code is evaluated in the context of the connected SBCL session, giving you full access to the running application's state."
          :inputSchema (list :type "object"
-                           :properties (list :code (list :type "string"
-                                                        :description "The Lisp code to evaluate"
-                                                        :required t)
-                                            :package (list :type "string"
-                                                         :description "Package to evaluate in"
-                                                         :default "CL-USER"))
-                           :required (list "code"))
+                            :properties (list :code (list :type "string"
+                                                          :description "The Lisp code to evaluate"
+                                                          :required t)
+                                              :package (list :type "string"
+                                                             :description "Package to evaluate in"
+                                                             :default "CL-USER"))
+                            :required (list "code"))
          :outputSchema (list :type "object"
-                            :properties (list :result (list :type "string"
-                                                          :description "Evaluation result")))
+                             :properties (list :result (list :type "string"
+                                                             :description "Evaluation result")))
          :requiresApproval t)
    (list :name "health_check"
          :description "Perform a comprehensive health check of the MCP server and SBCL session. This tool checks various system components including memory usage, thread status, garbage collection state, and overall system health. Returns detailed status information for each component along with recommendations if any issues are detected. Essential for monitoring production systems and ensuring the debugging environment is functioning correctly."
          :inputSchema (list :type "object"
-                           :properties (list)
-                           :required (list))
+                            :properties (list)
+                            :required (list))
          :outputSchema (list :type "object"
-                            :properties (list :status (list :type "string"
-                                                          :description "Overall health status")
-                                              :checks (list :type "object"
-                                                           :description "Individual check results")))
+                             :properties (list :status (list :type "string"
+                                                             :description "Overall health status")
+                                               :checks (list :type "object"
+                                                             :description "Individual check results")))
          :requiresApproval nil)
    (list :name "runtime_stats"
          :description "Get comprehensive runtime statistics from the SBCL session. This tool provides detailed information about system resources including memory usage, thread count, garbage collection statistics, and SBCL version information. Useful for performance analysis, resource monitoring, and understanding the current state of the Lisp runtime environment. Returns structured data suitable for logging and monitoring systems."
          :inputSchema (list :type "object"
-                           :properties (list)
-                           :required (list))
+                            :properties (list)
+                            :required (list))
          :outputSchema (list :type "object"
-                            :properties (list :threadCount (list :type "integer"
-                                                                :description "Number of active threads")
-                                              :memory (list :type "object"
-                                                          :description "Memory usage statistics")
-                                              :gc (list :type "object"
-                                                      :description "Garbage collection statistics")))
+                             :properties (list :threadCount (list :type "integer"
+                                                                  :description "Number of active threads")
+                                               :memory (list :type "object"
+                                                             :description "Memory usage statistics")
+                                               :gc (list :type "object"
+                                                         :description "Garbage collection statistics")))
          :requiresApproval nil)))
 
 (defun mock-before-repl-help ()
@@ -154,8 +154,8 @@
         :message "Not connected to a REPL. You must connect to a Swank server before using REPL tools."
         :hint "To connect to a REPL, use the repl_connect tool with the appropriate host and port. For example: repl_connect :host \"127.0.0.1\" :port 4006. Make sure you have a Swank server running in your SBCL session. You can start Swank by evaluating (swank:create-server :port 4006) in your Lisp session. If you're using Slime, Portacle, or Sly, they typically start Swank automatically. Check that the port is correct and not blocked by a firewall. If you're connecting to a remote server, ensure the host is reachable and the port is open."
         :details (list :expected-state "connected"
-                      :current-state "disconnected"
-                      :suggested-action "Call repl_connect first")))
+                       :current-state "disconnected"
+                       :suggested-action "Call repl_connect first")))
 
 ;;; ============================================================
 ;;; Actual "After" State Responses
@@ -217,35 +217,35 @@
   (setq *benchmark-results*
         (list
          (run-benchmark-scenario "tools/list (5 tools)"
-                                  #'mock-before-tools-list
-                                  #'actual-after-tools-list)
+                                 #'mock-before-tools-list
+                                 #'actual-after-tools-list)
 
          (run-benchmark-scenario "repl-help"
-                                  #'mock-before-repl-help
-                                  #'actual-after-repl-help)
+                                 #'mock-before-repl-help
+                                 #'actual-after-repl-help)
 
          (run-benchmark-scenario "error response"
-                                  #'mock-before-error-response
-                                  #'actual-after-error-response)
+                                 #'mock-before-error-response
+                                 #'actual-after-error-response)
 
          (run-benchmark-scenario "health_check"
-                                  (lambda () (list :status :healthy
+                                 (lambda () (list :status :healthy
                                                   :checks (list :memory :ok
                                                                 :threads :ok
                                                                 :gc :ok)
                                                   :timestamp (get-universal-time)
                                                   :description "Comprehensive health check of the MCP server and SBCL session. This tool checks various system components including memory usage, thread status, garbage collection state, and overall system health. Returns detailed status information for each component along with recommendations if any issues are detected."))
-                                  #'actual-after-health-check)
+                                 #'actual-after-health-check)
 
          (run-benchmark-scenario "runtime_stats"
-                                  (lambda () (list :thread-count 5
+                                 (lambda () (list :thread-count 5
                                                   :memory (list :dynamic-bytes 12345678
-                                                               :total-bytes 12345678
-                                                               :total-mb 12)
+                                                                :total-bytes 12345678
+                                                                :total-mb 12)
                                                   :gc (list :bytes-consed-between-gcs 543210)
                                                   :sbcl-version "2.4.0"
                                                   :description "Get comprehensive runtime statistics from the SBCL session. This tool provides detailed information about system resources including memory usage, thread count, garbage collection statistics, and SBCL version information. Useful for performance analysis, resource monitoring, and understanding the current state of the Lisp runtime environment."))
-                                  #'actual-after-runtime-stats)))
+                                 #'actual-after-runtime-stats)))
 
   (format t "~&========================================~%")
   (format t "Benchmark Complete~%")
@@ -268,10 +268,10 @@
     (list :benchmark-date (get-universal-time)
           :scenarios results
           :summary (list :total-before-tokens total-before
-                        :total-after-tokens total-after
-                        :total-reduction total-reduction
-                        :average-reduction avg-reduction
-                        :scenarios-count (length results))
+                         :total-after-tokens total-after
+                         :total-reduction total-reduction
+                         :average-reduction avg-reduction
+                         :scenarios-count (length results))
           :recommendations (generate-recommendations results))))
 
 (defun generate-recommendations (results)
@@ -281,7 +281,7 @@
       (let ((reduction (getf scenario :reduction)))
         (when (< reduction 20.0)
           (push (format nil "~a: Only ~,1f% reduction. Consider further optimization."
-                       (getf scenario :name) reduction)
+                        (getf scenario :name) reduction)
                 recommendations))))
     (if recommendations
         (reverse recommendations)
@@ -390,7 +390,7 @@
   "Run benchmark and generate report."
   (run-benchmark)
   (let ((report-file (merge-pathnames "reports/token-benchmark-report.md"
-                                       (asdf:system-source-directory :cl-tron-mcp))))
+                                      (asdf:system-source-directory :cl-tron-mcp))))
     (ensure-directories-exist report-file)
     (save-benchmark-report report-file)
     (format t "~&Report saved to: ~a~%" report-file)

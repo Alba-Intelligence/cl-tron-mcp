@@ -12,9 +12,9 @@
 (defun %http-startup-log (msg)
   (flet ((try (path)
            (ignore-errors
-             (ensure-directories-exist (make-pathname :name nil :type nil :defaults path))
-             (with-open-file (f path :direction :output :if-exists :append :if-does-not-exist :create)
-               (write-line (format nil "~a ~a" (get-universal-time) msg) f)))))
+            (ensure-directories-exist (make-pathname :name nil :type nil :defaults path))
+            (with-open-file (f path :direction :output :if-exists :append :if-does-not-exist :create)
+              (write-line (format nil "~a ~a" (get-universal-time) msg) f)))))
     (or (try (merge-pathnames "reports/http-startup.log" (or (ignore-errors (truename #p"./")) *default-pathname-defaults*)))
         (try #p"/tmp/cl-tron-mcp-http-startup.log"))))
 

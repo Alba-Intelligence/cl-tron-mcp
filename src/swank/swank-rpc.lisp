@@ -56,11 +56,11 @@
                 do (return-from wait-for-response
                      (list :error t :message "Request timeout"))
               do (bordeaux-threads:condition-wait
-                   (swank-request-condition req) *request-lock*)
+                  (swank-request-condition req) *request-lock*)
               finally (return
-                         (if (swank-request-completed-p req)
-                             (swank-request-response req)
-                             (list :error t :message "Request timeout"))))))))
+                        (if (swank-request-completed-p req)
+                            (swank-request-response req)
+                            (list :error t :message "Request timeout"))))))))
 
 ;;; ============================================================
 ;;; Reader Thread & Message Dispatch
@@ -119,8 +119,8 @@
     (destructuring-bind (tag &rest args) message
       (case tag
         (:return
-         (destructuring-bind (result id) args
-           (fulfill-request id (list :result result))))
+          (destructuring-bind (result id) args
+            (fulfill-request id (list :result result))))
         (:debug
          (destructuring-bind (thread level condition restarts frames &optional extra) args
            (declare (ignore extra))

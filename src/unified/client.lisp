@@ -39,9 +39,9 @@ Includes hints for starting Swank and connecting."
 (defun make-already-connected-error ()
   "Return an error when already connected."
   (cl-tron-mcp/core:make-error-with-hint "REPL_ALREADY_CONNECTED"
-                                          :details (list :type *repl-type*
-                                                         :host *repl-host*
-                                                         :port *repl-port*)))
+                                         :details (list :type *repl-type*
+                                                        :host *repl-host*
+                                                        :port *repl-port*)))
 
 ;;; ============================================================
 ;;; Unified Connection
@@ -78,9 +78,9 @@ Includes hints for starting Swank and connecting."
                  *repl-host* host))
          (list* result (list :type :swank))))
 
-(t
-        (cl-tron-mcp/core:make-error-with-hint "REPL_DETECTION_FAILED"
-                                                :details (list :host host :port port))))))
+      (t
+       (cl-tron-mcp/core:make-error-with-hint "REPL_DETECTION_FAILED"
+                                              :details (list :host host :port port))))))
 
 (defun auto-detect-repl (host port)
   "Try to detect Swank by connecting."
@@ -126,7 +126,7 @@ Includes hints for starting Swank and connecting."
   (unless code
     (return-from repl-eval
       (cl-tron-mcp/core:make-error-with-hint "INVALID_CODE_PARAMETER"
-                                              :details (list :tool "repl_eval"))))
+                                             :details (list :tool "repl_eval"))))
   (unless *repl-connected*
     (return-from repl-eval (make-not-connected-error)))
 
@@ -140,7 +140,7 @@ Includes hints for starting Swank and connecting."
   (unless code
     (return-from repl-compile
       (cl-tron-mcp/core:make-error-with-hint "INVALID_CODE_PARAMETER"
-                                              :details (list :tool "repl_compile"))))
+                                             :details (list :tool "repl_compile"))))
   (unless *repl-connected*
     (return-from repl-compile (make-not-connected-error)))
 
@@ -173,7 +173,7 @@ Includes hints for starting Swank and connecting."
   (unless expression
     (return-from repl-inspect
       (cl-tron-mcp/core:make-error-with-hint "INVALID_EXPRESSION_PARAMETER"
-                                              :details (list :tool "repl_inspect"))))
+                                             :details (list :tool "repl_inspect"))))
   (unless *repl-connected*
     (return-from repl-inspect (make-not-connected-error)))
   (mcp-swank-inspect :expression expression))
@@ -183,7 +183,7 @@ Includes hints for starting Swank and connecting."
   (unless symbol
     (return-from repl-describe
       (cl-tron-mcp/core:make-error-with-hint "INVALID_SYMBOL_PARAMETER"
-                                              :details (list :tool "repl_describe"))))
+                                             :details (list :tool "repl_describe"))))
   (unless *repl-connected*
     (return-from repl-describe (make-not-connected-error)))
   (mcp-swank-describe :expression symbol))
@@ -193,7 +193,7 @@ Includes hints for starting Swank and connecting."
   (unless prefix
     (return-from repl-completions
       (cl-tron-mcp/core:make-error-with-hint "INVALID_PREFIX_PARAMETER"
-                                              :details (list :tool "repl_completions"))))
+                                             :details (list :tool "repl_completions"))))
   (unless *repl-connected*
     (return-from repl-completions (make-not-connected-error)))
   (mcp-swank-completions :prefix prefix :package package))
@@ -203,7 +203,7 @@ Includes hints for starting Swank and connecting."
   (unless symbol
     (return-from repl-doc
       (cl-tron-mcp/core:make-error-with-hint "INVALID_SYMBOL_PARAMETER"
-                                              :details (list :tool "repl_doc"))))
+                                             :details (list :tool "repl_doc"))))
   (unless *repl-connected*
     (return-from repl-doc (make-not-connected-error)))
   (mcp-swank-autodoc :symbol symbol))
@@ -298,9 +298,9 @@ Includes hints for starting Swank and connecting."
                                       (entry-descriptor-fn (symbol-function entry-descriptor-symbol)))
                                   (when (and registry entry-descriptor-fn)
                                     (loop for tool-name being the hash-keys of registry
-                                          using (hash-value tool-entry)
+                                            using (hash-value tool-entry)
                                           when (and (stringp tool-name)
-                                                   (string= (subseq tool-name 0 (min 5 (length tool-name))) "repl_"))
+                                                    (string= (subseq tool-name 0 (min 5 (length tool-name))) "repl_"))
                                             collect (let ((descriptor (funcall entry-descriptor-fn tool-entry)))
                                                       (list :name tool-name
                                                             :description (gethash :description descriptor)
@@ -312,5 +312,5 @@ Includes hints for starting Swank and connecting."
           :tools (sort repl-tools #'string< :key (lambda (x) (getf x :name)))
           :count (length repl-tools)
           :examples (list
-                    (list :auto-detect "repl_connect" :port 4006)
-                    (list :explicit-swank "repl_connect" :type :swank :port 4006)))))
+                     (list :auto-detect "repl_connect" :port 4006)
+                     (list :explicit-swank "repl_connect" :type :swank :port 4006)))))

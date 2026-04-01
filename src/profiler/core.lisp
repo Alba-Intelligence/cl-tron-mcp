@@ -46,13 +46,13 @@
   (when *profile-data*
     (handler-case
         #-sbcl
-        (list :error t
-              :message "Profiling not available")
-        #+sbcl
-        (let ((output (make-string-output-stream)))
-          (sb-profile:report :stream output)
-          (list :report (get-output-stream-string output)
-                :format format))
+      (list :error t
+            :message "Profiling not available")
+      #+sbcl
+      (let ((output (make-string-output-stream)))
+        (sb-profile:report :stream output)
+        (list :report (get-output-stream-string output)
+              :format format))
       (error (e)
         (list :error t
               :message (princ-to-string e))))))

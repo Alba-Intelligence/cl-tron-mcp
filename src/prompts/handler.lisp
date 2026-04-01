@@ -149,10 +149,10 @@ Returns plist suitable for JSON serialization. Messages use content as parts arr
   (list :module "cl-tron-mcp/prompts"
         :description "MCP Prompts implementation for guided workflows"
         :operations (list
-                    (list :name "prompts/list"
-                          :description "List all available guided workflows")
-                    (list :name "prompts/get"
-                          :description "Get a specific workflow by name"))
+                     (list :name "prompts/list"
+                           :description "List all available guided workflows")
+                     (list :name "prompts/get"
+                           :description "Get a specific workflow by name"))
         :available-prompts (loop for name being the hash-keys of *prompt-registry*
                                  collect name)))
 

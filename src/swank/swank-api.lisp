@@ -49,7 +49,7 @@
   "Get backtrace from Swank using sb-debug:list-backtrace."
   (send-request
    `(,(swank-sym "EVAL-AND-GRAB-OUTPUT")
-      (format nil "(sb-debug:list-backtrace :start ~a :count ~a)" ,start ,(- end start)))
+     (format nil "(sb-debug:list-backtrace :start ~a :count ~a)" ,start ,(- end start)))
    :package "CL-USER" :thread t))
 
 (defun swank-frame-locals (&key (frame-index 0) (thread :repl-thread))
@@ -165,26 +165,26 @@ instead of using swank:break directly."
       (let* ((hit-count-var (when hit-count (gensym "HIT-COUNT-")))
              (wrapper-code
                (format nil
-                 "(let (~a)
+                       "(let (~a)
                     (sb-int:encapsulate '~a 'mcp-breakpoint
                       (lambda (fn &rest args)
                         ~a
                         (apply fn args))))"
-                 (if hit-count
-                     (format nil "(~a 0)" hit-count-var)
-                     "")
-                 function
-                 (cond
-                   ((and condition hit-count)
-                    (format nil
-                      "(when (and (progn ~a) (>= (incf ~a) ~d)) (break \"MCP breakpoint on ~a (hit ~d)\"))"
-                      condition hit-count-var hit-count function hit-count))
-                   (condition
-                    (format nil "(when (progn ~a) (break \"MCP breakpoint on ~a\"))"
-                            condition function))
-                   (hit-count
-                    (format nil "(when (>= (incf ~a) ~d) (break \"MCP breakpoint on ~a (hit ~d)\"))"
-                            hit-count-var hit-count function hit-count))))))
+                       (if hit-count
+                           (format nil "(~a 0)" hit-count-var)
+                           "")
+                       function
+                       (cond
+                         ((and condition hit-count)
+                          (format nil
+                                  "(when (and (progn ~a) (>= (incf ~a) ~d)) (break \"MCP breakpoint on ~a (hit ~d)\"))"
+                                  condition hit-count-var hit-count function hit-count))
+                         (condition
+                          (format nil "(when (progn ~a) (break \"MCP breakpoint on ~a\"))"
+                                  condition function))
+                         (hit-count
+                          (format nil "(when (>= (incf ~a) ~d) (break \"MCP breakpoint on ~a (hit ~d)\"))"
+                                  hit-count-var hit-count function hit-count))))))
         (send-request `(,(swank-sym "EVAL-AND-GRAB-OUTPUT") ,wrapper-code)
                       :package "CL-USER" :thread t))
       ;; Simple unconditional breakpoint via swank:break
@@ -250,7 +250,7 @@ which implements this via remove/re-add using the saved breakpoint state."
       (cl-tron-mcp/core:make-error-with-hint "INVALID_EXPRESSION_PARAMETER"
                                              :details (list :function "swank-inspect-object"))))
   (send-request `(,(swank-sym "EVAL-AND-GRAB-OUTPUT")
-                   (,(swank-sym "INSPECT-IN-EMACS") ,expression))
+                  (,(swank-sym "INSPECT-IN-EMACS") ,expression))
                 :package "CL-USER" :thread t))
 
 (defun swank-inspect-nth-part (&key (part-id 0))
@@ -272,7 +272,7 @@ which implements this via remove/re-add using the saved breakpoint state."
       (cl-tron-mcp/core:make-error-with-hint "INVALID_SYMBOL_PARAMETER"
                                              :details (list :function "swank-autodoc"))))
   (send-request `(,(swank-sym "EVAL-AND-GRAB-OUTPUT")
-                   (format nil "(swank/backend:arglist (quote ~a))" ,symbol))
+                  (format nil "(swank/backend:arglist (quote ~a))" ,symbol))
                 :package "CL-USER" :thread t))
 
 (defun swank-completions (&key prefix (package "CL-USER"))

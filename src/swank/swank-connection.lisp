@@ -173,7 +173,7 @@ Returns: Connection status plist or error."
         (cl-tron-mcp/core:make-error "SWANK_ALREADY_CONNECTED")))
     (handler-case
         (let ((socket (usocket:socket-connect host port :timeout timeout
-                                              :element-type '(unsigned-byte 8))))
+                                                        :element-type '(unsigned-byte 8))))
           (setf *swank-socket* socket
                 *swank-io* (usocket:socket-stream socket)
                 *swank-connected* t
@@ -251,7 +251,7 @@ Returns: Connection status plist or error."
           :event-processor-alive (and *event-processor-thread*
                                       (bordeaux-threads:thread-alive-p *event-processor-thread*))
           :heartbeat-alive (and *heartbeat-thread*
-                                 (bordeaux-threads:thread-alive-p *heartbeat-thread*))
+                                (bordeaux-threads:thread-alive-p *heartbeat-thread*))
           :last-activity *last-activity-time*)))
 
 ;;; ============================================================

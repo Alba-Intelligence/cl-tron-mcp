@@ -25,7 +25,7 @@ Response is used by both stdio and HTTP transports unchanged."
                                                            :|tools| (list :|listChanged| t)
                                                            ;; Resources capability - exposes documentation
                                                            :|resources| (list :|subscribe| :false
-                                                                             :|listChanged| t)
+                                                                              :|listChanged| t)
                                                            ;; Prompts capability - exposes guided workflows
                                                            :|prompts| (list :|listChanged| t))
                                           :|serverInfo| (list :|name| "cl-tron-mcp"

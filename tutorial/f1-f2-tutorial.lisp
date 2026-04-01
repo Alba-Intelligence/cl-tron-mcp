@@ -168,6 +168,6 @@
 ;; (ql:quickload :cl-tron-mcp)
 ;; (ql:quickload :rove)
 ;; (ql:quickload :cl-tron-mcp/tests)
-;; 
+;;
 ;; ;; The integration test runs the full workflow automatically:
 ;; (rove:run :cl-tron-mcp/tests/integration)

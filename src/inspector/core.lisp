@@ -26,9 +26,9 @@
 (defun inspect-cons (cons depth max-depth max-elements)
   "Inspect cons cell."
   (let ((elements (loop for c = cons then (cdr c)
-                       for i below max-elements
-                       while c
-                       collect (inspect-object-recursive (car c) (1+ depth) max-depth max-elements))))
+                        for i below max-elements
+                        while c
+                        collect (inspect-object-recursive (car c) (1+ depth) max-depth max-elements))))
     (list :type "cons"
           :elements elements)))
 
@@ -44,10 +44,10 @@
   "Inspect hash table."
   (let ((entries (loop for i = 0 then (1+ i)
                        for key being the hash-keys of hash-table
-                       using (hash-value value)
+                         using (hash-value value)
                        while (< i max-elements)
                        collect (list :key (inspect-object-recursive key depth max-depth max-elements)
-                                    :value (inspect-object-recursive value depth max-depth max-elements)))))
+                                     :value (inspect-object-recursive value depth max-depth max-elements)))))
     (list :type "hash-table"
           :count (hash-table-count hash-table)
           :entries entries)))
@@ -69,7 +69,7 @@
         (setf (slot-value object slot-symbol) value))
       (list :slot slot_name
             :value (format nil "~a"
-                          (ignore-errors
+                           (ignore-errors
                             (slot-value object slot-symbol)))))))
 
 (defun inspect-class (&key class_name)
@@ -107,9 +107,9 @@
                :lambda-list (ignore-errors (multiple-value-list (function-lambda-expression fn))))))
       ((and symbol (macro-function symbol))
        (list :symbol (format nil "~a::~a" package-str (string-upcase symbol-name-only)) :type "macro"))
-(t
-        (cl-tron-mcp/core:make-error "NOT_A_FUNCTION"
-                                     :details (list :symbol symbol_name))))))
+      (t
+       (cl-tron-mcp/core:make-error "NOT_A_FUNCTION"
+                                    :details (list :symbol symbol_name))))))
 
 (defun inspect-package (&key package_name)
   "Inspect package contents."

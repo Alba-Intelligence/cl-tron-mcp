@@ -133,20 +133,20 @@ python3
 # The Python client calls CL-TRON-MCP which forwards to Swank
 # JSON-RPC request:
 {
-    "tool": "swank_eval",
-    "arguments": {
-        "code": "(defun hello () \"world\")",
-        "package": "CL-USER"
-    }
+"tool": "swank_eval",
+"arguments": {
+"code": "(defun hello () \"world\")",
+"package": "CL-USER"
+}
 }
 
 # Response:
 {
-    "result": {
-        "value": "HELLO",
-        "thread": ":repl-thread",
-        "package": "CL-USER"
-    }
+"result": {
+"value": "HELLO",
+"thread": ":repl-thread",
+"package": "CL-USER"
+}
 }
 
 ;;; ============================================================
@@ -170,8 +170,8 @@ CL-USER> (cl-tron-mcp/swank:mcp-swank-frame-locals 0)
 
 ;; Fix the function
 CL-USER> (cl-tron-mcp/swank:swank-eval
-           "(defun divide (a b) (if (zerop b) (error \"Cannot divide by zero\") (/ a b)))"
-           :package "CL-USER")
+          "(defun divide (a b) (if (zerop b) (error \"Cannot divide by zero\") (/ a b)))"
+          :package "CL-USER")
 ;; => (:VALUE "DIVIDE")
 
 ;; Test the fix

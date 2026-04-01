@@ -43,61 +43,61 @@
            (cl-tron-mcp/swank:swank-disconnect)))))
 
 (deftest swank-connection-test
-  (testing "Connect to Swank server"
-    (with-swank-connection
-      (let ((result (cl-tron-mcp/swank:swank-connect :port *swank-port*)))
-        (ok (getf result :error) "Should report already connected")))))
+    (testing "Connect to Swank server"
+             (with-swank-connection
+                 (let ((result (cl-tron-mcp/swank:swank-connect :port *swank-port*)))
+                   (ok (getf result :error) "Should report already connected")))))
 
 (deftest swank-eval-test
-  (testing "Evaluate simple expression"
-    (with-swank-connection
-      (let ((result (cl-tron-mcp/swank:swank-eval :code "(+ 1 2 3)")))
-        (ok (getf result :result))
-        (ok (listp (getf result :result)))))))
+    (testing "Evaluate simple expression"
+             (with-swank-connection
+                 (let ((result (cl-tron-mcp/swank:swank-eval :code "(+ 1 2 3)")))
+                   (ok (getf result :result))
+                   (ok (listp (getf result :result)))))))
 
 (deftest swank-backtrace-test
-  (testing "Get backtrace"
-    (with-swank-connection
-      (let ((result (cl-tron-mcp/swank:swank-backtrace :start 0 :end 5)))
-        (ok (getf result :result))))))
+    (testing "Get backtrace"
+             (with-swank-connection
+                 (let ((result (cl-tron-mcp/swank:swank-backtrace :start 0 :end 5)))
+                   (ok (getf result :result))))))
 
 (deftest swank-threads-test
-  (testing "List threads"
-    (with-swank-connection
-      (let ((result (cl-tron-mcp/swank:swank-threads)))
-        (ok (getf result :result))
-        (let ((threads (second (getf result :result))))
-          (ok (listp threads))
-          (ok (> (length threads) 0)))))))
+    (testing "List threads"
+             (with-swank-connection
+                 (let ((result (cl-tron-mcp/swank:swank-threads)))
+                   (ok (getf result :result))
+                   (let ((threads (second (getf result :result))))
+                     (ok (listp threads))
+                     (ok (> (length threads) 0)))))))
 
 (deftest swank-autodoc-test
-  (testing "Get arglist for symbol"
-    (with-swank-connection
-      (let ((result (cl-tron-mcp/swank:swank-autodoc :symbol "mapcar")))
-        (ok (getf result :result))))))
+    (testing "Get arglist for symbol"
+             (with-swank-connection
+                 (let ((result (cl-tron-mcp/swank:swank-autodoc :symbol "mapcar")))
+                   (ok (getf result :result))))))
 
 (deftest swank-completions-test
-  (testing "Get symbol completions"
-    (with-swank-connection
-      (let ((result (cl-tron-mcp/swank:swank-completions :prefix "map" :package "CL")))
-        (ok (getf result :result))
-        (let ((completions (second (getf result :result))))
-          (ok (listp completions))
-          (ok (> (length completions) 0)))))))
+    (testing "Get symbol completions"
+             (with-swank-connection
+                 (let ((result (cl-tron-mcp/swank:swank-completions :prefix "map" :package "CL")))
+                   (ok (getf result :result))
+                   (let ((completions (second (getf result :result))))
+                     (ok (listp completions))
+                     (ok (> (length completions) 0)))))))
 
 (deftest swank-debugger-test
-  (testing "Trigger error and get debug state"
-    (with-swank-connection
-      (let ((result (cl-tron-mcp/swank:swank-eval :code "(car 42)")))
-        (ok (getf result :result))
-        (let ((res (getf result :result)))
-          (ok (getf res :debug))))
-      (multiple-value-bind (thread level in-debugger)
-          (cl-tron-mcp/swank:swank-debugger-state)
-        (ok thread "Debugger thread should be set")
-        (ok (> level 0) "Debugger level should be > 0")
-        (ok in-debugger "Should be in debugger"))
-      (let ((restarts (cl-tron-mcp/swank:swank-get-restarts)))
-        (ok (getf restarts :restarts))
-        (ok (> (length (getf restarts :restarts)) 0)))
-      (cl-tron-mcp/swank:swank-invoke-restart :restart_index 1))))
+    (testing "Trigger error and get debug state"
+             (with-swank-connection
+                 (let ((result (cl-tron-mcp/swank:swank-eval :code "(car 42)")))
+                   (ok (getf result :result))
+                   (let ((res (getf result :result)))
+                     (ok (getf res :debug))))
+               (multiple-value-bind (thread level in-debugger)
+                   (cl-tron-mcp/swank:swank-debugger-state)
+                 (ok thread "Debugger thread should be set")
+                 (ok (> level 0) "Debugger level should be > 0")
+                 (ok in-debugger "Should be in debugger"))
+               (let ((restarts (cl-tron-mcp/swank:swank-get-restarts)))
+                 (ok (getf restarts :restarts))
+                 (ok (> (length (getf restarts :restarts)) 0)))
+               (cl-tron-mcp/swank:swank-invoke-restart :restart_index 1))))

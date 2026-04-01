@@ -64,8 +64,8 @@ Returns the number of entries evicted."
     (let ((current-size (hash-table-count *object-registry*)))
       (when (> current-size target-size)
         (let ((entries (sort (loop for id being the hash-keys of *object-registry-timestamps*
-                                  for ts = (gethash id *object-registry-timestamps*)
-                                  collect (cons ts id))
+                                   for ts = (gethash id *object-registry-timestamps*)
+                                   collect (cons ts id))
                              #'< :key #'car))
               (to-remove (- current-size target-size)))
           (loop for i from 0 below to-remove

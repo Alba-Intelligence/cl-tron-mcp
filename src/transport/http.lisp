@@ -106,29 +106,29 @@ This is a minimal implementation for development only."
   (let ((socket (usocket:socket-listen "127.0.0.1" port :reuse-address t)))
     (format t "Simple HTTP server listening on port ~d~%" port)
     (unwind-protect
-        (loop
-          (handler-case
-              (let ((client-socket (usocket:socket-accept socket)))
-                (unwind-protect
-                    (let ((stream (usocket:socket-stream client-socket)))
-                      (multiple-value-bind (request-line headers body)
-                          (read-http-request stream)
-                        (declare (ignore headers))
-                        (when request-line
-                          (let ((method (subseq request-line 0 (position #\Space request-line)))
-                                (path (subseq request-line (1+ (position #\Space request-line))
-                                               (position #\Space request-line :from-end t))))
-                            (cond
-                             ((and (string= method "POST")
-                                   (string= path "/eval"))
-                              (write-string (lisp-eval-handler body) stream))
-                             (t (write-string (http-not-found) stream)))
-                            (finish-output stream)))))
-                  (usocket:socket-close client-socket)))
-            (usocket:socket-error (e)
-              (format t "Socket error: ~a~%" e))
-            (error (e)
-              (format t "Error handling request: ~a~%" e))))
+         (loop
+           (handler-case
+               (let ((client-socket (usocket:socket-accept socket)))
+                 (unwind-protect
+                      (let ((stream (usocket:socket-stream client-socket)))
+                        (multiple-value-bind (request-line headers body)
+                            (read-http-request stream)
+                          (declare (ignore headers))
+                          (when request-line
+                            (let ((method (subseq request-line 0 (position #\Space request-line)))
+                                  (path (subseq request-line (1+ (position #\Space request-line))
+                                                (position #\Space request-line :from-end t))))
+                              (cond
+                                ((and (string= method "POST")
+                                      (string= path "/eval"))
+                                 (write-string (lisp-eval-handler body) stream))
+                                (t (write-string (http-not-found) stream)))
+                              (finish-output stream)))))
+                   (usocket:socket-close client-socket)))
+             (usocket:socket-error (e)
+               (format t "Socket error: ~a~%" e))
+             (error (e)
+               (format t "Error handling request: ~a~%" e))))
       (usocket:socket-close socket))))
 
 (provide :cl-tron-mcp/transport-http)

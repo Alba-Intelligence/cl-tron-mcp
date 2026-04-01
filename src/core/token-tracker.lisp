@@ -43,7 +43,7 @@
   "Record token usage for a tool response."
   (unless *token-tracking-enabled*
     (return-from track-response))
-  
+
   (let ((tokens (count-response-tokens response)))
     (bordeaux-threads:with-lock-held (*token-stats-lock*)
       (multiple-value-bind (stats exists-p)
@@ -75,16 +75,16 @@
         (total-tokens 0)
         (total-calls 0)
         tool-list)
-    
+
     (maphash (lambda (tool-name value)
                (destructuring-bind (tokens calls) value
                  (incf total-tokens tokens)
                  (incf total-calls calls)
                  (push (list tool-name tokens calls) tool-list)))
              stats)
-    
+
     (setf tool-list (sort tool-list #'> :key #'second))
-    
+
     (let ((report (make-hash-table :test 'equal)))
       (setf (gethash "total-tokens" report) total-tokens)
       (setf (gethash "total-calls" report) total-calls)

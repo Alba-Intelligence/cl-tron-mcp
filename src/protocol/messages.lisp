@@ -15,8 +15,8 @@
   (jonathan:to-json (list :|jsonrpc| "2.0"
                           :|id| id
                           :|error| (list :|code| code
-                                       :|message| message
-                                       :|data| data))))
+                                         :|message| message
+                                         :|data| data))))
 
 (defun make-notification (method params)
   "Create JSON-RPC 2.0 notification."

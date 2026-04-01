@@ -4,118 +4,118 @@
 (in-package :cl-tron-mcp/tests)
 
 (deftest test-validate-required
-  (testing "validate-required accepts non-nil values"
-    (ok (eq (validate-required "test" "value") "value"))
-    (ok (eq (validate-required "test" 123) 123))
-    (ok (eq (validate-required "test" t) t))))
+    (testing "validate-required accepts non-nil values"
+             (ok (eq (validate-required "test" "value") "value"))
+             (ok (eq (validate-required "test" 123) 123))
+             (ok (eq (validate-required "test" t) t))))
 
 (deftest test-validate-required-fails
-  (testing "validate-required rejects nil values"
-    (ok (handler-case (validate-required "test" nil)
-          (validation-error (e) t)))))
+    (testing "validate-required rejects nil values"
+             (ok (handler-case (validate-required "test" nil)
+                   (validation-error (e) t)))))
 
 (deftest test-validate-string
-  (testing "validate-string accepts valid strings"
-    (ok (stringp (validate-string "test" "hello")))
-    (ok (stringp (validate-string "test" "hello" :min-length 3)))
-    (ok (stringp (validate-string "test" "hi" :max-length 10)))))
+    (testing "validate-string accepts valid strings"
+             (ok (stringp (validate-string "test" "hello")))
+             (ok (stringp (validate-string "test" "hello" :min-length 3)))
+             (ok (stringp (validate-string "test" "hi" :max-length 10)))))
 
 (deftest test-validate-string-fails
-  (testing "validate-string rejects invalid strings"
-    (ok (handler-case (validate-string "test" 123)
-          (validation-error (e) t)))
-    (ok (handler-case (validate-string "test" "hi" :min-length 3)
-          (validation-error (e) t)))
-    (ok (handler-case (validate-string "test" "hello world" :max-length 5)
-          (validation-error (e) t)))))
+    (testing "validate-string rejects invalid strings"
+             (ok (handler-case (validate-string "test" 123)
+                   (validation-error (e) t)))
+             (ok (handler-case (validate-string "test" "hi" :min-length 3)
+                   (validation-error (e) t)))
+             (ok (handler-case (validate-string "test" "hello world" :max-length 5)
+                   (validation-error (e) t)))))
 
 (deftest test-validate-integer
-  (testing "validate-integer accepts valid integers"
-    (ok (integerp (validate-integer "test" 42)))
-    (ok (integerp (validate-integer "test" 10 :min 5)))
-    (ok (integerp (validate-integer "test" 5 :max 10)))))
+    (testing "validate-integer accepts valid integers"
+             (ok (integerp (validate-integer "test" 42)))
+             (ok (integerp (validate-integer "test" 10 :min 5)))
+             (ok (integerp (validate-integer "test" 5 :max 10)))))
 
 (deftest test-validate-integer-fails
-  (testing "validate-integer rejects invalid integers"
-    (ok (handler-case (validate-integer "test" "not an integer")
-          (validation-error (e) t)))
-    (ok (handler-case (validate-integer "test" 3 :min 5)
-          (validation-error (e) t)))
-    (ok (handler-case (validate-integer "test" 15 :max 10)
-          (validation-error (e) t)))))
+    (testing "validate-integer rejects invalid integers"
+             (ok (handler-case (validate-integer "test" "not an integer")
+                   (validation-error (e) t)))
+             (ok (handler-case (validate-integer "test" 3 :min 5)
+                   (validation-error (e) t)))
+             (ok (handler-case (validate-integer "test" 15 :max 10)
+                   (validation-error (e) t)))))
 
 (deftest test-validate-boolean
-  (testing "validate-boolean accepts valid booleans"
-    (ok (eq (validate-boolean "test" t) t))
-    (ok (eq (validate-boolean "test" nil) nil))))
+    (testing "validate-boolean accepts valid booleans"
+             (ok (eq (validate-boolean "test" t) t))
+             (ok (eq (validate-boolean "test" nil) nil))))
 
 (deftest test-validate-boolean-fails
-  (testing "validate-boolean rejects invalid booleans"
-    (ok (handler-case (validate-boolean "test" "true")
-          (validation-error (e) t)))
-    (ok (handler-case (validate-boolean "test" 1)
-          (validation-error (e) t)))))
+    (testing "validate-boolean rejects invalid booleans"
+             (ok (handler-case (validate-boolean "test" "true")
+                   (validation-error (e) t)))
+             (ok (handler-case (validate-boolean "test" 1)
+                   (validation-error (e) t)))))
 
 (deftest test-validate-choice
-  (testing "validate-choice accepts valid choices"
-    (ok (stringp (validate-choice "test" "flat" '("flat" "graph" "cumulative"))))
-    (ok (stringp (validate-choice "test" "graph" '("flat" "graph" "cumulative"))))))
+    (testing "validate-choice accepts valid choices"
+             (ok (stringp (validate-choice "test" "flat" '("flat" "graph" "cumulative"))))
+             (ok (stringp (validate-choice "test" "graph" '("flat" "graph" "cumulative"))))))
 
 (deftest test-validate-choice-fails
-  (testing "validate-choice rejects invalid choices"
-    (ok (handler-case (validate-choice "test" "invalid" '("flat" "graph" "cumulative"))
-          (validation-error (e) t)))))
+    (testing "validate-choice rejects invalid choices"
+             (ok (handler-case (validate-choice "test" "invalid" '("flat" "graph" "cumulative"))
+                   (validation-error (e) t)))))
 
 (deftest test-validate-object-id
-  (testing "validate-object-id accepts valid object IDs"
-    (ok (stringp (validate-object-id "test" "123")))
-    (ok (integerp (validate-object-id "test" 123)))))
+    (testing "validate-object-id accepts valid object IDs"
+             (ok (stringp (validate-object-id "test" "123")))
+             (ok (integerp (validate-object-id "test" 123)))))
 
 (deftest test-validate-object-id-fails
-  (testing "validate-object-id rejects invalid object IDs"
-    (ok (handler-case (validate-object-id "test" '(1 2 3))
-          (validation-error (e) t)))))
+    (testing "validate-object-id rejects invalid object IDs"
+             (ok (handler-case (validate-object-id "test" '(1 2 3))
+                   (validation-error (e) t)))))
 
 (deftest test-validate-symbol-name
-  (testing "validate-symbol-name accepts valid symbol names"
-    (ok (stringp (validate-symbol-name "test" "my-function")))
-    (ok (stringp (validate-symbol-name "test" "*global-var*")))
-    (ok (stringp (validate-symbol-name "test" "my-package:symbol")))))
+    (testing "validate-symbol-name accepts valid symbol names"
+             (ok (stringp (validate-symbol-name "test" "my-function")))
+             (ok (stringp (validate-symbol-name "test" "*global-var*")))
+             (ok (stringp (validate-symbol-name "test" "my-package:symbol")))))
 
 (deftest test-validate-symbol-name-fails
-  (testing "validate-symbol-name rejects invalid symbol names"
-    (ok (handler-case (validate-symbol-name "test" "invalid symbol")
-          (validation-error (e) t)))
-    (ok (handler-case (validate-symbol-name "test" "symbol@")
-          (validation-error (e) t)))))
+    (testing "validate-symbol-name rejects invalid symbol names"
+             (ok (handler-case (validate-symbol-name "test" "invalid symbol")
+                   (validation-error (e) t)))
+             (ok (handler-case (validate-symbol-name "test" "symbol@")
+                   (validation-error (e) t)))))
 
 (deftest test-validate-package-name
-  (testing "validate-package-name accepts valid package names"
-    (ok (stringp (validate-package-name "test" "my-package")))
-    (ok (stringp (validate-package-name "test" "CL-USER")))))
+    (testing "validate-package-name accepts valid package names"
+             (ok (stringp (validate-package-name "test" "my-package")))
+             (ok (stringp (validate-package-name "test" "CL-USER")))))
 
 (deftest test-validate-package-name-fails
-  (testing "validate-package-name rejects invalid package names"
-    (ok (handler-case (validate-package-name "test" "invalid package")
-          (validation-error (e) t)))
-    (ok (handler-case (validate-package-name "test" "package@")
-          (validation-error (e) t)))))
+    (testing "validate-package-name rejects invalid package names"
+             (ok (handler-case (validate-package-name "test" "invalid package")
+                   (validation-error (e) t)))
+             (ok (handler-case (validate-package-name "test" "package@")
+                   (validation-error (e) t)))))
 
 (deftest test-with-validation
-  (testing "with-validation macro works correctly"
-    (ok (with-validation
-           ((validate-string "test" "hello"))
-           :success))
-    (ok (eq (with-validation
-               ((validate-integer "test" 42 :min 0 :max 100))
-               :success)
-             :success))))
+    (testing "with-validation macro works correctly"
+             (ok (with-validation
+                     ((validate-string "test" "hello"))
+                   :success))
+             (ok (eq (with-validation
+                         ((validate-integer "test" 42 :min 0 :max 100))
+                       :success)
+                     :success))))
 
 (deftest test-with-validation-fails
-  (testing "with-validation macro returns error on validation failure"
-    (let ((result (with-validation
-                    ((validate-integer "test" 150 :max 100))
-                    :success)))
-      (ok (getf result :error))
-      (ok (stringp (getf result :message)))
-      (ok (string= (getf result :parameter) "test")))))
+    (testing "with-validation macro returns error on validation failure"
+             (let ((result (with-validation
+                               ((validate-integer "test" 150 :max 100))
+                             :success)))
+               (ok (getf result :error))
+               (ok (stringp (getf result :message)))
+               (ok (string= (getf result :parameter) "test")))))

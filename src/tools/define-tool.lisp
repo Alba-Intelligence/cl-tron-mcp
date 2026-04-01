@@ -35,14 +35,14 @@
                                                               :description (getf p :description))))
                                                      parameters)))
                        :required (quote ,(mapcar (lambda (p)
-                                                  (getf p :name))
+                                                   (getf p :name))
                                                  parameters)))
          :outputSchema (alexandria:plist-hash-table
                         :type "object"
                         :properties (alexandria:plist-hash-table
                                      :content (alexandria:plist-hash-table
-                                              :type "text"
-                                              :text "string")))
+                                               :type "text"
+                                               :text "string")))
          :requiresApproval ,requires-approval
          :concurrency ,concurrency)
         #',handler-sym))))

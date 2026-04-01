@@ -23,8 +23,8 @@
     (setf (gethash :concurrency descriptor) (or concurrency "sequential"))
     (setf (gethash name *tool-registry*)
           (make-tool-entry :name name
-                          :descriptor descriptor
-                          :handler nil))))
+                           :descriptor descriptor
+                           :handler nil))))
 
 (defun register-tool-handler (name handler)
   "Register handler function for already registered tool."

@@ -44,22 +44,22 @@ Dispatches to appropriate handler based on method name.
 Messages without ID are treated as notifications."
   (handler-case (let* ((parsed (if (stringp message)
                                    (jonathan:parse message)
-                                 message))
+                                   message))
                        (id (getf parsed :|id|))
                        (method (getf parsed :|method|))
                        (params (getf parsed :|params|)))
                   (cond
-                   ((null id)
-                    (handle-notification method params))
-                   (t (handle-request id method params))))
+                    ((null id)
+                     (handle-notification method params))
+                    (t (handle-request id method params))))
     (jonathan.error:<jonathan-error> (e)
-                                     (cl-tron-mcp/logging:log-error (format nil "JSON parse error: ~a" e))
-                                     (make-error-response nil -32700 "Parse error"))
+      (cl-tron-mcp/logging:log-error (format nil "JSON parse error: ~a" e))
+      (make-error-response nil -32700 "Parse error"))
     (error (e)
-           (cl-tron-mcp/logging:log-error (format nil "Error handling message: ~a" e))
-           (make-error-response nil
-                                -32603
-                                (princ-to-string e)))))
+      (cl-tron-mcp/logging:log-error (format nil "Error handling message: ~a" e))
+      (make-error-response nil
+                           -32603
+                           (princ-to-string e)))))
 
 (defun handle-request (id method params)
   "Handle JSON-RPC 2.0 request.
@@ -68,33 +68,33 @@ Wraps each request in a trace context (when tracing is enabled)."
   (let ((*request-id* id))
     (cl-tron-mcp/core:with-request-trace (method :request-id id)
       (cond
-       ;; Core protocol
-       ((string= method "initialize")
-        (handle-initialize id params))
-       ((string= method "ping")
-        (handle-ping id))
-       ;; Tools
-       ((string= method "tools/list")
-        (handle-tools-list id))
-       ((string= method "tools/call")
-        (handle-tool-call id params))
-       ;; Resources (documentation exposure)
-       ((string= method "resources/list")
-        (handle-resources-list id))
-       ((string= method "resources/read")
-        (handle-resources-read id params))
-       ;; Prompts (guided workflows)
-       ((string= method "prompts/list")
-        (handle-prompts-list id))
-       ((string= method "prompts/get")
-        (handle-prompts-get id params))
-       ;; Approval (server-enforced user approval)
-       ((string= method "approval/respond")
-        (handle-approval-respond id params))
-       ;; Unknown method
-       (t (make-error-response id
-                               -32601
-                               (format nil "Unknown method: ~a" method)))))))
+        ;; Core protocol
+        ((string= method "initialize")
+         (handle-initialize id params))
+        ((string= method "ping")
+         (handle-ping id))
+        ;; Tools
+        ((string= method "tools/list")
+         (handle-tools-list id))
+        ((string= method "tools/call")
+         (handle-tool-call id params))
+        ;; Resources (documentation exposure)
+        ((string= method "resources/list")
+         (handle-resources-list id))
+        ((string= method "resources/read")
+         (handle-resources-read id params))
+        ;; Prompts (guided workflows)
+        ((string= method "prompts/list")
+         (handle-prompts-list id))
+        ((string= method "prompts/get")
+         (handle-prompts-get id params))
+        ;; Approval (server-enforced user approval)
+        ((string= method "approval/respond")
+         (handle-approval-respond id params))
+        ;; Unknown method
+        (t (make-error-response id
+                                -32601
+                                (format nil "Unknown method: ~a" method)))))))
 
 (defun handle-notification (method params)
   "Handle JSON-RPC 2.0 notification.

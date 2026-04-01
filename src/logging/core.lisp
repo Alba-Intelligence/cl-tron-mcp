@@ -18,7 +18,7 @@
               (let ((pkg (find-package (string-upcase package))))
                 (when pkg
                   (log:config pkg level)))
-            (log:config level)))
+              (log:config level)))
         (list :success t
               :config *log-config*))
     (error (e)
@@ -37,7 +37,7 @@
         (if package
             (let ((pkg (find-package (string-upcase package))))
               (when pkg (log:info pkg message)))
-          (log:info message))
+            (log:info message))
         (list :logged t :message message :level :info))
     (error (e)
       (list :error t :message (princ-to-string e)))))
@@ -50,7 +50,7 @@
         (if package
             (let ((pkg (find-package (string-upcase package))))
               (when pkg (log:debug pkg message)))
-          (log:debug message))
+            (log:debug message))
         (list :logged t :message message :level :debug))
     (error (e)
       (list :error t :message (princ-to-string e)))))
@@ -63,7 +63,7 @@
         (if package
             (let ((pkg (find-package (string-upcase package))))
               (when pkg (log:warn pkg message)))
-          (log:warn message))
+            (log:warn message))
         (list :logged t :message message :level :warn))
     (error (e)
       (list :error t :message (princ-to-string e)))))
@@ -76,7 +76,7 @@
         (if package
             (let ((pkg (find-package (string-upcase package))))
               (when pkg (log:error pkg message)))
-          (log:error message))
+            (log:error message))
         (list :logged t :message message :level :error))
     (error (e)
       (list :error t :message (princ-to-string e)))))

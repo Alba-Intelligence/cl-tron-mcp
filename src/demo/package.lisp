@@ -107,9 +107,9 @@
                (format f "Type \"~a\"~%" (escape-vhs-string text))
                (format f "Enter~%")
                (format f "Sleep ~ams~%" (case style
-                                         (:error 800)
-                                         (:success 300)
-                                         (t 400)))))
+                                          (:error 800)
+                                          (:success 300)
+                                          (t 400)))))
             (:tool-call
              (let ((tool (getf event :tool))
                    (args (getf event :args)))

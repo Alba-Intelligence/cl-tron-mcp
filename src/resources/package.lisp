@@ -28,16 +28,16 @@
    ;; Resource listing
    #:list-resources
    #:resource-descriptor
-   
+
    ;; Resource reading
    #:read-resource
    #:resource-not-found-error
-   
+
    ;; Whitelist management
    #:*resource-whitelist*
    #:add-resource-to-whitelist
    #:clear-resource-whitelist
-   
+
    ;; MCP handlers
    #:handle-resources-list
    #:handle-resources-read))

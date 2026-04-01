@@ -36,9 +36,9 @@ URI format: file://relative/path/to/file.md"
                                    id params)))
                     (jonathan:to-json response))
       (error (e)
-             (cl-tron-mcp/logging:log-error (format nil "Error reading resource: ~a" e))
-             (make-error-response id
-                                  -32000
-                                  (princ-to-string e))))))
+        (cl-tron-mcp/logging:log-error (format nil "Error reading resource: ~a" e))
+        (make-error-response id
+                             -32000
+                             (princ-to-string e))))))
 
 (provide :cl-tron-mcp/protocol-handlers-resources)

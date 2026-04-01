@@ -85,8 +85,8 @@ Returns (values json-body-string status-code)."
         (handler-case
             (let ((response (cl-tron-mcp/protocol:handle-message message)))
               (values (cond ((and response (stringp response)) response)
-                           (response (jonathan:to-json response))
-                           (t "{}"))
+                            (response (jonathan:to-json response))
+                            (t "{}"))
                       200))
           (error (e)
             (cl-tron-mcp/logging:log-error (format nil "Error handling RPC: ~a" e))
@@ -130,9 +130,9 @@ Returns (values json-body-string status-code)."
         (multiple-value-bind (body-json status)
             (handle-rpc-body body)
           (setf (hunchentoot:return-code*) (case status
-                                              (200 hunchentoot:+http-ok+)
-                                              (413 hunchentoot:+http-request-entity-too-large+)
-                                              (t hunchentoot:+http-bad-request+)))
+                                             (200 hunchentoot:+http-ok+)
+                                             (413 hunchentoot:+http-request-entity-too-large+)
+                                             (t hunchentoot:+http-bad-request+)))
           (or body-json "{}")))))
 
 (hunchentoot:define-easy-handler (mcp-lisply-eval :uri "/lisply/lisp-eval" :default-request-type :post) ()

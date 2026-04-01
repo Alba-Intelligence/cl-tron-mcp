@@ -6,13 +6,13 @@
   "Get memory usage statistics from SBCL."
   (handler-case
       #+sbcl
-      (let ((dynamic-usage (sb-kernel:dynamic-usage)))
-        (list :dynamic-bytes dynamic-usage
-              :total-bytes dynamic-usage
-              :total-mb (round (/ dynamic-usage 1048576))))
-      #-sbcl
-      (list :total-bytes nil
-            :message "Memory stats not available")
+    (let ((dynamic-usage (sb-kernel:dynamic-usage)))
+      (list :dynamic-bytes dynamic-usage
+            :total-bytes dynamic-usage
+            :total-mb (round (/ dynamic-usage 1048576))))
+    #-sbcl
+    (list :total-bytes nil
+          :message "Memory stats not available")
     (error (e)
       (list :error t
             :message (princ-to-string e)))))
@@ -45,8 +45,8 @@
   (let ((mem (memory-stats))
         (threads (length (bt:all-threads))))
     (format nil "# HELP cltron_heap_bytes Total heap bytes in use~%# TYPE cltron_heap_bytes gauge~%cltron_heap_bytes ~d~%~%# HELP cltron_threads Number of active threads~%# TYPE cltron_threads gauge~%cltron_threads ~d~%"
-              (getf mem :total-bytes 0)
-              threads)))
+            (getf mem :total-bytes 0)
+            threads)))
 
 (defun gc-run (&key (generation 0))
   "Force garbage collection. SBCL: optional generation (0-7). Other Lisps: call generic GC."
