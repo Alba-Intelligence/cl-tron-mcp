@@ -182,8 +182,5 @@
   :output-schema (list :type "object")
   :requires-approval nil
   :documentation-uri "file://docs/tools/swank-send-input.md"
-  :validators (list
-               (list :param :input
-                     :validator #'cl-tron-mcp/tools:validate-string
-                     :message "input must be a non-empty string"))
-  :function cl-tron-mcp/swank:mcp-swank-send-input)
+  :validation ((validate-string "input" input :required t :min-length 0))
+  :body (cl-tron-mcp/swank:mcp-swank-send-input :input input))

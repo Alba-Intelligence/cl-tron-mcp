@@ -32,17 +32,17 @@
           *sensitive-parameter-names*)))
 
 (defun sanitize-arguments (args)
-  "Sanitize a plist/alist of tool arguments, redacting sensitive values.
-Returns a new list with sensitive values replaced by \"[REDACTED]\"."
+  "Sanitize a plist of tool arguments, redacting sensitive values.
+Returns a new plist with sensitive parameter values replaced by \"[REDACTED]\"."
   (cond
     ((null args) nil)
     ((listp args)
-     (loop for item in args
-           collect (cond
-                     ((and (listp item) (car item) (sensitive-param-p (car item)))
-                      (cons (car item) "[REDACTED]"))
-                     ((listp item) item)
-                     (t item))))
+     (loop for (key val) on args by #'cddr
+           when key
+           append (list key (if (and (or (symbolp key) (stringp key))
+                                     (sensitive-param-p key))
+                                "[REDACTED]"
+                                val))))
     (t args)))
 
 (defun log-operation (operation tool &key (user "unknown") resource approved-p duration result)

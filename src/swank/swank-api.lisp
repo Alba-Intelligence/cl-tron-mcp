@@ -155,14 +155,51 @@
 ;;; ============================================================
 
 (defun swank-set-breakpoint (&key function condition hit-count thread)
-  "Set a breakpoint via Swank."
-  (declare (ignore condition hit-count thread))
-  (send-request `(,(swank-sym "BREAK") ,function)
-                :package "CL-USER" :thread t))
+  "Set a breakpoint on FUNCTION via Swank.
+When CONDITION (a Lisp expression string) or HIT-COUNT is given, wraps
+the function with a generated predicate evaluated in the remote image
+instead of using swank:break directly."
+  (declare (ignore thread))
+  (if (or condition hit-count)
+      ;; Conditional/counted breakpoint: install via eval in remote image
+      (let* ((hit-count-var (when hit-count (gensym "HIT-COUNT-")))
+             (wrapper-code
+               (format nil
+                 "(let (~a)
+                    (sb-int:encapsulate '~a 'mcp-breakpoint
+                      (lambda (fn &rest args)
+                        ~a
+                        (apply fn args))))"
+                 (if hit-count
+                     (format nil "(~a 0)" hit-count-var)
+                     "")
+                 function
+                 (cond
+                   ((and condition hit-count)
+                    (format nil
+                      "(when (and (progn ~a) (>= (incf ~a) ~d)) (break \"MCP breakpoint on ~a (hit ~d)\"))"
+                      condition hit-count-var hit-count function hit-count))
+                   (condition
+                    (format nil "(when (progn ~a) (break \"MCP breakpoint on ~a\"))"
+                            condition function))
+                   (hit-count
+                    (format nil "(when (>= (incf ~a) ~d) (break \"MCP breakpoint on ~a (hit ~d)\"))"
+                            hit-count-var hit-count function hit-count))))))
+        (send-request `(,(swank-sym "EVAL-AND-GRAB-OUTPUT") ,wrapper-code)
+                      :package "CL-USER" :thread t))
+      ;; Simple unconditional breakpoint via swank:break
+      (send-request `(,(swank-sym "BREAK") ,function)
+                    :package "CL-USER" :thread t)))
 
 (defun swank-remove-breakpoint (&key breakpoint-id)
   "Remove a breakpoint via Swank."
   (send-request `(,(swank-sym "BREAK-REMOVE") ,breakpoint-id)
+                :package "CL-USER" :thread t))
+
+(defun swank-unencapsulate (&key function)
+  "Remove a conditional MCP breakpoint encapsulation from FUNCTION."
+  (send-request `(,(swank-sym "EVAL-AND-GRAB-OUTPUT")
+                  ,(format nil "(sb-int:unencapsulate '~a 'mcp-breakpoint)" function))
                 :package "CL-USER" :thread t))
 
 (defun swank-list-breakpoints ()
@@ -170,9 +207,10 @@
   (send-request `(,(swank-sym "BREAK-LIST")) :package "CL-USER" :thread t))
 
 (defun swank-toggle-breakpoint (&key breakpoint-id)
-  "Toggle breakpoint enabled state (not fully implemented)."
+  "Toggle breakpoint state — callers should use breakpoints.lisp:toggle-breakpoint
+which implements this via remove/re-add using the saved breakpoint state."
   (declare (ignore breakpoint-id))
-  (list :success t :message "Toggle not implemented"))
+  (list :error t :message "Use cl-tron-mcp/debugger:toggle-breakpoint instead"))
 
 ;;; ============================================================
 ;;; Thread Management

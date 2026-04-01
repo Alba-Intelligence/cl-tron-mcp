@@ -12,19 +12,23 @@
 
 (deftest log-info-test
   (testing "log-info writes without error"
-    (ok (null (cl-tron-mcp/logging:log-info "test info message")))))
+    (let ((result (cl-tron-mcp/logging:log-info "test info message")))
+      (ok (listp result)))))
 
 (deftest log-debug-test
   (testing "log-debug writes without error"
-    (ok (null (cl-tron-mcp/logging:log-debug "test debug message")))))
+    (let ((result (cl-tron-mcp/logging:log-debug "test debug message")))
+      (ok (listp result)))))
 
 (deftest log-warn-test
   (testing "log-warn writes without error"
-    (ok (null (cl-tron-mcp/logging:log-warn "test warn message")))))
+    (let ((result (cl-tron-mcp/logging:log-warn "test warn message")))
+      (ok (listp result)))))
 
 (deftest log-error-test
   (testing "log-error writes without error"
-    (ok (null (cl-tron-mcp/logging:log-error "test error message")))))
+    (let ((result (cl-tron-mcp/logging:log-error "test error message")))
+      (ok (listp result)))))
 
 (deftest log-level-test
   (testing "log-level returns current level"

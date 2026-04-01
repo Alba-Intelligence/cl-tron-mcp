@@ -66,25 +66,39 @@
             :message (princ-to-string e)))))
 
 (defun toggle-breakpoint (breakpoint-id)
-  "Toggle breakpoint enabled/disabled state via Swank RPC."
+  "Toggle breakpoint enabled/disabled state.
+When disabling: removes the breakpoint from Swank but preserves local state.
+When enabling: re-installs the breakpoint in Swank using saved parameters."
   (handler-case
       (let ((bp (gethash breakpoint-id *breakpoints*)))
         (unless bp
           (return-from toggle-breakpoint
             (list :error t
                   :message (format nil "Breakpoint ~d not found" breakpoint-id))))
-        (let ((swank-id (getf bp :swank-id)))
-          (unless swank-id
-            (return-from toggle-breakpoint
-              (list :error t
-                    :message (format nil "Breakpoint ~d not associated with Swank" breakpoint-id)))))
-        (let ((result (swank-toggle-breakpoint :breakpoint-id (getf bp :swank-id))))
-          (if (getf result :error)
-              result
-              (let ((enabled (getf bp :enabled)))
-                (setf (getf bp :enabled) (not enabled))
-                (list :breakpoint-id breakpoint-id
-                      :enabled (getf bp :enabled))))))
+        (let ((enabled (getf bp :enabled)))
+          (if enabled
+              ;; Disabling: remove from Swank, keep local state
+              (let ((swank-id (getf bp :swank-id)))
+                (when swank-id
+                  (let ((result (swank-remove-breakpoint :breakpoint-id swank-id)))
+                    (when (getf result :error)
+                      (return-from toggle-breakpoint result))))
+                (setf (getf bp :enabled) nil)
+                (setf (getf bp :swank-id) nil)
+                (list :breakpoint-id breakpoint-id :enabled nil :status "disabled"))
+              ;; Enabling: re-install in Swank
+              (let ((result (swank-set-breakpoint
+                             :function (getf bp :function)
+                             :condition (getf bp :condition)
+                             :hit-count (when (plusp (or (getf bp :hit-count) 0))
+                                          (getf bp :hit-count))
+                             :thread (getf bp :thread))))
+                (if (getf result :error)
+                    result
+                    (progn
+                      (setf (getf bp :enabled) t)
+                      (setf (getf bp :swank-id) (getf result :breakpoint-id))
+                      (list :breakpoint-id breakpoint-id :enabled t :status "active")))))))
     (error (e)
       (list :error t
             :message (princ-to-string e)))))

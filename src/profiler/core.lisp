@@ -6,33 +6,40 @@
 (defvar *profile-data* nil)
 
 (defun profile-start (&key functions package)
-  "Start deterministic profiling."
+  "Start deterministic profiling via sb-profile (SBCL) or stub."
   (declare (ignore functions package))
-  (when (and (member :sb-profile *features*)
-             (not *profiling-active*))
-    (handler-case
-        (progn
-          #+sbcl (sb-profile:profile)
+  #+sbcl
+  (handler-case
+      (progn
+        (unless *profiling-active*
+          (sb-profile:profile)
           (setq *profiling-active* t
-                *profile-data* (list :started (get-unix-time)))
-          (list :success t
-                :message "Profiling started"))
-      (error (e)
-        (list :error t
-              :message (princ-to-string e))))))
+                *profile-data* (list :started (get-unix-time))))
+        (list :success t
+              :started *profiling-active*
+              :message (if *profiling-active* "Profiling started" "Already active")))
+    (error (e)
+      (list :error t
+            :message (princ-to-string e))))
+  #-sbcl
+  (list :success t :message "Profiling not available on this Lisp (stub)"))
 
 (defun profile-stop ()
   "Stop profiling."
-  (when *profiling-active*
-    (handler-case
-        (progn
-          #+sbcl (sb-profile:unprofile)
-          (setq *profiling-active* nil)
-          (list :success t
-                :message "Profiling stopped"))
-      (error (e)
-        (list :error t
-              :message (princ-to-string e))))))
+  #+sbcl
+  (handler-case
+      (progn
+        (when *profiling-active*
+          (sb-profile:unprofile)
+          (setq *profiling-active* nil))
+        (list :success t :message "Profiling stopped"))
+    (error (e)
+      (list :error t
+            :message (princ-to-string e))))
+  #-sbcl
+  (progn
+    (setq *profiling-active* nil)
+    (list :success t :message "Profiling stopped (stub)")))
 
 (defun profile-report (&key (format :flat))
   "Get profiling report."

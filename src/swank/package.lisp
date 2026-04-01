@@ -41,6 +41,7 @@
    #:mcp-swank-set-breakpoint
    #:swank-remove-breakpoint
    #:mcp-swank-remove-breakpoint
+   #:swank-unencapsulate
    #:swank-list-breakpoints
    #:mcp-swank-list-breakpoints
    #:swank-toggle-breakpoint

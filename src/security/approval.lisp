@@ -57,14 +57,20 @@
 
 (defun whitelist-match-p (pattern details)
   "Return t if DETAILS matches PATTERN.
-PATTERN can be a string (substring match on tool name), a keyword (operation match),
-a function (called with details), or t (wildcard)."
+PATTERN can be: t (wildcard), \"*\" (wildcard), a function (called with details),
+or a string (substring match against details if string, or :tool key if plist)."
   (cond
     ((eq pattern t) t)
     ((functionp pattern) (funcall pattern details))
     ((stringp pattern)
-     (let ((tool-name (getf details :tool "")))
-       (search pattern (or tool-name "") :test #'string-equal)))
+     (when (string= pattern "*") (return-from whitelist-match-p t))
+     (let ((target (cond
+                     ((stringp details) details)
+                     ((listp details) (or (getf details :tool)
+                                          (getf details :operation-details)
+                                          ""))
+                     (t ""))))
+       (search pattern (or target "") :test #'string-equal)))
     (t nil)))
 
 (defun whitelist-check (operation details)

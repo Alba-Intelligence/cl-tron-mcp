@@ -49,17 +49,22 @@
               threads)))
 
 (defun gc-run (&key (generation 0))
-  "Force garbage collection. SBCL: optional generation. Other Lisps: call generic GC."
+  "Force garbage collection. SBCL: optional generation (0-7). Other Lisps: call generic GC."
   #+sbcl
-  (handler-case
-      (progn
-        (sb-ext:gc :generation generation)
-        (list :success t
-              :generation generation
-              :memory-after (memory-stats)))
-    (error (e)
-      (list :error t
-            :message (princ-to-string e))))
+  (progn
+    (unless (typep generation '(integer 0 7))
+      (return-from gc-run
+        (list :error t
+              :message (format nil "Invalid generation ~a: must be integer 0-7" generation))))
+    (handler-case
+        (progn
+          (sb-ext:gc :generation generation)
+          (list :success t
+                :generation generation
+                :memory-after (memory-stats)))
+      (error (e)
+        (list :error t
+              :message (princ-to-string e)))))
   #-sbcl
   (handler-case
       (progn

@@ -74,7 +74,9 @@
 
 (defun inspect-class (&key class_name)
   "Inspect class definition using CLOS MOP."
-  (let ((class (find-class (intern (string-upcase class_name) :cl) nil)))
+  (let* ((sym (or (find-symbol (string-upcase class_name))
+                  (find-symbol (string-upcase class_name) :cl-user)))
+         (class (when sym (find-class sym nil))))
     (unless class
       (return-from inspect-class
         (cl-tron-mcp/core:make-error "CLASS_NOT_FOUND"

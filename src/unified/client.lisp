@@ -100,6 +100,10 @@ Includes hints for starting Swank and connecting."
           *repl-type* nil))
   (list :success t :message "Disconnected from REPL"))
 
+(defun repl-connected-p ()
+  "Return T if currently connected to a REPL."
+  (and *repl-connected* t))
+
 (defun repl-status ()
   "Get the current REPL connection status."
   (list :connected *repl-connected*

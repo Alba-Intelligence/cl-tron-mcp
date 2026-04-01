@@ -35,14 +35,17 @@
   (cond
     ((not (bt:thread-alive-p thread)) :dead)
     #+sbcl
-    ((sb-thread:thread-waiting-for thread)
-     (let ((waiting-for (sb-thread:thread-waiting-for thread)))
-       (typecase waiting-for
-         (sb-thread:mutex :blocked)
-         (t :waiting))))
+    ((let ((waiting-for (sb-thread::thread-waiting-for thread)))
+       (when waiting-for
+         (typecase waiting-for
+           (sb-thread:mutex (return-from thread-state :blocked))
+           (t (return-from thread-state :waiting)))
+         nil))
+     nil)
     #+sbcl
-    ((let ((state (sb-thread:thread-state thread)))
-       (string= (symbol-name state) "WAITING"))
+    ((ignore-errors
+       (string= (symbol-name (funcall (intern "THREAD-STATE" :sb-thread) thread))
+                "WAITING"))
      :sleeping)
     (t :running)))
 

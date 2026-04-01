@@ -34,6 +34,7 @@
    ;; Connection
    #:repl-connect
    #:repl-disconnect
+   #:repl-connected-p
    #:repl-status
    #:repl-type
 

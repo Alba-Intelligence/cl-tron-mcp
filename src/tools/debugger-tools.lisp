@@ -47,6 +47,15 @@
   :documentation-uri "file://docs/tools/breakpoint-list.md"
   :function cl-tron-mcp/debugger:list-breakpoints)
 
+(define-validated-tool "breakpoint_toggle"
+  "Enable or disable a breakpoint by ID without removing it"
+  :input-schema (list :breakpointId "integer")
+  :output-schema (list :type "object")
+  :requires-approval t
+  :documentation-uri "file://docs/tools/breakpoint-toggle.md"
+  :validation ((validate-integer "breakpoint_id" breakpoint_id :required t :min 0))
+  :body (cl-tron-mcp/debugger:toggle-breakpoint breakpoint_id))
+
 (define-validated-tool "step_frame"
   "Step through execution in a stack frame (into, over, or out)"
   :input-schema (list :frame "integer" :mode "string")
