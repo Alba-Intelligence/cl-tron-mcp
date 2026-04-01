@@ -30,8 +30,8 @@ flake.lock
 git_examples
 tmp
 
-# VHS tape files (source for demo GIFs)
-*.tape
+# VHS tape files (source for demo GIFs — tracked in demo/)
+# *.tape
 
 *.log
 

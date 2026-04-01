@@ -8,10 +8,11 @@
 
 set -e
 
-cd "$(dirname "$0")"
+# VHS tapes reference paths like "demo/demo-script.lisp" → run from project root
+cd "$(dirname "$0")/.."
 
 # Use local tmp directory instead of /tmp
-export TMPDIR="$(pwd)/tmp"
+export TMPDIR="$(pwd)/demo/tmp"
 mkdir -p "$TMPDIR"
 
 # NixOS: ensure libcrypto is available for CFFI
@@ -47,7 +48,7 @@ echo "LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-<not set>}"
 echo ""
 
 # Generate all demos
-for tape in demo.tape demo-kilocode.tape demo-mcp-raw.tape demo-f1-f2.tape; do
+for tape in demo/demo.tape demo/demo-kilocode.tape demo/demo-mcp-raw.tape demo/demo-f1-f2.tape; do
 	if [ ! -f "$tape" ]; then
 		echo "Skipping $tape (not found)"
 		continue
@@ -61,7 +62,7 @@ done
 echo "═══════════════════════════════════════════════════════════════════════════════"
 echo "  ✅ Done!"
 echo "═══════════════════════════════════════════════════════════════════════════════"
-ls -la *.gif 2>/dev/null || echo "(no GIFs generated)"
+ls -la demo/*.gif 2>/dev/null || echo "(no GIFs generated)"
 echo ""
 echo "GIFs generated:"
 echo "  demo.gif          - Basic debugging demo"
