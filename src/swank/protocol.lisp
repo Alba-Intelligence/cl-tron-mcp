@@ -12,8 +12,15 @@
    #:prin1-to-string-for-emacs
    #:swank-protocol-error
    #:swank-read-error
+   #:swank-read-timeout
    #:swank-write-error
    #:swank-reader-error
+   #:swank-protocol-error-message
+   #:swank-read-error-condition
+   #:swank-read-error-stream
+   #:swank-write-error-condition
+   #:swank-reader-error-packet
+   #:swank-reader-error-cause
    #:*default-read-timeout*))
 
 (in-package #:cl-tron-mcp/swank-protocol)
@@ -35,6 +42,41 @@
 ;;; Default timeout for socket reads (in seconds)
 (defvar *default-read-timeout* 30
   "Default timeout for socket read operations in seconds.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Condition Classes
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-condition swank-protocol-error (error)
+  ((message :initarg :message :reader swank-protocol-error-message :initform "Swank protocol error"))
+  (:report (lambda (c s) (format s "Swank protocol error: ~a" (swank-protocol-error-message c)))))
+
+(define-condition swank-read-error (swank-protocol-error)
+  ((condition :initarg :condition :reader swank-read-error-condition :initform nil)
+   (stream    :initarg :stream    :reader swank-read-error-stream    :initform nil))
+  (:report (lambda (c s)
+             (format s "Swank read error~@[: ~a~]"
+                     (swank-read-error-condition c)))))
+
+(define-condition swank-read-timeout (swank-read-error)
+  ((timeout :initarg :timeout :reader swank-read-timeout-seconds :initform nil))
+  (:report (lambda (c s)
+             (format s "Swank read timeout~@[ after ~a seconds~]"
+                     (swank-read-timeout-seconds c)))))
+
+(define-condition swank-write-error (swank-protocol-error)
+  ((condition :initarg :condition :reader swank-write-error-condition :initform nil)
+   (message   :initarg :message   :reader swank-write-error-message-data :initform nil))
+  (:report (lambda (c s)
+             (format s "Swank write error~@[: ~a~]"
+                     (swank-write-error-condition c)))))
+
+(define-condition swank-reader-error (swank-read-error)
+  ((packet :initarg :packet :reader swank-reader-error-packet :initform nil)
+   (cause  :initarg :cause  :reader swank-reader-error-cause  :initform nil))
+  (:report (lambda (c s)
+             (format s "Swank reader error~@[ in packet: ~a~]"
+                     (swank-reader-error-packet c)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; UTF-8 Encoding/Decoding

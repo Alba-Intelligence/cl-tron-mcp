@@ -60,7 +60,7 @@ in
 
   # https://devenv.sh/basics/
   enterShell = ''
-    export LD_LIBRARY_PATH=${pkgs.lib.getLib pkgs.openssl_legacy}/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=${pkgs.openssl_legacy.out}/lib:$LD_LIBRARY_PATH
 
     hello         # Run scripts directly
     git --version # Use packages

@@ -113,6 +113,8 @@
                  (ok t "Swank server not available - skipping")
                  (progn
                    (cl-tron-mcp/swank:swank-connect :port 4006)
+                   (cl-tron-mcp/security:whitelist-enable t)
+                   (cl-tron-mcp/security:whitelist-add :eval "*")
                    (unwind-protect
                         (let* ((args (list :|code| "(+ 1 2 3)"))
                                (params (list :|name| "swank_eval" :|arguments| args))
@@ -122,6 +124,8 @@
                           (let ((result (getf parsed :|result|)))
                             (when result
                               (ok (search "6" (format nil "~a" result))))))
+                     (cl-tron-mcp/security:whitelist-clear)
+                     (cl-tron-mcp/security:whitelist-enable nil)
                      (cl-tron-mcp/swank:swank-disconnect))))))
 
 ;;; Approval flow tests
@@ -145,6 +149,7 @@
 
 (deftest mcp-approval-respond-then-tool-test
     (testing "After approval/respond(approved: true), re-invoke tool with approval_request_id runs tool"
+             ;; First call returns approval_required - no Swank needed for this step
              (let* ((params1 (list :|name| "swank_eval" :|arguments| (list :|code| "(+ 1 2)")))
                     (resp1 (cl-tron-mcp/protocol:handle-tool-call 1 params1))
                     (parsed1 (parse-json-response resp1))
@@ -156,23 +161,29 @@
                ;; Record approval
                (let ((respond-params (list :|request_id| req-id :|approved| "true")))
                  (cl-tron-mcp/protocol:handle-request 2 "approval/respond" respond-params))
-               ;; Re-invoke with approval
-               (let* ((params2 (list :|name| "swank_eval"
-                                     :|arguments| (list :|code| "(+ 1 2)"
-                                                        :|approval_request_id| req-id
-                                                        :|approved| "true")))
-                      (resp2 (cl-tron-mcp/protocol:handle-tool-call 2 params2))
-                      (parsed2 (parse-json-response resp2)))
-                 (ok (getf parsed2 :|result|) "Re-invoke with approval should return result (or tool error)")
-                 ;; Should not be approval_required again
-                 (let ((content2 (getf (getf parsed2 :|result|) :|content|)))
-                   (when content2
-                     (let ((text2 (getf (first content2) :|text|)))
-                       (when (stringp text2)
-                         (let ((inner (ignore-errors (jonathan:parse text2))))
-                           (when inner
-                             (ok (not (getf inner :|approval_required|))
-                                 "Should not ask for approval again")))))))))))
+               ;; Re-invoke with approval — needs Swank for actual eval
+               (if (not (swank-available-p))
+                   (ok t "Swank not available - skipping re-invocation with approval")
+                   (progn
+                     (cl-tron-mcp/swank:swank-connect :port 4006)
+                     (unwind-protect
+                          (let* ((params2 (list :|name| "swank_eval"
+                                               :|arguments| (list :|code| "(+ 1 2)"
+                                                                    :|approval_request_id| req-id
+                                                                    :|approved| "true")))
+                                 (resp2 (cl-tron-mcp/protocol:handle-tool-call 2 params2))
+                                 (parsed2 (parse-json-response resp2)))
+                            (ok (getf parsed2 :|result|) "Re-invoke with approval should return result (or tool error)")
+                            ;; Should not be approval_required again
+                            (let ((content2 (getf (getf parsed2 :|result|) :|content|)))
+                              (when content2
+                                (let ((text2 (getf (first content2) :|text|)))
+                                  (when (stringp text2)
+                                    (let ((inner (ignore-errors (jonathan:parse text2))))
+                                      (when inner
+                                        (ok (not (getf inner :|approval_required|))
+                                            "Should not ask for approval again"))))))))
+                       (cl-tron-mcp/swank:swank-disconnect)))))))
 
 (deftest mcp-approval-deny-message-test
     (testing "approval/respond(approved: false) returns message for retry"
@@ -194,23 +205,28 @@
 
 (deftest mcp-whitelist-skips-approval-test
     (testing "When whitelist allows operation, protected tool runs without approval_required"
-             (cl-tron-mcp/security:whitelist-enable t)
-             (cl-tron-mcp/security:whitelist-add :eval "*")
-             (unwind-protect
-                  (let* ((params (list :|name| "swank_eval" :|arguments| (list :|code| "(+ 1 2)")))
-                         (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
-                         (parsed (parse-json-response response))
-                         (content (getf (getf parsed :|result|) :|content|))
-                         (text (when content (getf (first content) :|text|))))
-                    (ok (getf parsed :|result|))
-                    ;; Result text should not be approval_required JSON
-                    (when (stringp text)
-                      (let ((inner (ignore-errors (jonathan:parse text))))
-                        (when inner
-                          (ok (not (getf inner :|approval_required|))
-                              "Whitelisted tool should not return approval_required")))))
-               (cl-tron-mcp/security:whitelist-clear)
-               (cl-tron-mcp/security:whitelist-enable nil))))
+             (if (not (swank-available-p))
+                 (ok t "Swank not available - skipping whitelist test")
+                 (progn
+                   (cl-tron-mcp/swank:swank-connect :port 4006)
+                   (cl-tron-mcp/security:whitelist-enable t)
+                   (cl-tron-mcp/security:whitelist-add :eval "*")
+                   (unwind-protect
+                        (let* ((params (list :|name| "swank_eval" :|arguments| (list :|code| "(+ 1 2)")))
+                               (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
+                               (parsed (parse-json-response response))
+                               (content (getf (getf parsed :|result|) :|content|))
+                               (text (when content (getf (first content) :|text|))))
+                          (ok (getf parsed :|result|))
+                          ;; Result text should not be approval_required JSON
+                          (when (stringp text)
+                            (let ((inner (ignore-errors (jonathan:parse text))))
+                              (when inner
+                                (ok (not (getf inner :|approval_required|))
+                                    "Whitelisted tool should not return approval_required")))))
+                     (cl-tron-mcp/security:whitelist-clear)
+                     (cl-tron-mcp/security:whitelist-enable nil)
+                     (cl-tron-mcp/swank:swank-disconnect))))))
 
 ;;; Error handling tests
 
