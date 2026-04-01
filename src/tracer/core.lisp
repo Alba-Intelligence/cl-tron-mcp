@@ -1,4 +1,6 @@
 ;;;; src/tracer/core.lisp
+;;;; CL:TRACE and CL:UNTRACE are ANSI standard — works on SBCL, ECL, and all
+;;;; conforming implementations. No implementation guards needed.
 
 (in-package :cl-tron-mcp/tracer)
 
@@ -8,11 +10,11 @@
 (defvar *max-trace-entries* 1000)
 
 (defun trace-function (function-name &key condition hit-count)
-  "Add trace to function."
+  "Add trace to function. Uses standard CL:TRACE — works on all implementations."
   (let ((symbol (read-from-string function-name)))
     (handler-case
         (progn
-          #+sbcl (eval `(trace ,symbol))
+          (eval `(trace ,symbol))
           (pushnew symbol *traced-functions*)
           (list :success t
                 :function function-name
@@ -23,11 +25,11 @@
               :message (princ-to-string e))))))
 
 (defun trace-remove (function-name)
-  "Remove trace from function."
+  "Remove trace from function. Uses standard CL:UNTRACE."
   (let ((symbol (read-from-string function-name)))
     (handler-case
         (progn
-          #+sbcl (eval `(untrace ,symbol))
+          (eval `(untrace ,symbol))
           (setq *traced-functions* (remove symbol *traced-functions*))
           (list :success t
                 :function function-name))
@@ -41,10 +43,10 @@
         :count (length *traced-functions*)))
 
 (defun trace-clear ()
-  "Remove all traces."
+  "Remove all traces. Uses standard CL:UNTRACE."
   (handler-case
       (progn
-        #+sbcl (eval '(untrace))
+        (eval '(untrace))
         (setq *traced-functions* nil
               *trace-entries* nil
               *trace-count* 0)
@@ -53,31 +55,3 @@
     (error (e)
       (list :error t
             :message (princ-to-string e)))))
-
-(defun trace-get-entries (&key (limit 100))
-  "Get trace entries with call information."
-  (let ((entries (reverse *trace-entries*)))
-    (list :entries (subseq entries 0 (min limit (length entries)))
-          :total (length *trace-entries*)
-          :limit limit)))
-
-(defun trace-capture-entry (function-name args result)
-  "Capture a trace entry for recording."
-  (when (< *trace-count* *max-trace-entries*)
-    (push (list :function function-name
-                :args (format nil "~a" args)
-                :result (format nil "~a" result)
-                :timestamp (get-unix-time)
-                :index (incf *trace-count*))
-          *trace-entries*)))
-
-(defun get-unix-time ()
-  "Get current Unix timestamp."
-  (multiple-value-bind (sec min hour day month year)
-      (get-decoded-time)
-    (+ (* sec 1)
-       (* min 60)
-       (* hour 3600)
-       (* day 86400)
-       (* month 2592000)
-       (* year 31536000))))

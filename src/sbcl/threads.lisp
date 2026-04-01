@@ -47,6 +47,17 @@
        (string= (symbol-name (funcall (intern "THREAD-STATE" :sb-thread) thread))
                 "WAITING"))
      :sleeping)
+    #+ecl
+    ((ignore-errors
+       ;; ECL: mp:process-wait-function returns the wait function if blocked
+       (when (funcall (find-symbol "PROCESS-WAIT-FUNCTION" :mp) thread)
+         (return-from thread-state :waiting))
+       nil)
+     nil)
+    #+ecl
+    ((ignore-errors
+       (not (funcall (find-symbol "PROCESS-RUN-P" :mp) thread)))
+     :sleeping)
     (t :running)))
 
 (defun inspect-thread (thread-id)

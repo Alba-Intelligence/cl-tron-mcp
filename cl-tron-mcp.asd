@@ -122,3 +122,12 @@
                   (:file "tests/profiler-test")
                   (:file "tests/xref-test")
                   (:file "tests/logging-test")))
+
+(asdf:defsystem :cl-tron-mcp/tests/integration
+  :name "cl-tron-mcp Integration Tests"
+  :description "Integration tests requiring a live Swank server on localhost:4006"
+  :author "Emmanuel"
+  :licence "Apache"
+  :depends-on (:cl-tron-mcp :rove :usocket)
+  :serial t
+  :components ((:file "tests/integration/f1-f2-workflow-test")))
