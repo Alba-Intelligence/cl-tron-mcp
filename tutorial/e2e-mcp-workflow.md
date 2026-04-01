@@ -4,12 +4,23 @@ This tutorial walks from "nothing running" to "first connection, first eval, fir
 
 ## Prerequisites
 
-- Swank running in your Lisp session, e.g. `(swank:create-server :port 4006 :dont-close t)` or a dedicated port for MCP (e.g. 4006).
 - MCP server started by your client (Cursor, OpenCode, Kilocode). See [docs/starting-the-mcp.md](../docs/starting-the-mcp.md) if the MCP won't start.
+- Either a Swank server already running (e.g. `(swank:create-server :port 4006 :dont-close t)`), **or** use Step 0 to launch one automatically.
+
+## Step 0: Bootstrap — Launch a Swank Server (if needed)
+
+If no Swank server is running, launch one via the `swank_launch` tool:
+
+```
+Tool: swank_launch
+Arguments: { "port": 4006 }
+```
+
+This starts a child SBCL process with Swank and waits until the port is ready. Once it returns `{ "success": true }`, proceed to Step 1.
+
+> Skip this step if you already have a Swank server on port 4006.
 
 ## Step 1: Connect
-
-Use the unified interface (Swank on the given port):
 
 ```
 Tool: repl_connect

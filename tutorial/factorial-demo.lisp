@@ -213,7 +213,7 @@ debugger integration.
 (format t "  - breakpoint_set: Set breakpoints~%")
 (format t "  - profile_*: Performance profiling~%")
 (format t "~%")
-(format t "Total CL-TRON-MCP Tools: 43 across 11 categories~%")
+(format t "Total CL-TRON-MCP Tools: 91 across 14 categories~%")
 (format t "~%")
 (format t "========================================~%")
 (format t "~%")

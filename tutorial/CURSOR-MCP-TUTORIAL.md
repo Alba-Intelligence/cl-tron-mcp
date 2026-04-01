@@ -1,6 +1,6 @@
 # CL-TRON-MCP: AI-Powered Common Lisp Debugging with Cursor IDE
 
-This tutorial demonstrates how to set up and use CL-TRON-MCP with Cursor IDE for AI-assisted Common Lisp debugging. CL-TRON-MCP provides 86+ tools that enable AI agents to interact with running Lisp sessions as if they were a human developer at the keyboard.
+This tutorial demonstrates how to set up and use CL-TRON-MCP with Cursor IDE for AI-assisted Common Lisp debugging. CL-TRON-MCP provides 91 tools across 14 categories that enable AI agents to interact with running Lisp sessions as if they were a human developer at the keyboard.
 
 ## Table of Contents
 
@@ -36,24 +36,24 @@ This tutorial demonstrates how to set up and use CL-TRON-MCP with Cursor IDE for
 Expected output:
 ```
 Version: 0.1.0
-Tools registered: 86
+Tools registered: 91
 ```
 
 ---
 
 ## Cursor IDE Setup
 
-### Option 1: Direct SBCL (must use --noinform)
+### Option 1: Direct SBCL (recommended flags)
 
-If you run SBCL directly, **you must use `--noinform`** so the SBCL banner does not appear on stdout and break the MCP handshake:
+Use `--noinform --disable-debugger` so the SBCL banner doesn't appear on stdout and break the MCP handshake. Do **not** use `--non-interactive` (it implies `--quit` which terminates the process after startup):
 
 ```json
 {
   "name": "cl-tron-mcp",
   "command": "sbcl",
   "args": [
-    "--non-interactive",
     "--noinform",
+    "--disable-debugger",
     "--eval", "(ql:quickload :cl-tron-mcp :silent t)",
     "--eval", "(cl-tron-mcp/core:start-server :transport :stdio)"
   ],
@@ -70,7 +70,7 @@ Copy from `examples/cursor-mcp.json.example` and set your path, or use:
 ```bash
 #!/bin/bash
 cd "$(dirname "$0")"
-exec sbcl --non-interactive --noinform \
+exec sbcl --noinform --disable-debugger \
   --eval '(ql:quickload :cl-tron-mcp :silent t)' \
   --eval '(cl-tron-mcp/core:start-server :transport :stdio)'
 ```
@@ -606,6 +606,15 @@ AI Agent: Recommends:
 | `whitelist_clear` | Clear all patterns |
 | `whitelist_enable` | Enable/disable whitelist |
 | `whitelist_status` | Get whitelist status |
+
+### Process Management Tools (4)
+
+| Tool | Description |
+|------|-------------|
+| `swank_launch` | Launch a managed SBCL+Swank subprocess |
+| `swank_kill` | Kill a managed Swank process |
+| `swank_process_list` | List all managed processes |
+| `swank_process_status` | Get status of a managed process |
 
 ---
 

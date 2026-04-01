@@ -81,8 +81,34 @@
                  (bordeaux-threads:with-lock-held (*connection-lock*)
                    (setf *last-activity-time* (get-unix-time)))
                  (dispatch-incoming-message message))
+             ;; I/O timeouts are non-fatal: the socket may have a
+             ;; residual SO_RCVTIMEO from usocket:socket-connect.
+             ;; Retry as long as *swank-running* is true.
+             (cl-tron-mcp/swank-protocol:swank-read-timeout ()
+               (log-debug "Swank reader: read timeout, retrying"))
+             (cl-tron-mcp/swank-protocol:swank-read-error (e)
+               ;; I/O timeout from the underlying stream is wrapped in
+               ;; swank-read-error.  If the inner condition is a timeout,
+               ;; treat it as non-fatal and retry.
+                (let ((inner (cl-tron-mcp/swank-protocol:swank-read-error-condition e)))
+                 (cond
+                   ((typep inner 'sb-sys:io-timeout)
+                    (log-debug "Swank reader: stream I/O timeout, retrying"))
+                   ;; Socket closed during disconnect is expected
+                   ((not *swank-running*)
+                    (log-debug (format nil "Swank reader exiting: ~a" e))
+                    (return))
+                   (t
+                    (log-error (format nil "Swank reader error: ~a" e))
+                    (return)))))
+             (end-of-file ()
+               (log-info "Swank connection closed (EOF)")
+               (return))
              (error (e)
-               (log-error (format nil "Swank reader error: ~a" e))
+               ;; When disconnecting, socket-closed errors are expected
+               (if *swank-running*
+                   (log-error (format nil "Swank reader error: ~a" e))
+                   (log-debug (format nil "Swank reader exiting: ~a" e)))
                (return)))
         finally (log-debug "Swank reader thread exiting")))
 

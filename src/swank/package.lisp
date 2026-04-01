@@ -90,4 +90,5 @@
    #:managed-process-status
    #:list-managed-processes
    #:port-available-p
+   #:wait-for-port
    #:*managed-processes*))

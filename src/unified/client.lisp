@@ -83,14 +83,15 @@ Includes hints for starting Swank and connecting."
                                               :details (list :host host :port port))))))
 
 (defun auto-detect-repl (host port)
-  "Try to detect Swank by connecting."
+  "Try to detect Swank by probing the port with a raw TCP connect.
+Does NOT do a full Swank handshake (which would consume a connection
+slot on :spawn-style servers)."
   (handler-case
-      (let ((swank-result (swank-connect :host host :port port :timeout 2)))
-        (when (getf swank-result :success)
-          (swank-disconnect)
-          (return-from auto-detect-repl :swank)))
-    (error nil))
-  nil)
+      (let ((sock (usocket:socket-connect host port :timeout 2
+                                                    :element-type '(unsigned-byte 8))))
+        (ignore-errors (usocket:socket-close sock))
+        :swank)
+    (error () nil)))
 
 (defun repl-disconnect ()
   "Disconnect from the current REPL."

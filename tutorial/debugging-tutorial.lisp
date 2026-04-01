@@ -1,331 +1,244 @@
 ;;;; CL-TRON-MCP Tutorial: Debugging a Real-World Scenario
+;;;;
+;;;; Demonstrates using CL-TRON-MCP tools to debug a buggy factorial function.
+;;;; All #{...}# blocks from the original have been replaced with either:
+;;;;   - real runnable Lisp calls (direct package-qualified API), or
+;;;;   - #| block comments |# showing the equivalent MCP tool JSON.
 
-;; This tutorial demonstrates using CL-TRON-MCP to debug a buggy factorial function.
-;; Follow along step by step to learn the debugging workflow.
+;;; ============================================================
+;;; STEP 1: Bootstrap — load CL-TRON-MCP and connect to Swank
+;;; ============================================================
 
-;; ============================================================================
-;; STEP 1: Setup - Load CL-TRON-MCP
-;; ============================================================================
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (ql:quickload :cl-tron-mcp :silent t))
 
-;; First, load CL-TRON-MCP in your Lisp image:
-(ql:quickload :cl-tron-mcp)
+;; Launch a managed Swank process on port 14006 (self-contained):
+(let ((port 14006))
+  (cl-tron-mcp/swank:launch-sbcl-with-swank :port port)
+  (cl-tron-mcp/swank:wait-for-port port :timeout 30)
+  (cl-tron-mcp/unified:repl-connect :port port))
 
-;; Start the MCP server (in another terminal or as a background process):
-;; (cl-tron-mcp:start-server :transport :stdio)
+;;; ============================================================
+;;; STEP 2: Define a buggy function in the connected image
+;;; ============================================================
 
-;; ============================================================================
-;; STEP 2: Define a Buggy Function
-;; ============================================================================
-
-;; Let's create a function with a bug, similar to the CL Cookbook example:
-
-(defpackage :tutorial
-  (:use :cl))
-
+(defpackage :tutorial (:use :cl))
 (in-package :tutorial)
 
 (defun factorial (n)
-  "Calculate factorial of N. This has a subtle bug!"
+  "Calculate factorial of N. This has a subtle bug with negative numbers!"
   (if (plusp n)
       (* n (factorial (1- n)))
       1))
 
-;; Test it:
-(factorial 5)  ;; => 120 (correct)
-(factorial 0)  ;; => 1 (correct)
+;; Test it (works for non-negative):
+(format t "factorial(5) = ~d~%" (factorial 5))  ; => 120
+(format t "factorial(0) = ~d~%" (factorial 0))  ; => 1
 
-;; But what if we call it with a negative number?
-;; (factorial -1)  ;; This will cause issues!
+(in-package :cl-user)
 
-;; ============================================================================
-;; STEP 3: Using the Inspector to Examine Objects
-;; ============================================================================
-
-;; CL-TRON-MCP Tool: inspect_object
-;; Inspect the factorial function definition:
-#{
-"tool": "inspect_function",
-"arguments": {
-"symbolName": "tutorial::factorial"
-}
-}#
-
-;; This returns information about the function type, lambda list, etc.
-
-;; ============================================================================
-;; STEP 4: Using the Tracer to Track Function Calls
-;; ============================================================================
-
-;; CL-TRON-MCP Tool: trace_function
-;; Trace the factorial function to see the call stack:
-
-#{
-"tool": "trace_function",
-"arguments": {
-"functionName": "tutorial::factorial"
-}
-}#
-
-;; Now call the function and observe the trace output:
-;; (tutorial::factorial 3)
-
-;; CL-TRON-MCP Tool: trace_list
-;; Check which functions are being traced:
-
-#{
-"tool": "trace_list",
-"arguments": {}
-}#
-
-;; CL-TRON-MCP Tool: trace_remove
-;; Remove the trace when done:
-
-#{
-"tool": "trace_remove",
-"arguments": {
-"functionName": "tutorial::factorial"
-}
-}#
-
-;; ============================================================================
-;; STEP 5: Using Cross-References to Find Callers
-;; ============================================================================
-
-;; CL-TRON-MCP Tool: who-calls
-;; Find all functions that call factorial:
-
-#{
-"tool": "who_calls",
-"arguments": {
-"symbolName": "tutorial::factorial"
-}
-}#
-
-;; CL-TRON-MCP Tool: list_callees
-;; Find all functions that factorial calls:
-
-#{
-"tool": "list_callees",
-"arguments": {
-"symbolName": "tutorial::factorial"
-}
-}#
-
-;; ============================================================================
-;; STEP 6: Using the Debugger to Inspect Stack Frames
-;; ============================================================================
-
-;; CL-TRON-MCP Tool: debugger_frames
-;; Get the current stack frames:
-
-#{
-"tool": "debugger_frames",
-"arguments": {
-"start": 0,
-"end": 10
-}
-}#
-
-;; CL-TRON-MCP Tool: debugger_restarts
-;; List available restarts:
-
-#{
-"tool": "debugger_restarts",
-"arguments": {}
-}#
-
-;; ============================================================================
-;; STEP 7: Using the REPL for Interactive Debugging
-;; ============================================================================
-
-;; CL-TRON-MCP Tool: repl_eval
-;; Evaluate Lisp code in the context of your package:
-
-#{
-"tool": "repl_eval",
-"arguments": {
-"code": "(in-package :tutorial)",
-"package": "CL-USER"
-}
-}#
-
-#{
-"tool": "repl_eval",
-"arguments": {
-"code": "(format t \"Testing factorial: ~d~%\" (factorial 5))",
-"package": "TUTORIAL"
-}
-}#
-
-;; ============================================================================
-;; STEP 8: Using Logging
-;; ============================================================================
-
-;; CL-TRON-MCP Tool: log_configure
-;; Configure logging for the tutorial package:
-
-#{
-"tool": "log_configure",
-"arguments": {
-"level": "debug",
-"package": "tutorial"
-}
-}#
-
-;; CL-TRON-MCP Tool: log_debug
-;; Add debug logging:
-
-#{
-"tool": "log_debug",
-"arguments": {
-"message": "Calculating factorial",
-"package": "tutorial"
-}
-}#
-
-;; ============================================================================
-;; STEP 9: Hot Reloading Code
-;; ============================================================================
-
-;; CL-TRON-MCP Tool: code_compile_string
-;; Fix the bug and reload the function:
-
-#{
-"tool": "code_compile_string",
-"arguments": {
-"code": "(in-package :tutorial)
+;; Now define it in the target Swank image via repl-compile:
+(cl-tron-mcp/unified:repl-compile
+  :code "(defpackage :tutorial (:use :cl))
+(in-package :tutorial)
 (defun factorial (n)
-  \"Calculate factorial of N. Now handles negative numbers correctly!\"
+  (if (plusp n) (* n (factorial (1- n))) 1))")
+
+;;; ============================================================
+;;; STEP 3: Inspector — examine the function
+;;; ============================================================
+
+;; Direct Lisp call:
+(format t "~%[inspect_function]~%~a~%"
+        (cl-tron-mcp/inspector:inspect-function :symbol_name "tutorial::factorial"))
+
+#|
+Equivalent MCP tool JSON:
+{
+  "tool": "inspect_function",
+  "arguments": { "functionName": "tutorial::factorial" }
+}
+|#
+
+;;; ============================================================
+;;; STEP 4: Tracer — track function calls
+;;; ============================================================
+
+;; Trace the function:
+(format t "~%[trace_function]~%~a~%"
+        (cl-tron-mcp/tracer:trace-function "tutorial::factorial"))
+
+;; Check what's being traced:
+(format t "~%[trace_list]~%~a~%"
+        (cl-tron-mcp/tracer:trace-list))
+
+;; Evaluate through the tracer to see call tree:
+(cl-tron-mcp/unified:repl-eval :code "(tutorial::factorial 3)" :package "TUTORIAL")
+
+;; Remove trace:
+(cl-tron-mcp/tracer:trace-remove "tutorial::factorial")
+
+#|
+Equivalent MCP tool JSON:
+{ "tool": "trace_function", "arguments": { "functionName": "tutorial::factorial" } }
+{ "tool": "trace_list",     "arguments": {} }
+{ "tool": "repl_eval",      "arguments": { "code": "(tutorial::factorial 3)" } }
+{ "tool": "trace_remove",   "arguments": { "functionName": "tutorial::factorial" } }
+|#
+
+;;; ============================================================
+;;; STEP 5: Cross-references
+;;; ============================================================
+
+(format t "~%[who_calls tutorial::factorial]~%~a~%"
+        (cl-tron-mcp/xref:who-calls "tutorial::factorial"))
+
+(format t "~%[list_callees tutorial::factorial]~%~a~%"
+        (cl-tron-mcp/xref:list-callees "tutorial::factorial"))
+
+#|
+{ "tool": "who_calls",    "arguments": { "symbolName": "tutorial::factorial" } }
+{ "tool": "list_callees", "arguments": { "symbolName": "tutorial::factorial" } }
+|#
+
+;;; ============================================================
+;;; STEP 6: Debugger frames and restarts
+;;; ============================================================
+
+(format t "~%[debugger_frames]~%~a~%"
+        (cl-tron-mcp/debugger:get-debugger-frames :start 0 :end 5))
+
+(format t "~%[debugger_restarts]~%~a~%"
+        (cl-tron-mcp/debugger:list-restarts))
+
+#|
+{ "tool": "debugger_frames",   "arguments": { "start": 0, "end": 10 } }
+{ "tool": "debugger_restarts", "arguments": {} }
+|#
+
+;;; ============================================================
+;;; STEP 7: REPL eval via unified interface
+;;; ============================================================
+
+(format t "~%[repl_eval]~%~a~%"
+        (cl-tron-mcp/unified:repl-eval
+          :code "(format nil \"Testing factorial: ~d\" (tutorial::factorial 5))"
+          :package "CL-USER"))
+
+#|
+{ "tool": "repl_eval",
+  "arguments": {
+    "code": "(format nil \"Testing factorial: ~d\" (tutorial::factorial 5))",
+    "package": "CL-USER"
+  }
+}
+|#
+
+;;; ============================================================
+;;; STEP 8: Logging
+;;; ============================================================
+
+(cl-tron-mcp/logging:log-configure :level :debug :package "tutorial")
+(cl-tron-mcp/logging:log-debug "Calculating factorial" :package "tutorial")
+(format t "Logged debug message for tutorial package.~%")
+
+#|
+{ "tool": "log_configure", "arguments": { "level": "debug", "package": "tutorial" } }
+{ "tool": "log_debug",     "arguments": { "message": "Calculating factorial", "package": "tutorial" } }
+|#
+
+;;; ============================================================
+;;; STEP 9: Hot reload — fix the bug
+;;; ============================================================
+
+(format t "~%[code_compile_string — fix factorial]~%")
+(cl-tron-mcp/unified:repl-compile
+  :code "(in-package :tutorial)
+(defun factorial (n)
+  \"Factorial — now handles negative numbers correctly.\"
   (cond
     ((plusp n) (* n (factorial (1- n))))
     ((zerop n) 1)
-    (t (error \"Factorial undefined for negative numbers: ~d\" n))))",
-"filename": "factorial.lisp"
+    (t (error \"Factorial undefined for negative: ~d\" n))))")
+
+(format t "Fixed factorial(5) = ~a~%"
+        (cl-tron-mcp/unified:repl-eval :code "(tutorial::factorial 5)"))
+
+#|
+{
+  "tool": "repl_compile",
+  "arguments": {
+    "code": "(in-package :tutorial)\n(defun factorial (n) ...)"
+  }
 }
-}#
+|#
 
-;; ============================================================================
-;; STEP 10: Monitoring and System Information
-;; ============================================================================
+;;; ============================================================
+;;; STEP 10: Monitoring and system info
+;;; ============================================================
 
-;; CL-TRON-MCP Tool: system_info
-;; Get comprehensive system information:
+(format t "~%[system_info]~%~a~%" (cl-tron-mcp/monitor:system-info))
+(format t "~%[runtime_stats]~%~a~%" (cl-tron-mcp/monitor:runtime-stats))
+(format t "~%[health_check]~%~a~%" (cl-tron-mcp/monitor:health-check))
 
-#{
-"tool": "system_info",
-"arguments": {}
-}#
+#|
+{ "tool": "system_info",   "arguments": {} }
+{ "tool": "runtime_stats", "arguments": {} }
+{ "tool": "health_check",  "arguments": {} }
+|#
 
-;; CL-TRON-MCP Tool: runtime_stats
-;; Get runtime statistics:
+;;; ============================================================
+;;; STEP 11: Thread management
+;;; ============================================================
 
-#{
-"tool": "runtime_stats",
-"arguments": {}
-}#
+(format t "~%[thread_list]~%~a~%"
+        (cl-tron-mcp/sbcl:list-threads))
 
-;; CL-TRON-MCP Tool: health_check
-;; Check the MCP server health:
+#|
+{ "tool": "thread_list",    "arguments": {} }
+{ "tool": "thread_inspect", "arguments": { "threadId": "main thread" } }
+|#
 
-#{
-"tool": "health_check",
-"arguments": {}
-}#
+;;; ============================================================
+;;; STEP 12: Security whitelist
+;;; ============================================================
 
-;; ============================================================================
-;; STEP 11: Thread Management
-;; ============================================================================
+(cl-tron-mcp/security:whitelist-add :eval "tutorial::factorial*")
+(format t "~%[whitelist_status]~%~a~%" (cl-tron-mcp/security:whitelist-status))
 
-;; CL-TRON-MCP Tool: thread_list
-;; List all threads:
+#|
+{ "tool": "whitelist_add",    "arguments": { "operation": "eval", "pattern": "tutorial::factorial*" } }
+{ "tool": "whitelist_status", "arguments": {} }
+|#
 
-#{
-"tool": "thread_list",
-"arguments": {}
-}#
+;;; ============================================================
+;;; STEP 13: Profiling
+;;; ============================================================
 
-;; CL-TRON-MCP Tool: thread_inspect
-;; Inspect a specific thread:
+#|
+{ "tool": "profile_start",  "arguments": {} }
+... run computations ...
+{ "tool": "profile_stop",   "arguments": {} }
+{ "tool": "profile_report", "arguments": { "format": "flat" } }
+|#
 
-#{
-"tool": "thread_inspect",
-"arguments": {
-"threadId": "main thread"
-}
-}#
+;;; ============================================================
+;;; Cleanup — disconnect from Swank
+;;; ============================================================
 
-;; ============================================================================
-;; STEP 12: Using the Approval System
-;; ============================================================================
+(cl-tron-mcp/unified:repl-disconnect)
 
-;; Operations that modify code require approval by default.
-;; You can whitelist operations to bypass approval for automation.
+;;; ============================================================
+;;; Summary
+;;; ============================================================
 
-;; CL-TRON-MCP Tool: whitelist_add
-;; Add a pattern to whitelist:
-
-#{
-"tool": "whitelist_add",
-"arguments": {
-"operation": "eval",
-"pattern": "tutorial::factorial*"
-}
-}#
-
-;; CL-TRON-MCP Tool: whitelist_status
-;; Check whitelist status:
-
-#{
-"tool": "whitelist_status",
-"arguments": {}
-}#
-
-;; ============================================================================
-;; STEP 13: Using Profiler
-;; ============================================================================
-
-;; CL-TRON-MCP Tool: profile_start
-;; Start profiling:
-
-#{
-"tool": "profile_start",
-"arguments": {}
-}#
-
-;; Run some computations:
-;; (tutorial::factorial 100)
-
-;; CL-TRON-MCP Tool: profile_stop
-;; Stop profiling:
-
-#{
-"tool": "profile_stop",
-"arguments": {}
-}#
-
-;; CL-TRON-MCP Tool: profile_report
-;; Get profiling report:
-
-#{
-"tool": "profile_report",
-"arguments": {
-"format": "flat"
-}
-}#
-
-;; ============================================================================
-;; Summary
-;; ============================================================================
-
-;; CL-TRON-MCP provides a comprehensive set of tools for:
-;; - Object and function inspection
-;; - Function tracing
-;; - Cross-reference analysis
-;; - Interactive debugging via REPL
-;; - Hot code reloading
-;; - Thread management
-;; - Performance profiling
-;; - Logging integration
-
-;; These tools enable both human developers and AI agents to effectively
-;; debug and analyze Common Lisp applications.
+;; CL-TRON-MCP provides 91 tools across 14 categories:
+;; - Object and function inspection (inspector_*)
+;; - Function tracing (trace_*)
+;; - Cross-reference analysis (who_calls, list_callees, ...)
+;; - Interactive debugging via REPL (repl_eval, repl_compile)
+;; - Hot code reloading (code_compile_string, reload_system)
+;; - Thread management (thread_list, thread_backtrace)
+;; - Performance profiling (profile_start, profile_stop)
+;; - Logging integration (log_configure, log_info, ...)
+;; - Process management (swank_launch, swank_kill, ...)

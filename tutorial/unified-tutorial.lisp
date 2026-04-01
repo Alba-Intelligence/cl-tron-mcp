@@ -1,88 +1,103 @@
 ;;;; tutorial/unified-tutorial.lisp - Unified REPL Interface Tutorial
 
 ;; This tutorial demonstrates the unified REPL interface
-;; that works with both Swank and nrepl transparently.
+;; that connects to a Swank server and provides a clean API.
 
 ;; Prerequisites:
 ;; 1. SBCL with Quicklisp
 ;; 2. CL-TRON-MCP loaded: (ql:quickload :cl-tron-mcp)
-;; 3. A running REPL server (Swank or nrepl)
+;; 3. A running Swank server (see Step 0 below)
 
 ;; ============================================================
-;; Part 1: Starting a REPL Server
+;; Part 0: Bootstrap — Launch a Swank Server
 ;; ============================================================
 
-;; Option A: Swank (Slime, Portacle)
-;; (ql:quickload :swank)
-;; (swank:create-server :port 4006)
-
-;; Option B: nrepl (Sly, CIDER)
-;; (ql:quickload :sly)
-;; (sly:nrepl-start :port 7888)
+;; If you don't have a Swank server running, launch one via MCP:
+;;
+;;   Tool: swank_launch   Arguments: { "port": 4006 }
+;;
+;; Or from Lisp:
+;;   (ql:quickload :cl-tron-mcp :silent t)
+;;   (cl-tron-mcp/swank:launch-sbcl-with-swank :port 14006)
+;;   (cl-tron-mcp/swank:wait-for-port 14006 :timeout 30)
+;;
+;; Or manually in another terminal:
+;;   sbcl --eval "(ql:quickload :swank :silent t)" \
+;;        --eval "(swank:create-server :port 4006 :dont-close t)"
 
 ;; ============================================================
-;; Part 2: Connecting with Unified Interface
+;; Part 1: Connecting with the Unified Interface
 ;; ============================================================
 
-;; Auto-detect (recommended for beginners)
+;; Connect to a Swank server (auto-detects type):
 ;; (cl-tron-mcp/unified:repl-connect :port 4006)
 ;; ;; => (:SUCCESS T :TYPE :SWANK :HOST "127.0.0.1" :PORT 4006 ...)
 
-;; Explicit type specification
-;; (cl-tron-mcp/unified:repl-connect :type :swank :port 4006)
-;; ;; => (:SUCCESS T :TYPE :SWANK ...)
+;; With explicit type and host:
+;; (cl-tron-mcp/unified:repl-connect :type :swank :host "127.0.0.1" :port 4006)
 
-;; (cl-tron-mcp/unified:repl-connect :type :nrepl :port 7888)
-;; ;; => (:SUCCESS T :TYPE :NREPL ...)
-
-;; Check status
+;; Check status:
 ;; (cl-tron-mcp/unified:repl-status)
 ;; ;; => (:CONNECTED T :TYPE :SWANK :HOST "127.0.0.1" :PORT 4006)
 
 ;; ============================================================
-;; Part 3: Using Unified Tools
+;; Part 2: Evaluation
 ;; ============================================================
 
-;; The same API works regardless of which REPL you're connected to!
-
-;; Evaluate code
+;; Evaluate code:
 ;; (cl-tron-mcp/unified:repl-eval :code "(+ 10 20)")
-;; ;; => (:RESULT "30" :TYPE :SWANK)  or (:RESULT "30" :TYPE :NREPL)
+;; ;; => (:RESULT (:OK ("" "30")) :TYPE :SWANK)
 
-;; Define a function
+;; Define a function:
 ;; (cl-tron-mcp/unified:repl-eval
 ;;   :code "(defun factorial (n) (if (<= n 1) 1 (* n (factorial (1- n)))))")
-;; ;; => (:RESULT FACTORIAL ...)
+;; ;; => (:RESULT (:OK ("" "FACTORIAL")) ...)
 
-;; Call the function
+;; Call it:
 ;; (cl-tron-mcp/unified:repl-eval :code "(factorial 5)")
-;; ;; => (:RESULT 120 ...)
+;; ;; => (:RESULT (:OK ("" "120")) ...)
 
-;; Get symbol completions
+;; ============================================================
+;; Part 3: Inspection and Documentation
+;; ============================================================
+
+;; Get symbol completions:
 ;; (cl-tron-mcp/unified:repl-completions :prefix "mak")
-;; ;; => (:completions ("make-array" "make-hash-table" ...))
+;; ;; => (:RESULT (:OK ("..." "NIL")) ...)
 
-;; Describe a symbol
-;; (cl-tron-mcp/unified:repl-describe :symbol "mapcar")
-;; ;; => (:describe ...)
+;; Describe a symbol:
+;; (cl-tron-mcp/unified:repl-describe :expression "mapcar")
+;; ;; => (:RESULT (:OK ("MAPCAR ..." "...")) ...)
 
-;; Get documentation
-;; (cl-tron-mcp/unified:repl-doc :symbol "mapcar")
-;; ;; => (:doc ...)
-
-;; List threads
+;; List threads:
 ;; (cl-tron-mcp/unified:repl-threads)
-;; ;; => (:thread-list (...))
+;; ;; => (:THREADS (...))
 
-;; Get backtrace
+;; Get backtrace:
 ;; (cl-tron-mcp/unified:repl-backtrace)
-;; ;; => (:backtrace (...))
+;; ;; => (:RESULT (:OK ("..." "NIL")) ...)
 
 ;; ============================================================
-;; Part 4: Disconnection
+;; Part 4: Debugging
 ;; ============================================================
 
-;; Disconnect when done
+;; Get available restarts after an error:
+;; (cl-tron-mcp/unified:repl-get-restarts)
+
+;; Invoke a restart by index:
+;; (cl-tron-mcp/unified:repl-invoke-restart :restart_index 0)
+
+;; Inspect frame locals:
+;; (cl-tron-mcp/unified:repl-frame-locals :frame 0)
+
+;; Compile code (returns compiler output + notes):
+;; (cl-tron-mcp/unified:repl-compile
+;;   :code "(defun f2 (x y) (+ x y))")
+
+;; ============================================================
+;; Part 5: Disconnection
+;; ============================================================
+
 ;; (cl-tron-mcp/unified:repl-disconnect)
 ;; ;; => (:SUCCESS T :MESSAGE "Disconnected from REPL")
 
@@ -90,28 +105,16 @@
 ;; MCP Agent Usage
 ;; ============================================================
 
-;; MCP agents can use these unified tools:
+;; MCP agents use the equivalent JSON tools:
 ;;
-;; {
-;;   "tool": "repl_connect",
-;;   "arguments": {"port": 4006}
-;; }
-;;
-;; {
-;;   "tool": "repl_eval",
-;;   "arguments": {"code": "(+ 1 2 3)"}
-;; }
-;;
-;; {
-;;   "tool": "repl_completions",
-;;   "arguments": {"prefix": "def"}
-;; }
-;;
-;; {
-;;   "tool": "repl_describe",
-;;   "arguments": {"symbol": "car"}
-;; }
+;; { "tool": "repl_connect",   "arguments": {"port": 4006} }
+;; { "tool": "repl_eval",      "arguments": {"code": "(+ 1 2 3)"} }
+;; { "tool": "repl_compile",   "arguments": {"code": "(defun f2 (x y) (+ x y))"} }
+;; { "tool": "repl_backtrace", "arguments": {} }
+;; { "tool": "repl_completions","arguments": {"prefix": "def"} }
+;; { "tool": "repl_describe",  "arguments": {"expression": "car"} }
 
 (print "Unified REPL tutorial loaded!")
-(print "Connect with: (repl-connect :port 4006)")
-(print "Evaluate with: (repl-eval :code \"(+ 1 2)\")")
+(print "Bootstrap:  (cl-tron-mcp/swank:launch-sbcl-with-swank :port 14006)")
+(print "Connect:    (cl-tron-mcp/unified:repl-connect :port 4006)")
+(print "Evaluate:   (cl-tron-mcp/unified:repl-eval :code \"(+ 1 2)\")")
