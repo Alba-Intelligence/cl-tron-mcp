@@ -3,6 +3,7 @@
 ;;;; Canonical interactive debugging tutorial: the f1/f2 workflow.
 ;;;;
 ;;;; This file walks through the complete agent-assisted Lisp debugging loop:
+;;;;   - Bootstrap a fresh SBCL+Swank process (no manual setup needed)
 ;;;;   - Write a function that calls an undefined helper
 ;;;;   - Detect the warning at compile time
 ;;;;   - Enter the debugger when the function is called
@@ -10,20 +11,28 @@
 ;;;;   - Resume execution via restart — no session restart needed
 ;;;;
 ;;;; Prerequisites:
-;;;;   - A running SBCL image with Swank loaded on port 4006
-;;;;     e.g.: (ql:quickload :swank) (swank:create-server :port 4006 :dont-close t)
-;;;;   - cl-tron-mcp loaded and connected to that image
+;;;;   - cl-tron-mcp loaded (Swank is bootstrapped automatically)
 
 ;;; ===========================================================================
-;;; STEP 0: Start a Swank server in the target image (one-time setup)
+;;; STEP 0: Bootstrap a Swank server (automated — no manual setup needed)
 ;;; ===========================================================================
 
-;; In your SBCL REPL (or start-mcp.sh target), run:
+;; Agent action (MCP tool call):
+;;   swank_launch {:port 4006}
 ;;
-;;   (ql:quickload :swank)
-;;   (swank:create-server :port 4006 :dont-close t)
+;; What happens:
+;;   - A fresh SBCL subprocess is spawned with Swank listening on port 4006
+;;   - The MCP polls until Swank is ready (up to 60s)
+;;   - The process is registered in the MCP's process registry
 ;;
-;; Now the MCP can connect to it. Never restart this session — state lives here.
+;; Expected result:
+;;   {:success true, :port 4006, :pid <n>, :message "SBCL+Swank running on port 4006 ..."}
+;;
+;; Note: swank_launch requires user approval (it spawns a subprocess).
+;; If you already have a Swank server running, skip this step.
+;;
+;; Alternatively, from Lisp directly:
+;;   (cl-tron-mcp/swank:launch-sbcl-with-swank :port 4006 :timeout 60)
 
 ;;; ===========================================================================
 ;;; STEP 1: Connect the MCP to the live image
@@ -139,6 +148,8 @@
 ;;; SUMMARY: The complete workflow in one view
 ;;; ===========================================================================
 
+;;  [Bootstrap]    swank_launch :port 4006           ; spawns fresh SBCL+Swank
+;;       ↓
 ;;  [Connect]      repl_connect :port 4006
 ;;       ↓
 ;;  [Compile f1]   repl_compile "(defun f1 (a b) (f2 a b))"
@@ -158,8 +169,10 @@
 ;;       ↓
 ;;  [Verify]       repl_eval "(f1 1 2)"
 ;;                   → "3" ✓
+;;       ↓
+;;  [Cleanup]      swank_kill :port 4006             ; optional — kills managed process
 ;;
-;;  Total: 6 MCP tool calls, 0 session restarts, full state preserved.
+;;  Total: 7 MCP tool calls, 0 session restarts, 0 manual setup steps, full state preserved.
 
 ;;; ===========================================================================
 ;;; RUNNING AS A SCRIPT (automated verification)

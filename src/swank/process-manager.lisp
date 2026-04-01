@@ -54,14 +54,18 @@ Returns T if the port became available, NIL on timeout."
 ;;; ============================================================
 
 (defun build-swank-init-forms (port communication-style extra-eval)
-  "Build the --eval arguments for starting SBCL with Swank."
+  "Build the --eval arguments for starting SBCL with Swank.
+Ends with (loop (sleep 3600)) to keep the process alive — it is killed explicitly."
   (let ((forms
          (append
           (list "(ql:quickload :swank :silent t)"
                 (format nil "(swank:create-server :port ~d :dont-close t :style :~(~a~))"
                         port communication-style))
           (when extra-eval
-            (if (listp extra-eval) extra-eval (list extra-eval))))))
+            (if (listp extra-eval) extra-eval (list extra-eval)))
+          ;; Keep the process alive until killed by kill-managed-process.
+          ;; Without this, SBCL may exit when all non-daemon threads finish.
+          (list "(loop (sleep 3600))"))))
     (loop for form in forms
           nconc (list "--eval" form))))
 
@@ -93,7 +97,9 @@ Returns T if the port became available, NIL on timeout."
             :message (format nil "Port ~d is already in use (not by this MCP)" port))))
 
   (let* ((eval-args (build-swank-init-forms port communication-style extra-eval))
-         (cmd (list* sbcl-binary "--non-interactive" "--noinform" eval-args))
+         ;; Use --disable-debugger and --noinform only. Do NOT use --non-interactive
+         ;; because it adds an implicit --quit that kills the process after eval forms run.
+         (cmd (list* sbcl-binary "--noinform" "--disable-debugger" eval-args))
          (process (handler-case
                       (uiop:launch-program cmd
                                            :output :stream

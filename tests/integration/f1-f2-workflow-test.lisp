@@ -24,27 +24,54 @@
 
 (defvar *swank-available* nil)
 
+(defvar *auto-launched-port* nil
+  "Non-nil when we launched our own Swank process for this test run.
+The value is the port number; we kill it in cleanup.")
+
 (defun swank-available-p ()
-  (or *swank-available*
-      (setf *swank-available*
-            (handler-case
-                (let ((sock (usocket:socket-connect "127.0.0.1" *swank-port* :timeout 2
-                                                                             :element-type '(unsigned-byte 8))))
-                  (usocket:socket-close sock)
-                  t)
-              (error () nil)))))
+  (handler-case
+      (let ((sock (usocket:socket-connect "127.0.0.1" *swank-port* :timeout 2
+                                                                   :element-type '(unsigned-byte 8))))
+        (usocket:socket-close sock)
+        t)
+    (error () nil)))
+
+(defun ensure-swank (&optional (timeout 60))
+  "Return the port of an available Swank server.
+If none is running on *SWANK-PORT*, launch a managed one on a different port.
+Sets *AUTO-LAUNCHED-PORT* when a new process was started."
+  (when (swank-available-p)
+    (return-from ensure-swank *swank-port*))
+  ;; No existing Swank — launch one ourselves
+  (let* ((port 14006)
+         (result (cl-tron-mcp/swank:launch-sbcl-with-swank
+                  :port port
+                  :timeout timeout
+                  :communication-style :spawn)))
+    (if (getf result :success)
+        (progn
+          (setf *auto-launched-port* port)
+          port)
+        (error "Failed to auto-launch Swank: ~a" (getf result :message)))))
 
 (defmacro with-swank (&body body)
-  "Run BODY with Swank connected, skipping if not available."
-  `(if (not (swank-available-p))
-       (testing "Swank server not available - skipping"
-                (ok t "No Swank on port 4006 — integration test skipped."))
-       (progn
-         (when (cl-tron-mcp/unified:repl-connected-p)
-           (cl-tron-mcp/unified:repl-disconnect))
-         (cl-tron-mcp/unified:repl-connect :port *swank-port*)
-         (unwind-protect (progn ,@body)
-           (cl-tron-mcp/unified:repl-disconnect)))))
+  "Run BODY with Swank connected. Auto-launches a managed Swank process if none exists."
+  `(let ((port (handler-case (ensure-swank)
+                 (error (e)
+                   (format nil "FAILED:~a" e)))))
+     (cond
+       ((not (numberp port))
+        (testing "Could not start Swank - skipping"
+                 (ok t (format nil "Skipping: ~a" port))))
+       (t
+        (when (cl-tron-mcp/unified:repl-connected-p)
+          (cl-tron-mcp/unified:repl-disconnect))
+        (cl-tron-mcp/unified:repl-connect :port port)
+        (unwind-protect (progn ,@body)
+          (cl-tron-mcp/unified:repl-disconnect)
+          (when *auto-launched-port*
+            (cl-tron-mcp/swank:kill-managed-process :port *auto-launched-port*)
+            (setf *auto-launched-port* nil)))))))
 
 (defun result-value (result)
   "Extract the value string from a repl-eval/repl-compile result plist.
