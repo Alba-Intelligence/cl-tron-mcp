@@ -16,6 +16,8 @@
                     (:file "src/core/utils")
                     (:file "src/core/token-tracker")
                     (:file "src/core/error-codes")
+                     (:file "src/core/metrics")
+                     (:file "src/core/request-tracing")
                   (:file "src/sbcl/package")
                  (:file "src/sbcl/eval")
                  (:file "src/sbcl/compile")

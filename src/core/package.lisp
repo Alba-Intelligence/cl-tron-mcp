@@ -24,6 +24,7 @@
    #:load-configuration
    #:get-config-value
    #:print-configuration
+   ;; Token tracker
    #:*token-stats*
    #:*token-tracking-enabled*
    #:*token-stats-lock*
@@ -33,16 +34,33 @@
    #:get-token-stats
    #:reset-token-stats
    #:generate-token-report
-#:with-token-tracking
-    #:benchmark-tool
-    #:*error-codes*
-    #:get-error-info
-    #:get-error-message
-    #:get-error-hint
-    #:get-error-setup
-    #:get-error-documentation-uri
-    #:make-error
-    #:make-error-with-hint
-    #:make-error-full
-    #:make-not-connected-error
-    #:make-already-connected-error))
+   #:with-token-tracking
+   #:benchmark-tool
+   ;; Error codes
+   #:*error-codes*
+   #:get-error-info
+   #:get-error-message
+   #:get-error-hint
+   #:get-error-setup
+   #:get-error-documentation-uri
+   #:make-error
+   #:make-error-with-hint
+   #:make-error-full
+   #:make-not-connected-error
+   #:make-already-connected-error
+   ;; Metrics
+   #:*metrics-enabled*
+   #:metrics-record-call
+   #:with-metrics
+   #:metrics-snapshot
+   #:metrics-reset
+   #:metrics-for-tool
+   ;; Request tracing
+   #:*tracing-enabled*
+   #:*trace-buffer-size*
+   #:*current-trace-id*
+   #:with-request-trace
+   #:trace-log
+   #:current-trace-id
+   #:get-trace-log
+   #:clear-trace-log))

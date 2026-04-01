@@ -63,36 +63,38 @@ Messages without ID are treated as notifications."
 
 (defun handle-request (id method params)
   "Handle JSON-RPC 2.0 request.
-Routes to appropriate handler based on METHOD string."
+Routes to appropriate handler based on METHOD string.
+Wraps each request in a trace context (when tracing is enabled)."
   (let ((*request-id* id))
-    (cond
-     ;; Core protocol
-     ((string= method "initialize")
-      (handle-initialize id params))
-     ((string= method "ping")
-      (handle-ping id))
-     ;; Tools
-     ((string= method "tools/list")
-      (handle-tools-list id))
-     ((string= method "tools/call")
-      (handle-tool-call id params))
-     ;; Resources (documentation exposure)
-     ((string= method "resources/list")
-      (handle-resources-list id))
-     ((string= method "resources/read")
-      (handle-resources-read id params))
-     ;; Prompts (guided workflows)
-     ((string= method "prompts/list")
-      (handle-prompts-list id))
-     ((string= method "prompts/get")
-      (handle-prompts-get id params))
-     ;; Approval (server-enforced user approval)
-     ((string= method "approval/respond")
-      (handle-approval-respond id params))
-     ;; Unknown method
-     (t (make-error-response id
-                             -32601
-                             (format nil "Unknown method: ~a" method))))))
+    (cl-tron-mcp/core:with-request-trace (method :request-id id)
+      (cond
+       ;; Core protocol
+       ((string= method "initialize")
+        (handle-initialize id params))
+       ((string= method "ping")
+        (handle-ping id))
+       ;; Tools
+       ((string= method "tools/list")
+        (handle-tools-list id))
+       ((string= method "tools/call")
+        (handle-tool-call id params))
+       ;; Resources (documentation exposure)
+       ((string= method "resources/list")
+        (handle-resources-list id))
+       ((string= method "resources/read")
+        (handle-resources-read id params))
+       ;; Prompts (guided workflows)
+       ((string= method "prompts/list")
+        (handle-prompts-list id))
+       ((string= method "prompts/get")
+        (handle-prompts-get id params))
+       ;; Approval (server-enforced user approval)
+       ((string= method "approval/respond")
+        (handle-approval-respond id params))
+       ;; Unknown method
+       (t (make-error-response id
+                               -32601
+                               (format nil "Unknown method: ~a" method)))))))
 
 (defun handle-notification (method params)
   "Handle JSON-RPC 2.0 notification.

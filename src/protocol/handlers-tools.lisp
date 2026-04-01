@@ -75,12 +75,14 @@ Returns nil if no approval params present."
   nil)
 
 (defun execute-tool-with-timeout (tool-name arguments id)
-  "Execute tool with timeout and error handling.
+  "Execute tool with timeout, metrics recording, and request tracing.
 Returns JSON-RPC response with result or error."
   (let ((start-time (get-universal-time))
+        (start-tick (get-internal-real-time))
         (timeout-seconds *default-tool-timeout*)
         (result nil)
         (error-occurred nil))
+    (cl-tron-mcp/core:trace-log "executing tool ~a" tool-name)
     (unwind-protect
         (handler-case (progn
                         ;; Track this request for cleanup
@@ -124,6 +126,12 @@ Returns JSON-RPC response with result or error."
       ;; Cleanup: remove from pending requests
       (bordeaux-threads:with-lock-held (*request-lock*)
                                        (remhash id *pending-requests*))
+      ;; Record metrics
+      (let ((latency-ms (round (* 1000 (/ (- (get-internal-real-time) start-tick)
+                                          internal-time-units-per-second)))))
+        (cl-tron-mcp/core:metrics-record-call tool-name latency-ms :error-p error-occurred))
+      ;; Trace completion
+      (cl-tron-mcp/core:trace-log "tool ~a done (error=~a)" tool-name error-occurred)
       ;; If error occurred, perform additional cleanup
       (when error-occurred
         (cleanup-on-error (format nil "tool call: ~a" tool-name))))))

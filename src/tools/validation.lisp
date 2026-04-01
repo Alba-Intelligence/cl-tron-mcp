@@ -192,3 +192,60 @@ VALIDATIONS is a list of (function-name parameter-name &rest args)."
        (list :error t
              :message (format nil "Validation error: ~a" (validation-error-message e))
              :parameter (validation-error-parameter e)))))
+
+;;; ============================================================
+;;; Custom Validator Registry
+;;; ============================================================
+
+(defvar *custom-validators* (make-hash-table :test 'equal)
+  "Registry of custom validators keyed by name (string).
+Each entry is a function (name value &rest args) -> value or validation-error.")
+
+(defun register-validator (name validator-fn)
+  "Register a custom validator under NAME.
+VALIDATOR-FN is a function (parameter-name value &rest keyword-args) that
+should return VALUE if valid or signal VALIDATION-ERROR if not."
+  (check-type name string)
+  (check-type validator-fn function)
+  (setf (gethash name *custom-validators*) validator-fn)
+  name)
+
+(defun find-validator (name)
+  "Return the validator function registered under NAME, or NIL."
+  (gethash name *custom-validators*))
+
+(defun list-validators ()
+  "Return a list of all registered custom validator names."
+  (let (names)
+    (maphash (lambda (k v) (declare (ignore v)) (push k names)) *custom-validators*)
+    (sort names #'string<)))
+
+(defun unregister-validator (name)
+  "Remove the validator registered under NAME. Returns T if it existed."
+  (when (gethash name *custom-validators*)
+    (remhash name *custom-validators*)
+    t))
+
+(defun validate-with (validator-name parameter-name value &rest args)
+  "Apply the custom validator named VALIDATOR-NAME to VALUE.
+Raises VALIDATION-ERROR if the validator is not registered or validation fails."
+  (let ((fn (find-validator validator-name)))
+    (unless fn
+      (error 'validation-error
+             :parameter parameter-name
+             :message (format nil "Unknown validator: ~a" validator-name)))
+    (apply fn parameter-name value args)))
+
+(defmacro define-validator (name (param-name value-var &rest lambda-list) &body body)
+  "Define and register a custom validator named NAME.
+PARAM-NAME and VALUE-VAR are bound to the parameter name and value during validation.
+LAMBDA-LIST receives optional keyword arguments passed to VALIDATE-WITH.
+The body should return the (possibly coerced) value or signal VALIDATION-ERROR.
+
+Example:
+  (define-validator \"positive-integer\" (name val)
+    (validate-integer name val :required t :min 1)
+    val)"
+  `(register-validator ,name
+                       (lambda (,param-name ,value-var ,@lambda-list)
+                         ,@body)))

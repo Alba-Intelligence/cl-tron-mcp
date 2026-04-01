@@ -29,4 +29,12 @@
    #:validate-url
    #:validate-uri
    #:validate-list
-   #:with-validation))
+   #:with-validation
+   ;; Custom validator registry
+   #:*custom-validators*
+   #:register-validator
+   #:find-validator
+   #:list-validators
+   #:unregister-validator
+   #:validate-with
+   #:define-validator))
