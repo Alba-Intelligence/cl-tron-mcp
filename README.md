@@ -16,6 +16,14 @@ The AI connects to your running Lisp, triggers an error, inspects the backtrace,
 
 ---
 
+**f1/f2 Hot-Reload Demo:**
+
+![f1/f2 Demo](demo/demo-f1-f2.gif)
+
+The canonical hot-reload workflow: define two functions, trigger an error in `f2`, fix it live, and verify—all without restarting the Lisp image.
+
+---
+
 **Kilocode CLI Demo:**
 
 ![Kilocode Demo](demo/demo-kilocode.gif)
@@ -294,7 +302,7 @@ cl-tron-mcp/
 │   ├── swank-integration.md
 │   └── tools/              # Tool docs
 ├── prompts/                # Workflow guides
-├── demo/                   # Demo generation
+├── demo/                   # Demo scripts, VHS tapes, and recorded GIFs (see [demo/README.md](demo/README.md))
 └── AGENTS.md              # AI agent guidelines
 ```
 
