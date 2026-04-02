@@ -2,13 +2,16 @@
 
 **AI-Powered Debugging for Common Lisp**
 
-A Model Context Protocol (MCP) server that gives AI assistants deep access to running SBCL Common Lisp applications—debugger, inspector, profiler, and hot code reload.
+A Model Context Protocol (MCP) server that gives AI assistants deep access to
+running SBCL Common Lisp applications—debugger, inspector, profiler, and hot
+code reload.
 
 ## How It Works
 
 ### See It In Action
 
-These demos show the **real MCP JSON-RPC protocol** that AI agents send to Tron — not internal function calls.
+These demos show the **real MCP JSON-RPC protocol** that AI agents send to Tron
+— not internal function calls.
 
 **Protocol Discovery** — tools, resources, and guided prompts:
 
@@ -20,11 +23,23 @@ These demos show the **real MCP JSON-RPC protocol** that AI agents send to Tron 
 
 ---
 
-**f1/f2: In-Debugger Hot-Reload** — compile `f2` while the debugger is active, invoke `CONTINUE` to retry the failing call:
+**In-Debugger Function Hot-Reload** — compile a function while the debugger is
+active, invoke `CONTINUE` to retry the failing call:
+
+A unique capability of Common Lisp is the ability to modify running code without
+unwinding the call stack. 
+
+In this example, we define a function `f1` with 2 arguments that immediately
+calls an _undefined_ function `f2` with the same 2 arguments. Calling `(f1 1 2)`
+immediately throws the execution into the debugger. The MCP can then, while in
+the debugger, inject a definition of `f2` (a simple `(defun f2 (x y) (+ x y))`)
+and restart the execution where it was interrupted.
+
+The recording shows the sequence of calls and responses between the MCP and the
+Common Lisp Swank server.
 
 ![f1/f2 in-debugger fix](demo/f1-f2-2.gif)
 
-This is a unique capability of Common Lisp: modify running code without unwinding the call stack.
 See [demo/README.md](demo/README.md) for the setup phase (Swank launch + REPL connect).
 
 ---
@@ -44,18 +59,19 @@ See [demo/README.md](demo/README.md) for all 6 demo phases.
 │  SBCL + Swank   │◄───────►│   Tron (MCP)    │◄───────►│   AI Client     │
 │  (Port 4006)    │         │   (stdio)       │         │ (Kilocode, etc) │
 │                 │         │                 │         │                 │
-│  Your code      │         │  85 tools:      │         │  Sends prompts  │
+│  Your code      │         │  92 tools:      │         │  Sends prompts  │
 │  Debugger       │         │   - swank_eval  │         │  Receives       │
 │  Threads        │         │   - inspect     │         │  results        │
 │  State lives    │         │   - profile     │         │                 │
 └─────────────────┘         └─────────────────┘         └─────────────────┘
-        ▲
-        │
+        ▲                                                      │
+        │                                                      │
         └──────────────────────────────────────────────────────┘
                       Same session, no restart
 ```
 
-**Key insight:** All state lives in the SBCL process. Tron connects as a client. The session persists across debugging, hot-reloads, and errors.
+**Key:** All state lives in the SBCL process. Tron connects as a client. The
+session persists across debugging, hot-reloads, and errors.
 
 📖 **[Full architecture documentation →](docs/architecture.md)**
 
@@ -71,32 +87,32 @@ See [demo/README.md](demo/README.md) for all 6 demo phases.
 | **Monitor**    | Health checks, runtime stats, GC             | [docs/tools/monitor.md](docs/tools/monitor.md)         |
 | **Swank**      | Slime/Portacle integration (21 tools)        | [docs/swank-integration.md](docs/swank-integration.md) |
 
-**85 tools total** across 14 categories.
+**92 tools total** across 14 categories.
 
 ### Quick Tool Examples
 
-**Debug an error:**
+**Debug an error** (using MCP tool names):
 
-```lisp
-(swank-eval :code "(my-buggy-function 7)")  ; triggers error
-(swank-backtrace)                            ; see stack frames
-(swank-invoke-restart :restart_index 2)      ; abort
-(swank-eval :code "(defun my-buggy-function ...)")  ; hot-reload fix
+```
+repl_eval        code: "(my-buggy-function 7)"   ; triggers error
+debugger_frames                                   ; see stack frames
+repl_invoke_restart  restart_index: 5             ; abort to top level
+repl_compile     code: "(defun my-buggy-function ...)"  ; hot-reload fix
 ```
 
 **Profile performance:**
 
-```lisp
-(profile-start)
-(swank-eval :code "(process-data)")
-(profile-stop)
-(profile-report :format "flat")
+```
+profile_start
+repl_eval        code: "(process-data)"
+profile_stop
+profile_report   format: "flat"
 ```
 
 **Find callers:**
 
-```lisp
-(who-calls :symbol_name "my-package:process")
+```
+who_calls        symbol_name: "my-package:process"
 ```
 
 📖 **[More workflow examples →](prompts/workflow-examples.md)**
@@ -105,16 +121,27 @@ See [demo/README.md](demo/README.md) for all 6 demo phases.
 
 The MCP is **fully discoverable**: an AI agent can learn how to use it without any user explanation.
 
-- **Short path:** The agent calls **`prompts/get`** with name **`discover-mcp`**. That returns the exact steps: `resources/list` → `resources/read` AGENTS.md → `prompts/list` → `prompts/get` getting-started → `tools/list`. After that, the agent has everything needed to connect, evaluate, debug, inspect, profile, and hot-reload.
-- **Read path:** The agent calls **`resources/list`**, then **`resources/read`** with uri **`AGENTS.md`**. That document (and the other listed resources) explains the one long-running Lisp session, connection, tools, workflows, and conventions.
+- **Short path:** The agent calls **`prompts/get`** with name
+  **`discover-mcp`**. That returns the exact steps: `resources/list` →
+  `resources/read` AGENTS.md → `prompts/list` → `prompts/get` getting-started →
+  `tools/list`. After that, the agent has everything needed to connect,
+  evaluate, debug, inspect, profile, and hot-reload.
+- **Read path:** The agent calls **`resources/list`**, then **`resources/read`**
+  with uri **`AGENTS.md`**. That document (and the other listed resources)
+  explains the one long-running Lisp session, connection, tools, workflows, and
+  conventions.
 
-No manual "how to use Tron" instructions are required. Standard MCP methods (`resources/list`, `resources/read`, `prompts/list`, `prompts/get`, `tools/list`) are enough.
+No manual "how to use Tron" instructions are required. Standard MCP methods
+(`resources/list`, `resources/read`, `prompts/list`, `prompts/get`,
+`tools/list`) are enough.
 
 📖 **[MCP resources and prompts →](docs/mcp-resources-prompts.md)**
 
 ## Quick Start
 
-**Recommended:** Start Tron once as a long-running HTTP server, then configure MCP clients to connect via streamable HTTP. This keeps Tron running across IDE sessions without repeated startup.
+**Recommended:** Start Tron once as a long-running HTTP server, then configure
+MCP clients to connect via streamable HTTP. This keeps Tron running across IDE
+sessions without repeated startup.
 
 ```bash
 ./start-mcp.sh                    # Start long-running HTTP server (port 4006)
@@ -124,8 +151,8 @@ No manual "how to use Tron" instructions are required. Standard MCP methods (`re
 
 For MCP clients that require stdio (e.g., older configurations), use `--stdio-only`. This creates a short-lived process that exits when the client disconnects.
 
-| Mode | Command | Lifecycle | Use Case |
-|------|---------|-----------|----------|
+| Mode | Command | Lifecycle | Use Case  |
+| ------ | --------- | ----------- | ---------- |
 | **combined** | (default) | Long-running HTTP | Recommended for IDE sessions |
 | **stdio-only** | `--stdio-only` | Exits when client disconnects | MCP client starts the server |
 | **http-only** | `--http-only` | Long-running HTTP | Same as combined |
@@ -168,6 +195,7 @@ The config examples below use **tilde expansion** (`~`) for the standard Quickli
 ./create_configs.sh --client vscode
 ./create_configs.sh --client opencode
 ./create_configs.sh --client claude
+./create_configs.sh --client copilot
 
 # Or use start-mcp.sh --config (same as create_configs.sh)
 ./start-mcp.sh --config
@@ -236,7 +264,58 @@ Config file: **`~/.cursor/mcp.json`** (or Cursor MCP settings).
 }
 ```
 
-#### Other clients (Claude Code, VS Code, etc.)
+#### GitHub Copilot (VS Code)
+
+GitHub Copilot uses VS Code's built-in MCP support (VS Code 1.99+). Add Tron to your **workspace** config at `.vscode/mcp.json`:
+
+```json
+{
+    "servers": {
+        "cl-tron-mcp": {
+            "type": "stdio",
+            "command": "bash",
+            "args": ["-c", "cd ~/quicklisp/local-projects/cl-tron-mcp && ./start-mcp.sh --stdio-only"]
+        }
+    }
+}
+```
+
+Or add to your **user settings** (`settings.json`):
+
+```json
+{
+    "mcp": {
+        "servers": {
+            "cl-tron-mcp": {
+                "type": "stdio",
+                "command": "bash",
+                "args": ["-c", "cd ~/quicklisp/local-projects/cl-tron-mcp && ./start-mcp.sh --stdio-only"]
+            }
+        }
+    }
+}
+```
+
+The repo's `.vscode/mcp.json` is pre-configured for this workspace. Run `./create_configs.sh --client copilot` to generate a user-level config.
+
+#### Claude Desktop
+
+Config file: **`~/Library/Application Support/Claude/claude_desktop_config.json`** (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows).
+
+```json
+{
+    "mcpServers": {
+        "cl-tron-mcp": {
+            "command": "bash",
+            "args": ["-c", "cd ~/quicklisp/local-projects/cl-tron-mcp && ./start-mcp.sh --stdio-only"]
+        }
+    }
+}
+```
+
+Run `./create_configs.sh --client claude` to generate this file.
+
+#### Other clients (Claude Code, etc.)
 
 Any MCP client that runs a **local command** can use Tron the same way:
 
@@ -299,7 +378,7 @@ cl-tron-mcp/
 │   ├── swank-integration.md
 │   └── tools/              # Tool docs
 ├── prompts/                # Workflow guides
-├── demo/                   # Demo scripts, VHS tapes, and recorded GIFs (see [demo/README.md](demo/README.md))
+├── demo/                   # Demo scripts, asciinema recordings (.cast), and GIFs (see [demo/README.md](demo/README.md))
 └── AGENTS.md              # AI agent guidelines
 ```
 

@@ -12,7 +12,8 @@
 # Supported clients:
 #   - cursor: Cursor IDE
 #   - kilocode: Kilocode IDE
-#   - vscode: VS Code
+#   - vscode: VS Code (user-level ~/.vscode/mcp.json)
+#   - copilot: GitHub Copilot (VS Code 1.99+ workspace .vscode/mcp.json)
 #   - opencode: OpenCode IDE
 #   - claude: Claude Desktop
 
@@ -133,11 +134,11 @@ generate_vscode_config() {
     
     cat > "$config_file" << VSCODEJSON
 {
-    "mcpServers": {
+    "servers": {
         "cl-tron-mcp": {
+            "type": "stdio",
             "command": "bash",
-            "args": ["-c", "cd $PROOT && ./start-mcp.sh --stdio-only"],
-            "disabled": false
+            "args": ["-c", "cd $PROOT && ./start-mcp.sh --stdio-only"]
         }
     }
 }
@@ -145,6 +146,46 @@ VSCODEJSON
     
     log_info "Created: $config_file"
     log_info "  - Command: cd $PROOT && ./start-mcp.sh --stdio-only"
+}
+
+generate_copilot_config() {
+    # GitHub Copilot uses VS Code's MCP infrastructure (VS Code 1.99+).
+    # This generates the user-level settings snippet and the workspace .vscode/mcp.json.
+    local workspace_dir=".vscode"
+    local workspace_file="$workspace_dir/mcp.json"
+
+    log_info "Generating GitHub Copilot (VS Code) MCP config..."
+
+    # Workspace config
+    mkdir -p "$workspace_dir"
+    cat > "$workspace_file" << COPILOTWS
+{
+    "servers": {
+        "cl-tron-mcp": {
+            "type": "stdio",
+            "command": "bash",
+            "args": ["-c", "cd $PROOT && ./start-mcp.sh --stdio-only"]
+        }
+    }
+}
+COPILOTWS
+
+    log_info "Created workspace config: $workspace_file"
+    log_info ""
+    log_info "Alternatively, add to your VS Code user settings.json:"
+    echo '{
+    "mcp": {
+        "servers": {
+            "cl-tron-mcp": {
+                "type": "stdio",
+                "command": "bash",
+                "args": ["-c", "cd '"$PROOT"' && ./start-mcp.sh --stdio-only"]
+            }
+        }
+    }
+}'
+    log_info ""
+    log_info "Reload VS Code window (Ctrl+Shift+P → Reload Window) to activate."
 }
 
 generate_opencode_config() {
@@ -246,12 +287,13 @@ show_menu() {
     echo "  1) Cursor IDE"
     echo "  2) Kilocode IDE"
     echo "  3) VS Code"
-    echo "  4) OpenCode IDE"
-    echo "  5) Claude Desktop"
-    echo "  6) All of the above"
-    echo "  7) Exit"
+    echo "  4) GitHub Copilot (VS Code)"
+    echo "  5) OpenCode IDE"
+    echo "  6) Claude Desktop"
+    echo "  7) All of the above"
+    echo "  8) Exit"
     echo ""
-    echo -n "Enter choice (1-7): "
+    echo -n "Enter choice (1-8): "
 }
 
 generate_all() {
@@ -265,6 +307,9 @@ generate_all() {
     echo ""
     
     generate_vscode_config
+    echo ""
+    
+    generate_copilot_config
     echo ""
     
     generate_opencode_config
@@ -306,6 +351,9 @@ main() {
                     vscode)
                         generate_vscode_config
                         ;;
+                    copilot)
+                        generate_copilot_config
+                        ;;
                     opencode)
                         generate_opencode_config
                         ;;
@@ -314,7 +362,7 @@ main() {
                         ;;
                     *)
                         log_error "Unknown client: $2"
-                        log_info "Supported clients: cursor, kilocode, vscode, opencode, claude"
+                        log_info "Supported clients: cursor, kilocode, vscode, copilot, opencode, claude"
                         exit 1
                         ;;
                 esac
@@ -329,7 +377,7 @@ main() {
                 echo "Options:"
                 echo "  --all              Generate all MCP client configurations"
                 echo "  --client <name>    Generate config for specific client"
-                echo "                     (cursor, kilocode, vscode, opencode, claude)"
+                echo "                     (cursor, kilocode, vscode, copilot, opencode, claude)"
                 echo "  --help, -h         Show this help message"
                 echo ""
                 echo "Without arguments, shows an interactive menu."
@@ -365,24 +413,29 @@ main() {
                 log_info "Restart VS Code to pick up the new configuration."
                 ;;
             4)
+                generate_copilot_config
+                echo ""
+                log_info "Reload VS Code window (Ctrl+Shift+P → Reload Window) to activate."
+                ;;
+            5)
                 generate_opencode_config
                 echo ""
                 log_info "Restart OpenCode to pick up the new configuration."
                 ;;
-            5)
+            6)
                 generate_claude_config
                 echo ""
                 log_info "Restart Claude Desktop to pick up the new configuration."
                 ;;
-            6)
+            7)
                 generate_all
                 ;;
-            7)
+            8)
                 log_info "Exiting."
                 exit 0
                 ;;
             *)
-                log_error "Invalid choice. Please enter 1-7."
+                log_error "Invalid choice. Please enter 1-8."
                 ;;
         esac
         
