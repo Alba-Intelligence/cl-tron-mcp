@@ -18,6 +18,9 @@ test-*
 .DS_Store
 Thumbs.db
 
+# IDE
+.vscode
+
 # Project-specific
 .sbclrc
 http-port.txt
