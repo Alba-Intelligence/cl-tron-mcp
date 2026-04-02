@@ -15,9 +15,10 @@ in
   # https://devenv.sh/packages/
   packages =
     (with pkgs; [
-      # roswell
-
       git
+      openssl_oqs
+      openssl_3_5
+      openssl_3_6
       openssl_legacy
 
       # Basic utilities
@@ -28,6 +29,8 @@ in
 
       # Create ASCII GIFs
       vhs
+      asciinema_3
+      asciinema-agg
 
       sbcl
       ecl
@@ -60,7 +63,17 @@ in
 
   # https://devenv.sh/basics/
   enterShell = ''
-    export LD_LIBRARY_PATH=${pkgs.openssl_legacy.out}/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=${
+      pkgs.lib.makeLibraryPath (
+        with pkgs;
+        [
+          openssl_legacy
+          openssl_oqs
+          openssl_3_5
+          openssl_3_6
+        ]
+      )
+    }:$LD_LIBRARY_PATH
 
     hello         # Run scripts directly
     git --version # Use packages
@@ -77,6 +90,7 @@ in
   enterTest = ''
     echo "Running tests"
     git --version | grep --color=auto "${pkgs.git.version}"
+    echo
   '';
 
   # https://devenv.sh/git-hooks/

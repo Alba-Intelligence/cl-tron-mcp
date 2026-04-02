@@ -193,9 +193,10 @@ The config examples below use **tilde expansion** (`~`) for the standard Quickli
 ./create_configs.sh --client cursor
 ./create_configs.sh --client kilocode
 ./create_configs.sh --client vscode
+./create_configs.sh --client copilot
+./create_configs.sh --client copilot-cli
 ./create_configs.sh --client opencode
 ./create_configs.sh --client claude
-./create_configs.sh --client copilot
 
 # Or use start-mcp.sh --config (same as create_configs.sh)
 ./start-mcp.sh --config
@@ -297,6 +298,26 @@ Or add to your **user settings** (`settings.json`):
 ```
 
 The repo's `.vscode/mcp.json` is pre-configured for this workspace. Run `./create_configs.sh --client copilot` to generate a user-level config.
+
+#### GitHub Copilot CLI
+
+The Copilot CLI uses **`~/.copilot/mcp-config.json`**:
+
+```json
+{
+    "mcp": {
+        "servers": {
+            "cl-tron-mcp": {
+                "type": "stdio",
+                "command": "bash",
+                "args": ["-c", "cd ~/quicklisp/local-projects/cl-tron-mcp && ./start-mcp.sh --stdio-only"]
+            }
+        }
+    }
+}
+```
+
+Run `./create_configs.sh --client copilot-cli` to generate this file.
 
 #### Claude Desktop
 

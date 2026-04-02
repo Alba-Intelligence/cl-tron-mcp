@@ -14,6 +14,7 @@
 #   - kilocode: Kilocode IDE
 #   - vscode: VS Code (user-level ~/.vscode/mcp.json)
 #   - copilot: GitHub Copilot (VS Code 1.99+ workspace .vscode/mcp.json)
+#   - copilot-cli: GitHub Copilot CLI (~/.copilot/mcp-config.json)
 #   - opencode: OpenCode IDE
 #   - claude: Claude Desktop
 
@@ -188,6 +189,31 @@ COPILOTWS
     log_info "Reload VS Code window (Ctrl+Shift+P → Reload Window) to activate."
 }
 
+generate_copilot_cli_config() {
+    local config_dir="$HOME/.copilot"
+    local config_file="$config_dir/mcp-config.json"
+
+    log_info "Generating GitHub Copilot CLI MCP config..."
+
+    mkdir -p "$config_dir"
+    cat > "$config_file" << COPILOTCLIJSON
+{
+    "mcp": {
+        "servers": {
+            "cl-tron-mcp": {
+                "type": "stdio",
+                "command": "bash",
+                "args": ["-c", "cd $PROOT && ./start-mcp.sh --stdio-only"]
+            }
+        }
+    }
+}
+COPILOTCLIJSON
+
+    log_info "Created: $config_file"
+    log_info "  - Command: cd $PROOT && ./start-mcp.sh --stdio-only"
+}
+
 generate_opencode_config() {
     local config_dir="$HOME/.config/opencode"
     local config_file="$config_dir/opencode.json"
@@ -288,12 +314,13 @@ show_menu() {
     echo "  2) Kilocode IDE"
     echo "  3) VS Code"
     echo "  4) GitHub Copilot (VS Code)"
-    echo "  5) OpenCode IDE"
-    echo "  6) Claude Desktop"
-    echo "  7) All of the above"
-    echo "  8) Exit"
+    echo "  5) GitHub Copilot CLI"
+    echo "  6) OpenCode IDE"
+    echo "  7) Claude Desktop"
+    echo "  8) All of the above"
+    echo "  9) Exit"
     echo ""
-    echo -n "Enter choice (1-8): "
+    echo -n "Enter choice (1-9): "
 }
 
 generate_all() {
@@ -310,6 +337,9 @@ generate_all() {
     echo ""
     
     generate_copilot_config
+    echo ""
+    
+    generate_copilot_cli_config
     echo ""
     
     generate_opencode_config
@@ -354,6 +384,9 @@ main() {
                     copilot)
                         generate_copilot_config
                         ;;
+                    copilot-cli)
+                        generate_copilot_cli_config
+                        ;;
                     opencode)
                         generate_opencode_config
                         ;;
@@ -362,7 +395,7 @@ main() {
                         ;;
                     *)
                         log_error "Unknown client: $2"
-                        log_info "Supported clients: cursor, kilocode, vscode, copilot, opencode, claude"
+                        log_info "Supported clients: cursor, kilocode, vscode, copilot, copilot-cli, opencode, claude"
                         exit 1
                         ;;
                 esac
@@ -377,7 +410,7 @@ main() {
                 echo "Options:"
                 echo "  --all              Generate all MCP client configurations"
                 echo "  --client <name>    Generate config for specific client"
-                echo "                     (cursor, kilocode, vscode, copilot, opencode, claude)"
+                echo "                     (cursor, kilocode, vscode, copilot, copilot-cli, opencode, claude)"
                 echo "  --help, -h         Show this help message"
                 echo ""
                 echo "Without arguments, shows an interactive menu."
@@ -418,24 +451,29 @@ main() {
                 log_info "Reload VS Code window (Ctrl+Shift+P → Reload Window) to activate."
                 ;;
             5)
+                generate_copilot_cli_config
+                echo ""
+                log_info "Restart GitHub Copilot CLI to pick up the new configuration."
+                ;;
+            6)
                 generate_opencode_config
                 echo ""
                 log_info "Restart OpenCode to pick up the new configuration."
                 ;;
-            6)
+            7)
                 generate_claude_config
                 echo ""
                 log_info "Restart Claude Desktop to pick up the new configuration."
                 ;;
-            7)
+            8)
                 generate_all
                 ;;
-            8)
+            9)
                 log_info "Exiting."
                 exit 0
                 ;;
             *)
-                log_error "Invalid choice. Please enter 1-8."
+                log_error "Invalid choice. Please enter 1-9."
                 ;;
         esac
         
