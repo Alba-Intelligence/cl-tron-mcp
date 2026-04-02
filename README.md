@@ -10,27 +10,30 @@ A Model Context Protocol (MCP) server that gives AI assistants deep access to ru
 
 These demos show the **real MCP JSON-RPC protocol** that AI agents send to Tron — not internal function calls.
 
-**Protocol Overview:**
+**Protocol Discovery** — tools, resources, and guided prompts:
 
-![Protocol Overview Demo](demo/mcp-overview.gif)
+![Protocol discovery](demo/mcp-overview-1.gif)
 
-Discover the 91 tools, 20 documentation resources, and 9 guided workflow prompts available in Tron.
+**Live Health Monitoring** — health check and runtime statistics:
 
----
-
-**f1/f2 Hot-Reload Demo:**
-
-![f1/f2 Demo](demo/f1-f2.gif)
-
-Define `f1` that calls undefined `f2`, trigger `UNDEFINED-FUNCTION`, hot-compile `f2`, and verify — all without restarting the Lisp image.
+![Health and runtime stats](demo/mcp-overview-2.gif)
 
 ---
 
-**Factorial Debugging Demo:**
+**f1/f2: In-Debugger Hot-Reload** — compile `f2` while the debugger is active, invoke `CONTINUE` to retry the failing call:
 
-![Factorial Debug Demo](demo/factorial.gif)
+![f1/f2 in-debugger fix](demo/f1-f2-2.gif)
 
-A buggy `factorial` triggers `DIVISION-BY-ZERO`. Inspect the debugger, hot-reload the fix, verify correctness — the full debugging cycle.
+This is a unique capability of Common Lisp: modify running code without unwinding the call stack.
+See [demo/README.md](demo/README.md) for the setup phase (Swank launch + REPL connect).
+
+---
+
+**Factorial: Debug, Fix, Verify** — `DIVISION-BY-ZERO`, inspect restarts, hot-reload the fix:
+
+![Factorial debug](demo/factorial-2.gif)
+
+See [demo/README.md](demo/README.md) for all 6 demo phases.
 
 ---
 

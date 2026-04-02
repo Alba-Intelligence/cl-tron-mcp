@@ -1,0 +1,12 @@
+{"version":3,"term":{"cols":120,"rows":80,"type":"xterm-color"},"timestamp":1775115309,"command":"python3 demo/run-demo.py mcp-overview-2","env":{"SHELL":"/nix/store/2hjsch59amjs3nbgh7ahcfzm2bfwl8zi-bash-5.3p9/bin/bash"}}
+[0.059, "o", "\u001b[2mStarting MCP server...\u001b[0m\r\n"]
+[2.001, "o", "\u001b[2mServer started. Running scenario: mcp-overview-2\r\n\u001b[0m\r\n\r\n\u001b[1;33m════════════════════════════════════════════════════════════════════════\u001b[0m\r\n\u001b[1;33m  TRON MCP — Monitoring a Live Image\u001b[0m\r\n\u001b[1;33m════════════════════════════════════════════════════════════════════════\u001b[0m\r\n\r\nTron provides production monitoring tools: health checks and runtime statistics.\r\n\r\n"]
+[0.999, "o", "\r\n\u001b[1m── Step 1: Initialize MCP\u001b[0m\r\n\u001b[36m\u001b[36m→\u001b[0m\u001b[0m {\r\n  \"jsonrpc\": \"2.0\",\r\n  \"method\": \"initialize\",\r\n  \"params\": {\r\n    \"protocolVersion\": \"2024-11-05\",\r\n    \"capabilities\": {},\r\n    \"clientInfo\": {\r\n      \"name\": \"tron-demo\",\r\n      \"version\": \"1.0\"\r\n    }\r\n  },\r\n  \"id\": \"(next)\"\r\n}\r\n"]
+[1.968, "o", "\u001b[32m← \u001b[0m\u001b[32mServer: cl-tron-mcp v0.1.0  protocol: 2024-11-05\u001b[0m\r\n"]
+[1.500, "o", "\r\n\u001b[1m── Step 2: Health check\u001b[0m\r\n\u001b[36m\u001b[36m→\u001b[0m\u001b[0m {\r\n  \"method\": \"tools/call\",\r\n  \"params\": {\r\n    \"name\": \"health_check\",\r\n    \"arguments\": {}\r\n  }\r\n}\r\n"]
+[0.016, "o", "\u001b[32m← (STATUS HEALTHY CHECKS (MEMORY OK THREADS OK GC OK) TIMESTAMP 1775115315)\u001b[0m\r\n"]
+[2.000, "o", "\r\n\u001b[1m── Step 3: Runtime statistics\u001b[0m\r\n"]
+[0.000, "o", "\u001b[36m\u001b[36m→\u001b[0m\u001b[0m {\r\n  \"method\": \"tools/call\",\r\n  \"params\": {\r\n    \"name\": \"runtime_stats\",\r\n    \"arguments\": {}\r\n  }\r\n}\r\n"]
+[0.001, "o", "\u001b[32m← (THREAD-COUNT 2 MEMORY\r\n (DYNAMIC-BYTES 77899440 TOTAL-BYTES 77899440 TOTAL-MB 74) GC\r\n (BYTES-CONSED-BETWEEN-GCS 53687091) SBCL-VERSION 2.6.1)\u001b[0m\r\n"]
+[2.000, "o", "\r\n\u001b[32m✅ Monitoring complete!\u001b[0m\r\n"]
+[2.039, "x", "0"]

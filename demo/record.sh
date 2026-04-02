@@ -16,14 +16,16 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-SCENARIOS=("mcp-overview" "f1-f2" "factorial")
+SCENARIOS=("mcp-overview-1" "mcp-overview-2" "f1-f2-1" "f1-f2-2" "factorial-1" "factorial-2")
 CAST_ONLY=false
 SELECTED=()
 
 for arg in "$@"; do
     case "$arg" in
         --cast-only) CAST_ONLY=true ;;
-        mcp-overview|f1-f2|factorial) SELECTED+=("$arg") ;;
+        mcp-overview|mcp-overview-1|mcp-overview-2|\
+        f1-f2|f1-f2-1|f1-f2-2|\
+        factorial|factorial-1|factorial-2) SELECTED+=("$arg") ;;
         *) echo "Unknown argument: $arg"; echo "Usage: $0 [scenario...] [--cast-only]"; exit 1 ;;
     esac
 done
