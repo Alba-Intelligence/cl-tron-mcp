@@ -51,7 +51,14 @@ in
   # languages.rust.enable = true;
 
   # https://devenv.sh/processes/
-  # processes.dev.exec = "${lib.getExe pkgs.watchexec} -n -- ls -la";
+  # Start the Tron MCP HTTP server for development. Run with: devenv up
+  processes.tron-mcp = {
+    exec = "$DEVENV_ROOT/start-mcp.sh --http-only";
+    ready.http.get = {
+      port = 4006;
+      path = "/health";
+    };
+  };
 
   # https://devenv.sh/services/
   # services.postgres.enable = true;
@@ -59,6 +66,13 @@ in
   # https://devenv.sh/scripts/
   scripts.hello.exec = ''
     echo hello from $GREET
+  '';
+
+  # tron-mcp: stdio wrapper for use in MCP client configs.
+  # AI clients (Cursor, Copilot CLI, etc.) can use `tron-mcp` as the command
+  # when the devenv shell is active, or use `devenv shell -- tron-mcp` from outside.
+  scripts.tron-mcp.exec = ''
+    exec "$DEVENV_ROOT/start-mcp.sh" --stdio-only
   '';
 
   # https://devenv.sh/basics/
@@ -81,10 +95,23 @@ in
   '';
 
   # https://devenv.sh/tasks/
-  # tasks = {
-  #   "myproj:setup".exec = "mytool build";
-  #   "devenv:enterShell".after = [ "myproj:setup" ];
-  # };
+  # Precompile Tron's Lisp source to .fasl cache on shell entry.
+  # This ensures the first MCP startup is fast (~2s) rather than recompiling from scratch.
+  tasks."tron-mcp:precompile" = {
+    exec = ''
+      echo "Precompiling cl-tron-mcp fasls..."
+      sbcl --noinform --non-interactive \
+        --eval "(push #p\"$DEVENV_ROOT/\" ql:*local-project-directories*)" \
+        --eval "(ql:quickload :cl-tron-mcp :silent t)" \
+        --eval "#+sbcl (sb-ext:exit :code 0)"
+      echo "cl-tron-mcp fasls ready."
+    '';
+    execIfModified = [
+      "src"
+      "cl-tron-mcp.asd"
+    ];
+    before = [ "devenv:enterShell" ];
+  };
 
   # https://devenv.sh/tests/
   enterTest = ''

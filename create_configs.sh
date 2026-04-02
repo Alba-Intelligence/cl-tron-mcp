@@ -214,6 +214,51 @@ COPILOTCLIJSON
     log_info "  - Command: cd $PROOT && ./start-mcp.sh --stdio-only"
 }
 
+generate_devenv_config() {
+    log_info "Generating devenv MCP client configs..."
+    log_info ""
+    log_info "devenv integration provides two usage modes:"
+    log_info ""
+    log_info "1. HTTP server (persistent, for development):"
+    log_info "   Run: devenv up"
+    log_info "   Tron starts on http://127.0.0.1:4006"
+    log_info ""
+    log_info "2. Stdio mode (for MCP clients like Cursor, Copilot CLI):"
+    log_info "   Use 'tron-mcp' script (available inside devenv shell),"
+    log_info "   or use 'devenv shell -- tron-mcp' from outside the shell."
+    log_info ""
+    log_info "Example MCP client config (Cursor .cursor/mcp.json):"
+    cat << DEVENVCURSOR
+{
+    "mcpServers": {
+        "cl-tron-mcp": {
+            "command": "devenv",
+            "args": ["shell", "--", "tron-mcp"],
+            "cwd": "$PROOT"
+        }
+    }
+}
+DEVENVCURSOR
+    log_info ""
+    log_info "Example MCP client config (Copilot CLI ~/.copilot/mcp-config.json):"
+    cat << DEVENVCOPILOT
+{
+    "mcpServers": {
+        "cl-tron-mcp": {
+            "type": "local",
+            "command": "devenv",
+            "args": ["shell", "--", "tron-mcp"],
+            "env": { "DEVENV_ROOT": "$PROOT" },
+            "tools": ["*"]
+        }
+    }
+}
+DEVENVCOPILOT
+    log_info ""
+    log_info "Tip: Run 'devenv shell' first so fasls are precompiled (tron-mcp:precompile task)."
+    log_info "     Subsequent startups will be ~2s instead of ~8s."
+}
+
 generate_opencode_config() {
     local config_dir="$HOME/.config/opencode"
     local config_file="$config_dir/opencode.json"
@@ -317,10 +362,11 @@ show_menu() {
     echo "  5) GitHub Copilot CLI"
     echo "  6) OpenCode IDE"
     echo "  7) Claude Desktop"
-    echo "  8) All of the above"
-    echo "  9) Exit"
+    echo "  8) devenv integration (show instructions)"
+    echo "  9) All of the above"
+    echo " 10) Exit"
     echo ""
-    echo -n "Enter choice (1-9): "
+    echo -n "Enter choice (1-10): "
 }
 
 generate_all() {
@@ -346,6 +392,9 @@ generate_all() {
     echo ""
     
     generate_claude_config
+    echo ""
+
+    generate_devenv_config
     echo ""
     
     log_info "All configurations generated successfully!"
@@ -393,9 +442,12 @@ main() {
                     claude)
                         generate_claude_config
                         ;;
+                    devenv)
+                        generate_devenv_config
+                        ;;
                     *)
                         log_error "Unknown client: $2"
-                        log_info "Supported clients: cursor, kilocode, vscode, copilot, copilot-cli, opencode, claude"
+                        log_info "Supported clients: cursor, kilocode, vscode, copilot, copilot-cli, opencode, claude, devenv"
                         exit 1
                         ;;
                 esac
@@ -410,7 +462,7 @@ main() {
                 echo "Options:"
                 echo "  --all              Generate all MCP client configurations"
                 echo "  --client <name>    Generate config for specific client"
-                echo "                     (cursor, kilocode, vscode, copilot, copilot-cli, opencode, claude)"
+                echo "                     (cursor, kilocode, vscode, copilot, copilot-cli, opencode, claude, devenv)"
                 echo "  --help, -h         Show this help message"
                 echo ""
                 echo "Without arguments, shows an interactive menu."
@@ -466,14 +518,17 @@ main() {
                 log_info "Restart Claude Desktop to pick up the new configuration."
                 ;;
             8)
-                generate_all
+                generate_devenv_config
                 ;;
             9)
+                generate_all
+                ;;
+            10)
                 log_info "Exiting."
                 exit 0
                 ;;
             *)
-                log_error "Invalid choice. Please enter 1-9."
+                log_error "Invalid choice. Please enter 1-10."
                 ;;
         esac
         

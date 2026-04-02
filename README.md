@@ -336,6 +336,37 @@ Config file: **`~/Library/Application Support/Claude/claude_desktop_config.json`
 
 Run `./create_configs.sh --client claude` to generate this file.
 
+#### devenv (NixOS / Nix users)
+
+If you manage your development environment with [devenv](https://devenv.sh), Tron integrates natively via `devenv.nix`. After cloning the repo, the devenv environment already includes SBCL and all required packages.
+
+**Two usage modes:**
+
+| Mode | Command | Best for |
+|------|---------|----------|
+| **HTTP server** (persistent) | `devenv up` | Development — keeps Tron running on port 4006 |
+| **Stdio** (on-demand) | `tron-mcp` (in shell) | MCP clients that spawn the server per session |
+
+**Fast startup:** When you enter the devenv shell (`devenv shell`), the `tron-mcp:precompile` task automatically compiles Lisp sources to cached `.fasl` files. Subsequent MCP startups take ~2 seconds instead of ~8 seconds.
+
+**MCP client config (using devenv):** Instead of hardcoding `./start-mcp.sh`, point your client at `devenv shell -- tron-mcp`. This ensures SBCL and all env vars come from devenv, even from outside the shell:
+
+```json
+{
+  "mcpServers": {
+    "cl-tron-mcp": {
+      "command": "devenv",
+      "args": ["shell", "--", "tron-mcp"],
+      "cwd": "/path/to/cl-tron-mcp"
+    }
+  }
+}
+```
+
+Run `./create_configs.sh --client devenv` to see full instructions for your current path.
+
+> **Note:** `devenv mcp` is devenv's own built-in MCP server (for querying Nix packages/options). It is unrelated to Tron and cannot be used to run Tron.
+
 #### Other clients (Claude Code, etc.)
 
 Any MCP client that runs a **local command** can use Tron the same way:
