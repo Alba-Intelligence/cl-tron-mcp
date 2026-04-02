@@ -1,83 +1,65 @@
 # Tron MCP Demos
 
-Animated demos showing Tron's debugging, hot-reload, and MCP capabilities.
+Animated demos showing Tron's actual **MCP JSON-RPC protocol** — the real messages that AI agents send to the server.
 
 ## Demos
 
-### 1. Basic Debugging Demo (`demo-script.lisp`)
+### 1. Protocol Overview (`mcp-overview`)
 
-Launches Swank, defines a buggy `factorial`, triggers `DIVISION-BY-ZERO`, inspects the debugger state, hot-reloads the fix, and verifies.
+Discover Tron: 91 tools across 19 categories, 20 documentation resources, 9 guided workflow prompts, plus health check and runtime stats.
 
-![Basic Demo](demo.gif)
+![Protocol Overview](mcp-overview.gif)
 
-```bash
-sbcl --noinform --disable-debugger --load demo/demo-script.lisp
-```
+### 2. f1/f2 Hot-Reload (`f1-f2`)
 
-### 2. f1/f2 Hot-Reload Demo (`demo-f1-f2.lisp`)
+The canonical hot-reload workflow: define `f1` calling undefined `f2`, trigger `UNDEFINED-FUNCTION`, hot-compile `f2` into the live image, verify.
 
-The canonical hot-reload workflow: define two functions, trigger an error in `f2`, fix it live, and verify — all without restarting the Lisp image.
+![f1/f2 Hot-Reload](f1-f2.gif)
 
-![f1/f2 Demo](demo-f1-f2.gif)
+### 3. Factorial Debugging (`factorial`)
 
-```bash
-sbcl --noinform --disable-debugger --load demo/demo-f1-f2.lisp
-```
+A buggy `factorial` triggers `DIVISION-BY-ZERO`. Inspect the debugger, hot-reload the fix, verify `(factorial 5) = 120`, `(factorial 10) = 3628800`.
 
-### 3. Kilocode CLI Demo (`demo-kilocode.lisp`)
-
-Simulates what a Kilocode AI agent sees when it uses Tron to debug and fix code.
-
-![Kilocode Demo](demo-kilocode.gif)
-
-```bash
-sbcl --noinform --disable-debugger --load demo/demo-kilocode.lisp
-```
-
-### 4. Raw MCP Protocol Demo (`demo-mcp-raw.lisp`)
-
-Shows the actual JSON-RPC messages that MCP clients (Cursor, VS Code, OpenCode) send to Tron internally.
-
-![Raw MCP Demo](demo-mcp-raw.gif)
-
-```bash
-sbcl --noinform --disable-debugger --load demo/demo-mcp-raw.lisp
-```
-
-## Re-recording GIFs
-
-All GIFs are recorded with [VHS](https://github.com/charmbracelet/vhs). Each `.tape` file defines the terminal recording.
-
-```bash
-# Record all demos
-./demo/generate.sh
-
-# Record a single demo
-vhs demo/demo-f1-f2.tape
-```
-
-### NixOS
-
-On NixOS, `LD_LIBRARY_PATH` must include the OpenSSL library path. The tape files handle this automatically via a hidden setup step. If running demos manually, set:
-
-```bash
-export LD_LIBRARY_PATH=$(find /nix/store -maxdepth 2 -name 'libcrypto.so.3' -printf '%h' -quit 2>/dev/null):$LD_LIBRARY_PATH
-```
+![Factorial Debug](factorial.gif)
 
 ## How It Works
 
-Each demo is **self-contained**: it loads `cl-tron-mcp`, launches its own Swank server on port 14006, runs the demo workflow, then cleans up. No external Swank server needed.
+Each demo runs `demo/run-demo.py <scenario>` which:
+1. Starts `./start-mcp.sh --stdio-only` as a subprocess
+2. Sends real JSON-RPC requests to its stdin
+3. Reads JSON-RPC responses from its stdout
+4. Prints formatted `→ request` / `← response` pairs
+
+This is exactly what Claude Code, Cursor, Kilocode, and OpenCode do when they use Tron.
+
+## Running Demos
+
+```bash
+# Run a demo scenario manually (no recording)
+python3 demo/run-demo.py mcp-overview
+python3 demo/run-demo.py f1-f2
+python3 demo/run-demo.py factorial
+
+# Re-record all demos (requires asciinema + agg in devenv.nix)
+./demo/record.sh
+
+# Record a single scenario
+./demo/record.sh f1-f2
+
+# Record .cast files only (skip GIF conversion)
+./demo/record.sh --cast-only
+```
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `demo-script.lisp` | Basic debugging demo script |
-| `demo-f1-f2.lisp` | Hot-reload demo script |
-| `demo-kilocode.lisp` | Kilocode CLI demo script |
-| `demo-mcp-raw.lisp` | Raw MCP protocol demo script |
-| `demo.tape` | VHS tape for basic demo |
-| `demo-f1-f2.tape` | VHS tape for f1/f2 demo |
-| `demo-kilocode.tape` | VHS tape for Kilocode demo |
-| `demo-mcp-raw.tape` | VHS tape for raw MCP demo |
-| `generate.sh` | Script to re-record all GIFs |
+| `run-demo.py` | Python demo driver (3 scenarios) |
+| `record.sh` | asciinema recording + agg GIF generation |
+| `mcp-overview.cast` | asciinema recording (protocol overview) |
+| `f1-f2.cast` | asciinema recording (hot-reload demo) |
+| `factorial.cast` | asciinema recording (debugging demo) |
+| `mcp-overview.gif` | Animated GIF (protocol overview) |
+| `f1-f2.gif` | Animated GIF (hot-reload demo) |
+| `factorial.gif` | Animated GIF (debugging demo) |
+

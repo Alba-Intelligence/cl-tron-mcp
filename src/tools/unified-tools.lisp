@@ -12,7 +12,10 @@
   :validation ((when type (validate-choice "type" type '("swank")))
                (when host (validate-string "host" host))
                (when port (validate-integer "port" port :min 1 :max 65535)))
-  :body (cl-tron-mcp/unified:repl-connect :type type :host host :port port))
+  :body (cl-tron-mcp/unified:repl-connect
+           :type (if type (intern (string-upcase type) :keyword) :auto)
+           :host (or host "127.0.0.1")
+           :port (or port 4006)))
 
 (define-simple-tool "repl_disconnect"
   "Disconnect from REPL"
@@ -38,7 +41,7 @@
   :documentation-uri "file://docs/tools/repl-eval.md"
   :validation ((validate-string "code" code :required t :min-length 1)
                (when package (validate-package-name "package" package)))
-  :body (cl-tron-mcp/unified:repl-eval :code code :package package))
+  :body (cl-tron-mcp/unified:repl-eval :code code :package (or package "CL-USER")))
 
 (define-validated-tool "repl_compile"
   "Compile and load Lisp code"
@@ -49,7 +52,7 @@
   :validation ((validate-string "code" code :required t :min-length 1)
                (when package (validate-package-name "package" package))
                (when filename (validate-string "filename" filename)))
-  :body (cl-tron-mcp/unified:repl-compile :code code :package package :filename filename))
+  :body (cl-tron-mcp/unified:repl-compile :code code :package (or package "CL-USER") :filename (or filename "repl")))
 
 (define-simple-tool "repl_threads"
   "List all REPL threads"

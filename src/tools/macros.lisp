@@ -6,10 +6,17 @@
 (defmacro define-validated-tool (name description &key input-schema output-schema requires-approval documentation-uri validation body)
   "Define a tool with validation wrapper.
    VALIDATION is a list of validation forms.
-   BODY is the actual implementation."
-  (let ((params (when validation (remove-duplicates
-                                  (loop for (func param . args) in validation
-                                        collect (intern (string-upcase param)))))))
+   BODY is the actual implementation.
+
+   Lambda parameters are derived from BOTH input-schema keys AND validation forms,
+   so that body can reference any declared input parameter even if it has no validation."
+  (let* ((schema-params (when input-schema
+                          (loop for (k v) on (eval input-schema) by #'cddr
+                                collect (intern (string-upcase (symbol-name k))))))
+         (validation-params (when validation
+                              (loop for (func param . args) in validation
+                                    collect (intern (string-upcase param)))))
+         (params (remove-duplicates (append schema-params validation-params))))
     `(progn
        (register-tool ,name ,description
                       :input-schema ,input-schema

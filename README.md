@@ -8,35 +8,29 @@ A Model Context Protocol (MCP) server that gives AI assistants deep access to ru
 
 ### See It In Action
 
-**Basic Debugging Demo:**
+These demos show the **real MCP JSON-RPC protocol** that AI agents send to Tron — not internal function calls.
 
-![Basic Demo](demo/demo.gif)
+**Protocol Overview:**
 
-The AI connects to your running Lisp, triggers an error, inspects the backtrace, hot-reloads a fix, and verifies it works—all without restarting.
+![Protocol Overview Demo](demo/mcp-overview.gif)
+
+Discover the 91 tools, 20 documentation resources, and 9 guided workflow prompts available in Tron.
 
 ---
 
 **f1/f2 Hot-Reload Demo:**
 
-![f1/f2 Demo](demo/demo-f1-f2.gif)
+![f1/f2 Demo](demo/f1-f2.gif)
 
-The canonical hot-reload workflow: define two functions, trigger an error in `f2`, fix it live, and verify—all without restarting the Lisp image.
-
----
-
-**Kilocode CLI Demo:**
-
-![Kilocode Demo](demo/demo-kilocode.gif)
-
-Shows what you'd see when using Kilocode with Tron MCP: the terminal interface, commands, and output.
+Define `f1` that calls undefined `f2`, trigger `UNDEFINED-FUNCTION`, hot-compile `f2`, and verify — all without restarting the Lisp image.
 
 ---
 
-**Raw MCP Protocol:**
+**Factorial Debugging Demo:**
 
-![MCP Protocol](demo/demo-mcp-raw.gif)
+![Factorial Debug Demo](demo/factorial.gif)
 
-Shows the actual JSON-RPC messages that AI clients send to Tron internally. This is what Kilocode, Cursor, and Claude Code do under the hood.
+A buggy `factorial` triggers `DIVISION-BY-ZERO`. Inspect the debugger, hot-reload the fix, verify correctness — the full debugging cycle.
 
 ---
 

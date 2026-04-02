@@ -19,8 +19,8 @@ Use swank_connect / repl_connect afterwards to connect to it."
   ((when port (validate-integer "port" port :min 1024 :max 65535))
    (when timeout (validate-integer "timeout" timeout :min 5 :max 120))
    (when communication_style
-     (validate-string "communication_style" communication_style
-                      :allowed-values '("spawn" "fd-handler" "sigio"))))
+     (validate-choice "communication_style" communication_style
+                      '("spawn" "fd-handler" "sigio"))))
   :body
   (cl-tron-mcp/swank:launch-sbcl-with-swank
    :port    (or port 4006)

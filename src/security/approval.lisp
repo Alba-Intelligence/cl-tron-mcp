@@ -28,23 +28,32 @@
 (defun operation-requires-approval (operation)
   (member operation *approval-required-operations*))
 
+(defun coerce-operation-key (operation)
+  "Normalize OPERATION to a keyword regardless of whether it's a string or keyword."
+  (etypecase operation
+    (keyword operation)
+    (string (intern (string-upcase operation) :keyword))))
+
 (defun whitelist-add (operation pattern)
-  (bt:with-lock-held (*approval-lock*)
-    (push pattern (gethash operation *approval-whitelist*))
-    (list :operation operation :pattern pattern)))
+  (let ((op (coerce-operation-key operation)))
+    (bt:with-lock-held (*approval-lock*)
+      (push pattern (gethash op *approval-whitelist*))
+      (list :operation op :pattern pattern))))
 
 (defun whitelist-remove (operation pattern)
-  (bt:with-lock-held (*approval-lock*)
-    (let ((patterns (gethash operation *approval-whitelist*)))
-      (when patterns
-        (setf (gethash operation *approval-whitelist*)
-              (remove pattern patterns :test #'equal))))
-    (list :operation operation :pattern pattern :removed t)))
+  (let ((op (coerce-operation-key operation)))
+    (bt:with-lock-held (*approval-lock*)
+      (let ((patterns (gethash op *approval-whitelist*)))
+        (when patterns
+          (setf (gethash op *approval-whitelist*)
+                (remove pattern patterns :test #'equal))))
+      (list :operation op :pattern pattern :removed t))))
 
 (defun whitelist-clear (&optional operation)
   (bt:with-lock-held (*approval-lock*)
     (if operation
-        (setf (gethash operation *approval-whitelist*) nil)
+        (let ((op (coerce-operation-key operation)))
+          (setf (gethash op *approval-whitelist*) nil))
         (clrhash *approval-whitelist*))
     (list :cleared operation)))
 
