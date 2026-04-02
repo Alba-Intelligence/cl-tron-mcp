@@ -867,14 +867,14 @@ case "$LISP" in
 *ecl*)
     ECL_LOAD_QL_FLAG="-eval"
     ECL_LOAD_QL_EXPR="(progn (setq *load-verbose* nil *compile-verbose* nil) (let ((*standard-output* *error-output*)) (load #p\"$QUICKLISP_DIR/setup.lisp\")))"
-    COMPILE_EXPR="(let ((*standard-output* *error-output*)) (asdf:compile-system :cl-tron-mcp :force t))"
-    LOAD_EXPR="(let ((*standard-output* *error-output*)) (asdf:load-system :cl-tron-mcp))"
+    COMPILE_EXPR="(let ((*standard-output* *error-output*)) (ql:quickload :cl-tron-mcp :silent t))"
+    LOAD_EXPR=""
     ;;
 *)
     ECL_LOAD_QL_FLAG=""
     ECL_LOAD_QL_EXPR=""
-    COMPILE_EXPR="(asdf:compile-system :cl-tron-mcp :force t)"
-    LOAD_EXPR="(asdf:load-system :cl-tron-mcp)"
+    COMPILE_EXPR="(ql:quickload :cl-tron-mcp :silent t)"
+    LOAD_EXPR=""
     ;;
 esac
 
@@ -937,9 +937,8 @@ if [[ "$TRANSPORT" == "stdio" ]]; then
         $LISP_EVAL "(setq *compile-verbose* nil *load-verbose* nil)" \
         $LISP_EVAL "(push #p\"$PROOT/\" ql:*local-project-directories*)" \
         $LISP_EVAL "$COMPILE_EXPR" \
-        $LISP_EVAL "$LOAD_EXPR" \
+        ${LOAD_EXPR:+$LISP_EVAL "$LOAD_EXPR"} \
         $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :stdio-only) #+sbcl (sb-ext:exit :code 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
-elif [[ "$TRANSPORT" == "combined" ]]; then
     # Combined mode: long-running HTTP server (stdio clients should use HTTP transport)
     log_info "-- Starting combined mode (long-running HTTP on port $PORT)"
     log_info "-- MCP clients can connect via streamable HTTP: http://127.0.0.1:$PORT/mcp"
@@ -957,14 +956,12 @@ elif [[ "$TRANSPORT" == "combined" ]]; then
 (%boot-log "1: setq done")
 (push #p"$PROOT/" ql:*local-project-directories*)
 (%boot-log "2: push done")
-(asdf:compile-system :cl-tron-mcp :force t)
-(%boot-log "3: compile done")
-(asdf:load-system :cl-tron-mcp)
-(%boot-log "4: load done")
+(ql:quickload :cl-tron-mcp :silent t)
+(%boot-log "3: load done")
 (let ((port (parse-integer (with-open-file (f #p"$PROOT/http-port.txt") (read-line f)))))
-  (%boot-log (format nil "5: port=~a calling start-server" port))
+  (%boot-log (format nil "4: port=~a calling start-server" port))
   (cl-tron-mcp/core:start-server :transport :combined :port port))
-(%boot-log "6: start-server returned")
+(%boot-log "5: start-server returned")
 #+sbcl (sb-ext:exit :code 0)
 #+ecl (ext:quit 0)
 #-(or sbcl ecl) (cl-user::quit 0)
@@ -993,14 +990,12 @@ elif [[ "$TRANSPORT" == "http" ]]; then
 (%boot-log "1: setq done")
 (push #p"$PROOT/" ql:*local-project-directories*)
 (%boot-log "2: push done")
-(asdf:compile-system :cl-tron-mcp :force t)
-(%boot-log "3: compile done")
-(asdf:load-system :cl-tron-mcp)
-(%boot-log "4: load done")
+(ql:quickload :cl-tron-mcp :silent t)
+(%boot-log "3: load done")
 (let ((port (parse-integer (with-open-file (f #p"$PROOT/http-port.txt") (read-line f)))))
-  (%boot-log (format nil "5: port=~a calling start-server" port))
+  (%boot-log (format nil "4: port=~a calling start-server" port))
   (cl-tron-mcp/core:start-server :transport :http-only :port port))
-(%boot-log "6: start-server returned")
+(%boot-log "5: start-server returned")
 #+sbcl (sb-ext:exit :code 0)
 #+ecl (ext:quit 0)
 #-(or sbcl ecl) (cl-user::quit 0)
@@ -1022,6 +1017,6 @@ elif [[ "$TRANSPORT" == "websocket" ]]; then
         "${ECL_ARGS[@]}" \
         $LISP_EVAL "(push #p\"$PROOT/\" ql:*local-project-directories*)" \
         $LISP_EVAL "$COMPILE_EXPR" \
-        $LISP_EVAL "$LOAD_EXPR" \
+        ${LOAD_EXPR:+$LISP_EVAL "$LOAD_EXPR"} \
         $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :websocket :port $PORT) #+sbcl (sb-ext:exit :code 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
 fi
