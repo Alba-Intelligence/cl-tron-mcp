@@ -198,13 +198,13 @@ generate_copilot_cli_config() {
     mkdir -p "$config_dir"
     cat > "$config_file" << COPILOTCLIJSON
 {
-    "mcp": {
-        "servers": {
-            "cl-tron-mcp": {
-                "type": "stdio",
-                "command": "bash",
-                "args": ["-c", "cd $PROOT && ./start-mcp.sh --stdio-only"]
-            }
+    "mcpServers": {
+        "cl-tron-mcp": {
+            "type": "local",
+            "command": "bash",
+            "args": ["-c", "cd $PROOT && ./start-mcp.sh --stdio-only"],
+            "env": {},
+            "tools": ["*"]
         }
     }
 }

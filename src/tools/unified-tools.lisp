@@ -175,8 +175,8 @@
   :output-schema (list :type "object")
   :requires-approval nil
   :documentation-uri "file://docs/tools/repl-invoke-restart.md"
-  :validation ((validate-integer "restart_index" restart_index :required t :min 1))
-  :body (cl-tron-mcp/unified:repl-invoke-restart :restart-index restart_index))
+  :validation ((validate-integer "restart_index" restart_index :required t :min 0))
+  :body (cl-tron-mcp/unified:repl-invoke-restart :restart_index restart_index))
 
 (define-validated-tool "repl_set_breakpoint"
   "Set a breakpoint"

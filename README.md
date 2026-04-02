@@ -301,23 +301,23 @@ The repo's `.vscode/mcp.json` is pre-configured for this workspace. Run `./creat
 
 #### GitHub Copilot CLI
 
-The Copilot CLI uses **`~/.copilot/mcp-config.json`**:
+The Copilot CLI uses **`~/.copilot/mcp-config.json`** with `mcpServers` at the top level and `"type": "local"`:
 
 ```json
 {
-    "mcp": {
-        "servers": {
-            "cl-tron-mcp": {
-                "type": "stdio",
-                "command": "bash",
-                "args": ["-c", "cd ~/quicklisp/local-projects/cl-tron-mcp && ./start-mcp.sh --stdio-only"]
-            }
+    "mcpServers": {
+        "cl-tron-mcp": {
+            "type": "local",
+            "command": "bash",
+            "args": ["-c", "cd ~/quicklisp/local-projects/cl-tron-mcp && ./start-mcp.sh --stdio-only"],
+            "env": {},
+            "tools": ["*"]
         }
     }
 }
 ```
 
-Run `./create_configs.sh --client copilot-cli` to generate this file.
+Run `./create_configs.sh --client copilot-cli` to generate this file, or use `/mcp add` inside the CLI.
 
 #### Claude Desktop
 
