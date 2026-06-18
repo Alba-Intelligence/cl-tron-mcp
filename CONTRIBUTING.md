@@ -16,20 +16,23 @@ Thank you for your interest in contributing! This guide will help you get starte
 
 ### Prerequisites
 
-- SBCL 2.4.0 or later
+- SBCL 2.4.0 or later, or ECL
 - Quicklisp
 - Git
+- [devenv](https://devenv.sh) (optional, for Nix-based development)
 
 ### Set Up Development Environment
 
+#### Without devenv
+
 ```bash
 # Clone the repository
-git clone https://github.com/anomalyco/cl-tron-mcp.git
+git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git
 cd cl-tron-mcp
 
 # Ensure Quicklisp can find the project
 # Option 1: Symlink to local-projects
-ln -sf "$(pwd)" ~/quicklisp/local-projects/cl-tron
+ln -sf "$(pwd)" ~/quicklisp/local-projects/cl-tron-mcp
 
 # Option 2: Use QL-PACKAGE-LOCAL-PROJECTS
 export QL_PACKAGE_LOCAL_PROJECTS="$(pwd)"
@@ -39,6 +42,24 @@ sbcl --non-interactive \
   --eval "(ql:quickload :cl-tron-mcp :silent t)" \
   --eval "(cl-tron-mcp/monitor:health-check)"
 ```
+
+#### With devenv (recommended for Nix users)
+
+```bash
+# Clone and enter devenv shell
+git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git
+cd cl-tron-mcp
+devenv shell
+
+# Quicklisp will be auto-detected. If not found, set it:
+export QUICKLISP_DIR=$HOME/quicklisp
+
+# Run the MCP from inside devenv
+./run-mcp.sh --stdio-only   # For MCP clients
+./run-mcp.sh                # Long-running HTTP server
+```
+
+The `devenv.nix` config includes SBCL, ECL, and all required dependencies. The `tron-mcp:precompile` task caches `.fasl` files for fast startup.
 
 ## Development Setup
 

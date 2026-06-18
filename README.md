@@ -27,7 +27,7 @@ These demos show the **real MCP JSON-RPC protocol** that AI agents send to Tron
 active, invoke `CONTINUE` to retry the failing call:
 
 A unique capability of Common Lisp is the ability to modify running code without
-unwinding the call stack. 
+unwinding the call stack.
 
 In this example, we define a function `f1` with 2 arguments that immediately
 calls an _undefined_ function `f2` with the same 2 arguments. Calling `(f1 1 2)`
@@ -319,6 +319,23 @@ The Copilot CLI uses **`~/.copilot/mcp-config.json`** with `mcpServers` at the t
 
 Run `./create_configs.sh --client copilot-cli` to generate this file, or use `/mcp add` inside the CLI.
 
+#### From Outside the devenv Environment (run-mcp.sh)
+
+If you are **not** inside the devenv shell but want to use devenv-managed dependencies, use the bundled `run-mcp.sh` script. It auto-detects your host Quicklisp installation, enters the devenv environment, and starts the MCP:
+
+```bash
+./run-mcp.sh --stdio-only   # For MCP clients
+./run-mcp.sh                # Long-running HTTP server (default)
+```
+
+This is the simplest way to run Tron from an coding assistant or IDE that spawns a shell outside the Nix environment. The script handles:
+
+- Finding Quicklisp on the host (`$HOME/quicklisp` or `QUICKLISP_DIR`)
+- Entering the devenv shell with the correct environment
+- Forwarding all arguments to `start-mcp.sh`
+
+See [docs/starting-the-mcp.md#quick-start-outside-devenv](docs/starting-the-mcp.md#quick-start-outside-devenv) for details.
+
 #### Claude Desktop
 
 Config file: **`~/Library/Application Support/Claude/claude_desktop_config.json`** (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows).
@@ -340,16 +357,46 @@ Run `./create_configs.sh --client claude` to generate this file.
 
 If you manage your development environment with [devenv](https://devenv.sh), Tron integrates natively via `devenv.nix`. After cloning the repo, the devenv environment already includes SBCL and all required packages.
 
-**Two usage modes:**
+**Quick start — recommended:** Use the bundled `run-mcp.sh` script. It auto-detects your host Quicklisp, enters the devenv environment, and starts the MCP:
+
+```bash
+# Long-running HTTP server (combined mode)
+./run-mcp.sh
+
+# Stdio for MCP clients
+./run-mcp.sh --stdio-only
+
+# HTTP only
+./run-mcp.sh --http-only
+
+# Force SBCL
+./run-mcp.sh --use-sbcl
+```
+
+**Inside the devenv shell manually:**
 
 | Mode | Command | Best for |
 |------|---------|----------|
 | **HTTP server** (persistent) | `devenv up` | Development — keeps Tron running on port 4006 |
-| **Stdio** (on-demand) | `tron-mcp` (in shell) | MCP clients that spawn the server per session |
+| **Stdio** (on-demand) | `devenv shell -- tron-mcp` | MCP clients that spawn the server per session |
 
-**Fast startup:** When you enter the devenv shell (`devenv shell`), the `tron-mcp:precompile` task automatically compiles Lisp sources to cached `.fasl` files. Subsequent MCP startups take ~2 seconds instead of ~8 seconds.
+**Fast startup:** When you enter the devenv shell (`devenv shell`), the `tron-mcp:precompile` task automatically compiles Lisp sources to cached `.fasl` files. Subsequent MCP startups take ~2 seconds instead of ~8 seconds. If Quicklisp is not available in the sandbox, the task skips with a diagnostic rather than blocking shell entry.
 
-**MCP client config (using devenv):** Instead of hardcoding `./start-mcp.sh`, point your client at `devenv shell -- tron-mcp`. This ensures SBCL and all env vars come from devenv, even from outside the shell:
+**MCP client config (using run-mcp.sh):**
+
+```json
+{
+  "mcpServers": {
+    "cl-tron-mcp": {
+      "command": "/path/to/cl-tron-mcp/run-mcp.sh",
+      "args": ["--stdio-only"],
+      "disabled": false
+    }
+  }
+}
+```
+
+**MCP client config (using devenv directly):** Point your client at `devenv shell -- tron-mcp`. This ensures SBCL and all env vars come from devenv, even from outside the shell:
 
 ```json
 {
@@ -362,8 +409,6 @@ If you manage your development environment with [devenv](https://devenv.sh), Tro
   }
 }
 ```
-
-Run `./create_configs.sh --client devenv` to see full instructions for your current path.
 
 > **Note:** `devenv mcp` is devenv's own built-in MCP server (for querying Nix packages/options). It is unrelated to Tron and cannot be used to run Tron.
 

@@ -176,6 +176,46 @@ The script chooses the Lisp in this order:
 
 Example: `./start-mcp.sh --use-ecl` to force ECL when both are installed.
 
+## Quick Start Outside devenv
+
+If you want an MCP client or coding assistant to start Tron from a shell **outside** the devenv environment, use the bundled `run-mcp.sh` script. It auto-detects your host Quicklisp installation, enters the devenv environment, and forwards all arguments to `start-mcp.sh`:
+
+```bash
+# From the project root:
+./run-mcp.sh                      # Combined (long-running HTTP on 4006)
+./run-mcp.sh --stdio-only         # Stdio for MCP clients
+./run-mcp.sh --http-only          # HTTP only
+./run-mcp.sh --use-sbcl           # Force SBCL
+```
+
+### How it works
+
+1. **Detect Quicklisp** — Checks `QUICKLISP_DIR` (if set), then `$HOME/quicklisp`.
+2. **Enter devenv** — Runs `devenv shell` with `QUICKLISP_DIR` inherited.
+3. **Launch MCP** — Executes `start-mcp.sh` inside the devenv environment with all your arguments.
+
+### MCP client config example
+
+Point your MCP client at `run-mcp.sh` instead of `start-mcp.sh` directly:
+
+```json
+{
+  "mcpServers": {
+    "cl-tron-mcp": {
+      "command": "/path/to/cl-tron-mcp/run-mcp.sh",
+      "args": ["--stdio-only"],
+      "disabled": false
+    }
+  }
+}
+```
+
+### Troubleshooting
+
+- **"Quicklisp not found"** — Ensure Quicklisp is installed at `~/quicklisp` or set `QUICKLISP_DIR` to the correct path before running `run-mcp.sh`.
+- **"devenv: command not found"** — Install [devenv](https://devenv.sh/install/) and ensure it is on your `PATH`.
+- **Precompile skipped** — Inside the devenv sandbox, the precompile task may skip if Quicklisp is not visible. This is expected; the MCP will still start correctly when `run-mcp.sh` injects `QUICKLISP_DIR`.
+
 ## One-Time Precompile (Avoid First-Start Timeout)
 
 The first time the client starts the server, SBCL may compile the system, which can take 1–2 minutes. Many clients use a startup timeout (e.g. 30–60 seconds) and may report "failed to start" if the first JSON line does not appear in time.

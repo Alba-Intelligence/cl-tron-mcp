@@ -54,6 +54,7 @@ See [CONTRIBUTING.md – Adding New Tools](../CONTRIBUTING.md#adding-new-tools) 
 
 - **Run tests:** `(asdf:test-system :cl-tron-mcp)` or see [CONTRIBUTING.md – Running Tests](../CONTRIBUTING.md#running-tests).
 - **Run MCP manually (stdio):** From repo root, `./start-mcp.sh --stdio-only` and pipe JSON (e.g. `echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | ./start-mcp.sh --stdio-only 2>/dev/null | head -1`).
+- **From outside devenv:** Use `./run-mcp.sh --stdio-only` to auto-enter devenv with the correct Quicklisp path.
 - **Kilocode-style debug:** `./scripts/debug-mcp-stdio.sh` (writes to `reports/mcp-stdio-out.log` and `reports/mcp-stdio-err.log`).
 - **Transport options:** Combined (default), stdio-only, http-only. See [starting-the-mcp.md](starting-the-mcp.md).
 
