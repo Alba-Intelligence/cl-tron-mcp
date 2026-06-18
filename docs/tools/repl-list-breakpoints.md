@@ -9,6 +9,7 @@
 **Returns:** List of all breakpoints with IDs, functions, and status
 
 **Example Usage:**
+
 ```lisp
 (repl_list_breakpoints)
 ```

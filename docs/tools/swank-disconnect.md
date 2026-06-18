@@ -9,6 +9,7 @@
 **Returns:** Disconnection status
 
 **Example Usage:**
+
 ```lisp
 (swank_disconnect)
 ```

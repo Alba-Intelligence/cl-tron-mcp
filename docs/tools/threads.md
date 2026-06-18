@@ -17,9 +17,11 @@ Tools for managing and debugging multi-threaded SBCL applications.
 ## thread_list
 
 ### Overview
+
 List all threads with their status.
 
 ### Tool Definition
+
 ```json
 {
   "name": "thread_list",
@@ -28,6 +30,7 @@ List all threads with their status.
 ```
 
 ### Return Value
+
 ```json
 {
   "threads": [
@@ -50,9 +53,11 @@ List all threads with their status.
 ## thread_kill
 
 ### Overview
+
 Terminate a thread. Use with caution.
 
 ### Tool Definition
+
 ```json
 {
   "name": "thread_kill",
@@ -71,9 +76,11 @@ Terminate a thread. Use with caution.
 ```
 
 ### Approval Required
+
 Requires `:terminate-thread` approval.
 
 ### User Prompt
+
 ```
 AI agent wants to terminate thread "worker-2":
 Reason: Thread stuck in infinite loop

@@ -9,6 +9,7 @@
 **Returns:** Profiling report with timing data
 
 **Example Usage:**
+
 ```lisp
 (profile_stop)
 ```

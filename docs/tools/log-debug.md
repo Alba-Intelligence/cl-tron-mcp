@@ -5,12 +5,14 @@
 **Full Description:** Log a debug message. Use for detailed debugging information.
 
 **Parameters:**
+
 - `message`: Message to log (required)
 - `package`: Package to log for (optional)
 
 **Returns:** Log status
 
 **Example Usage:**
+
 ```lisp
 (log_debug :message "Variable value: 42")
 ```

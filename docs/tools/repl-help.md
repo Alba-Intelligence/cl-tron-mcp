@@ -9,6 +9,7 @@
 **Returns:** Help text listing all available REPL tools
 
 **Example Usage:**
+
 ```lisp
 (repl_help)
 ```

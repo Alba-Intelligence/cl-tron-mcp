@@ -18,10 +18,12 @@ This error occurs when attempting to use NREPL (Clojure's network REPL) function
 
 1. Use Swank instead of NREPL
 2. Start SBCL with Swank server enabled:
+
    ```lisp
    (ql:quickload :swank)
    (swank:create-server :port 4006)
    ```
+
 3. Connect using `repl_connect` with default or `:type :swank`
 
 ## Example

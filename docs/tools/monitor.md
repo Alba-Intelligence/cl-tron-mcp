@@ -17,9 +17,11 @@ Tools for production monitoring and health checks.
 ## memory_stats
 
 ### Overview
+
 Get memory usage statistics.
 
 ### Tool Definition
+
 ```json
 {
   "name": "memory_stats",
@@ -28,6 +30,7 @@ Get memory usage statistics.
 ```
 
 ### Return Value
+
 ```json
 {
   "total_bytes": 2147483648,
@@ -43,9 +46,11 @@ Get memory usage statistics.
 ## health_check
 
 ### Overview
+
 Check overall system health.
 
 ### Tool Definition
+
 ```json
 {
   "name": "health_check",
@@ -54,6 +59,7 @@ Check overall system health.
 ```
 
 ### Return Value
+
 ```json
 {
   "status": "healthy",
@@ -70,9 +76,11 @@ Check overall system health.
 ## metrics_export
 
 ### Overview
+
 Export metrics in Prometheus format.
 
 ### Tool Definition
+
 ```json
 {
   "name": "metrics_export",
@@ -81,6 +89,7 @@ Export metrics in Prometheus format.
 ```
 
 ### Return Value
+
 ```prometheus
 # HELP cltron_heap_bytes_allocated Total heap bytes allocated
 # TYPE cltron_heap_bytes_allocated gauge

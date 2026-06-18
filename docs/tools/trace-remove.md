@@ -5,11 +5,13 @@
 **Full Description:** Remove trace from a function. Use when done debugging to stop trace output.
 
 **Parameters:**
+
 - `functionName`: Function name to untrace (required)
 
 **Returns:** Untrace status
 
 **Example Usage:**
+
 ```lisp
 (trace_remove :functionName "my-function")
 ```

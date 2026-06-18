@@ -9,6 +9,7 @@
 **Returns:** List of available restarts with indices and descriptions
 
 **Example Usage:**
+
 ```lisp
 (swank_get_restarts)
 ```

@@ -9,6 +9,7 @@
 **Returns:** Call stack with function names and source locations
 
 **Example Usage:**
+
 ```lisp
 (swank_backtrace)
 ```

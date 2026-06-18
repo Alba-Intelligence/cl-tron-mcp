@@ -5,11 +5,13 @@
 **Full Description:** Remove a breakpoint by its ID. Use to clear breakpoints after debugging is complete.
 
 **Parameters:**
+
 - `breakpointId`: Breakpoint ID to remove (required)
 
 **Returns:** Removal status
 
 **Example Usage:**
+
 ```lisp
 (breakpoint_remove :breakpointId 1)
 ```

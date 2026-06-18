@@ -5,6 +5,7 @@ This directory contains detailed documentation for all MCP tools provided by cl-
 ## Tool Categories
 
 ### Unified REPL Tools (24 tools)
+
 - [repl-connect](repl-connect.md) - Connect to Swank REPL
 - [repl-disconnect](repl-disconnect.md) - Disconnect from REPL
 - [repl-status](repl-status.md) - Check REPL connection status
@@ -31,6 +32,7 @@ This directory contains detailed documentation for all MCP tools provided by cl-
 - [repl-help](repl-help.md) - Get help on REPL tools
 
 ### Swank Tools (20 tools)
+
 - [swank-connect](swank-connect.md) - Connect to Swank server
 - [swank-disconnect](swank-disconnect.md) - Disconnect from Swank
 - [swank-status](swank-status.md) - Get Swank connection status
@@ -53,6 +55,7 @@ This directory contains detailed documentation for all MCP tools provided by cl-
 - [swank-debugger-state](swank-debugger-state.md) - Get debugger state
 
 ### Inspector Tools (5 tools)
+
 - [inspect-object](inspect-object.md) - Inspect object by ID
 - [inspect-slot](inspect-slot.md) - Get or set slot value
 - [inspect-class](inspect-class.md) - Inspect CLOS class
@@ -60,6 +63,7 @@ This directory contains detailed documentation for all MCP tools provided by cl-
 - [inspect-package](inspect-package.md) - Inspect package symbols
 
 ### Debugger Tools (6 tools)
+
 - [debugger-frames](debugger-frames.md) - Get debugger stack frames
 - [debugger-restarts](debugger-restarts.md) - List debugger restarts
 - [breakpoint-set](breakpoint-set.md) - Set a breakpoint
@@ -68,34 +72,41 @@ This directory contains detailed documentation for all MCP tools provided by cl-
 - [step-frame](step-frame.md) - Step execution in frame
 
 ### REPL Tools (1 tool)
+
 - [repl-eval-repl](repl-eval-repl.md) - Evaluate code in REPL
 
 ### Hot Reload Tools (2 tools)
+
 - [code-compile-string](code-compile-string.md) - Compile and load code string
 - [reload-system](reload-system.md) - Reload ASDF system
 
 ### Profiler Tools (3 tools)
+
 - [profile-start](profile-start.md) - Start profiling
 - [profile-stop](profile-stop.md) - Stop profiling
 - [profile-report](profile-report.md) - Get profiling report
 
 ### Tracer Tools (3 tools)
+
 - [trace-function](trace-function.md) - Trace a function
 - [trace-remove](trace-remove.md) - Remove function trace
 - [trace-list](trace-list.md) - List traced functions
 
 ### Thread Tools (3 tools)
+
 - [thread-list](thread-list.md) - List all threads
 - [thread-inspect](thread-inspect.md) - Inspect thread details
 - [thread-backtrace](thread-backtrace.md) - Get thread backtrace
 
 ### Monitor Tools (4 tools)
+
 - [health-check](health-check.md) - Server health check
 - [runtime-stats](runtime-stats.md) - Get runtime statistics
 - [gc-run](gc-run.md) - Force garbage collection
 - [system-info](system-info.md) - Get system information
 
 ### Logging Tools (5 tools)
+
 - [log-configure](log-configure.md) - Configure logging level
 - [log-info](log-info.md) - Log info message
 - [log-debug](log-debug.md) - Log debug message
@@ -103,6 +114,7 @@ This directory contains detailed documentation for all MCP tools provided by cl-
 - [log-error](log-error.md) - Log error message
 
 ### XRef Tools (5 tools)
+
 - [who-calls](who-calls.md) - Find function callers
 - [who-references](who-references.md) - Find symbol references
 - [who-binds](who-binds.md) - Find symbol bindings
@@ -110,6 +122,7 @@ This directory contains detailed documentation for all MCP tools provided by cl-
 - [list-callees](list-callees.md) - List called functions
 
 ### Security Tools (5 tools)
+
 - [whitelist-add](whitelist-add.md) - Add whitelist pattern
 - [whitelist-remove](whitelist-remove.md) - Remove whitelist pattern
 - [whitelist-clear](whitelist-clear.md) - Clear whitelist
@@ -141,6 +154,7 @@ Each tool documentation file follows this structure:
 ```
 
 **Notes:** Any additional notes, prerequisites, or warnings
+
 ```
 
 ## Accessing Documentation

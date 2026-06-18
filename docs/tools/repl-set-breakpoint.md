@@ -5,6 +5,7 @@
 **Full Description:** Set a breakpoint on a function via the connected REPL
 
 **Parameters:**
+
 - `function`: Function name to set breakpoint on (required)
 - `condition`: Conditional expression (optional)
 - `hitCount`: Number of hits before triggering (optional)
@@ -13,6 +14,7 @@
 **Returns:** Breakpoint ID and status
 
 **Example Usage:**
+
 ```lisp
 (repl_set_breakpoint :function "my-function")
 (repl_set_breakpoint :function "my-function" :condition "(> x 10)")

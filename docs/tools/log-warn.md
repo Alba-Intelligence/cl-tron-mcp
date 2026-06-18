@@ -5,12 +5,14 @@
 **Full Description:** Log a warning message. Use for non-fatal issues that should be noted.
 
 **Parameters:**
+
 - `message`: Message to log (required)
 - `package`: Package to log for (optional)
 
 **Returns:** Log status
 
 **Example Usage:**
+
 ```lisp
 (log_warn :message "Deprecated function called")
 ```

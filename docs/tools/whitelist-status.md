@@ -9,6 +9,7 @@
 **Returns:** Current whitelist status including enabled state and patterns
 
 **Example Usage:**
+
 ```lisp
 (whitelist_status)
 ```

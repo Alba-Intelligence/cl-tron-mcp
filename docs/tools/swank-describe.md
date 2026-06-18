@@ -5,11 +5,13 @@
 **Full Description:** Describe a symbol in the connected SBCL. REQUIRES: swank_connect first. Shows documentation, argument list, and source location.
 
 **Parameters:**
+
 - `expression`: Symbol expression to describe (required)
 
 **Returns:** Symbol information including docstring, argument list, and source location
 
 **Example Usage:**
+
 ```lisp
 (swank_describe :expression "'mapcar")
 ```

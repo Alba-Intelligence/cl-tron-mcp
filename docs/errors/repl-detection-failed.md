@@ -19,17 +19,23 @@ This error occurs when the system cannot automatically determine the type of REP
 ## Resolution
 
 1. Verify the server is running:
+
    ```bash
    netstat -an | grep 4006
    ```
+
 2. Check network connectivity:
+
    ```bash
    telnet localhost 4006
    ```
+
 3. Try connecting with explicit type:
+
    ```lisp
    (repl_connect :host "localhost" :port 4006 :type :swank)
    ```
+
 4. Check server logs for errors
 
 ## Example

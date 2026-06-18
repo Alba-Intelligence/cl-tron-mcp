@@ -64,6 +64,7 @@ All errors follow this format:
 ## Error Categories
 
 ### Connection Errors
+
 - `REPL_NOT_CONNECTED`
 - `REPL_ALREADY_CONNECTED`
 - `NREPL_NOT_SUPPORTED`
@@ -76,6 +77,7 @@ All errors follow this format:
 - `RECONNECTION_ERROR`
 
 ### Parameter Validation Errors
+
 - `MISSING_REQUIRED_PARAMETER`
 - `INVALID_STRING_PARAMETER`
 - `INVALID_LIST_PARAMETER`
@@ -92,22 +94,26 @@ All errors follow this format:
 - `INVALID_BOOLEAN_PARAMETER`
 
 ### Debugger Errors
+
 - `NO_DEBUGGER_EVENT`
 - `NOT_IN_STEPPER`
 - `INTERRUPT_ERROR`
 
 ### Request Errors
+
 - `REQUEST_NOT_FOUND`
 - `REQUEST_TIMEOUT`
 - `APPROVAL_EXPIRED`
 - `TOOL_EXECUTION_TIMEOUT`
 
 ### Protocol Errors
+
 - `UNKNOWN_METHOD`
 - `JSON_PARSE_ERROR`
 - `INTERNAL_ERROR`
 
 ### Object/Type Errors
+
 - `NOT_A_FUNCTION`
 - `OBJECT_NOT_FOUND`
 - `CLASS_NOT_FOUND`

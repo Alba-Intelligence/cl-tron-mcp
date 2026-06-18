@@ -58,6 +58,7 @@ This guide helps you select the appropriate specialized agent for your task. Tro
 **Primary Use Case:** Deep debugging and error analysis in SBCL applications.
 
 **Trigger Conditions:**
+
 - You encounter an error or exception
 - You need to inspect stack frames or local variables
 - You want to understand the current debugger state
@@ -65,6 +66,7 @@ This guide helps you select the appropriate specialized agent for your task. Tro
 - You want to trace function execution
 
 **Key Capabilities:**
+
 - Stack frame inspection and navigation
 - Local variable examination
 - Restart analysis and invocation
@@ -78,6 +80,7 @@ This guide helps you select the appropriate specialized agent for your task. Tro
 **Primary Use Case:** Live code modification without restarting the SBCL session.
 
 **Trigger Conditions:**
+
 - You need to fix a bug in running code
 - You want to test changes immediately
 - You need to reload a system or package
@@ -85,6 +88,7 @@ This guide helps you select the appropriate specialized agent for your task. Tro
 - You want to preserve application state while updating code
 
 **Key Capabilities:**
+
 - Compile and load code strings
 - Reload ASDF systems
 - Hot-swap function definitions
@@ -98,6 +102,7 @@ This guide helps you select the appropriate specialized agent for your task. Tro
 **Primary Use Case:** Performance analysis and optimization of SBCL applications.
 
 **Trigger Conditions:**
+
 - Your application is slow or unresponsive
 - You need to identify performance bottlenecks
 - You want to profile function execution
@@ -105,6 +110,7 @@ This guide helps you select the appropriate specialized agent for your task. Tro
 - You're optimizing critical code paths
 
 **Key Capabilities:**
+
 - Statistical profiling
 - Function-level performance analysis
 - Runtime statistics
@@ -124,6 +130,7 @@ SBCL Debugging Expert → Hot Reload Specialist → Performance Engineer
 ```
 
 **Workflow:**
+
 1. Start with **SBCL Debugging Expert** to identify the issue using stack traces and local variable inspection
 2. Use **Hot Reload Specialist** to apply the fix without restarting
 3. Use **Performance Engineer** to verify the improvement and ensure no regressions
@@ -137,6 +144,7 @@ SBCL Debugging Expert → Hot Reload Specialist → SBCL Debugging Expert
 ```
 
 **Workflow:**
+
 1. Use **SBCL Debugging Expert** to inspect the current state and understand the code structure
 2. Use **Hot Reload Specialist** to compile and load the modified code
 3. Return to **SBCL Debugging Expert** to verify the changes work correctly
@@ -150,6 +158,7 @@ Performance Engineer → Hot Reload Specialist → Performance Engineer
 ```
 
 **Workflow:**
+
 1. Use **Performance Engineer** to profile the application and identify bottlenecks
 2. Use **Hot Reload Specialist** to apply optimizations
 3. Return to **Performance Engineer** to validate performance improvements
@@ -277,6 +286,7 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
 | `sbcl-debugging-expert` | Specialized SBCL debugging workflows                                         |
 | `hot-reload-specialist` | Hot code reloading specialist workflows                                      |
 | `performance-engineer` | Performance profiling and optimization workflows                             |
+
 ## Tool Categories (86 tools total)
 
 | Category   | Purpose                | Key Tools                                                      |

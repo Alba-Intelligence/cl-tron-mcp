@@ -9,6 +9,7 @@
 **Returns:** Execution status
 
 **Example Usage:**
+
 ```lisp
 (swank_continue)
 ```

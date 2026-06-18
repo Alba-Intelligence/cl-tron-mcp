@@ -9,6 +9,7 @@
 **Cause**: Package not loaded
 
 **Solution**:
+
 ```lisp
 (ql:quickload :cl-tron-mcp)
 ```
@@ -20,6 +21,7 @@
 **Cause**: User not responding within 300 seconds
 
 **Solution**:
+
 - Increase timeout in security configuration
 - Proceed without approval (if whitelisted)
 - Use `whitelist_add` to auto-approve operations
@@ -31,6 +33,7 @@
 **Cause**: Port already in use
 
 **Solution**:
+
 ```lisp
 ;; Use different port
 (cl-tron-mcp/core:start-server :transport :http-only :port 4007)
@@ -46,6 +49,7 @@ lsof -ti:4006 | xargs kill -9
 **Cause**: Stale FASL files
 
 **Solution**:
+
 ```lisp
 (asdf:compile-system :cl-tron-mcp :force t)
 (asdf:test-system :cl-tron-mcp)
@@ -58,6 +62,7 @@ lsof -ti:4006 | xargs kill -9
 **Cause**: Hunchentoot runs until explicitly stopped
 
 **Solution**:
+
 ```lisp
 (cl-tron-mcp/core:stop-server)
 ```
@@ -71,6 +76,7 @@ Or kill the process in the terminal where the server is running.
 **Cause**: SBCL compiled without `:sb-dbg` feature
 
 **Solution**:
+
 - Rebuild SBCL with debugging support
 - Or use default fallbacks where available
 
@@ -81,6 +87,7 @@ Or kill the process in the terminal where the server is running.
 **Cause**: Wrong JSON key case in responses
 
 **Solution**:
+
 - Ensure responses use lowercase keys (`jsonrpc`, `id`, `result`)
 - Check that Jonathan uses `:|key|` syntax for lowercase output
 
@@ -91,6 +98,7 @@ Or kill the process in the terminal where the server is running.
 **Cause**: Thread crash or output buffering
 
 **Solution**:
+
 - Use stdio transport for reliability
 - Ensure `force-output` is called after writing
 - Check stderr logs for errors
@@ -102,6 +110,7 @@ Or kill the process in the terminal where the server is running.
 **Cause**: Quicklisp not loaded
 
 **Solution**:
+
 ```lisp
 ;; Add before starting server
 (ql:quickload :cl-tron-mcp)
@@ -115,6 +124,7 @@ Or kill the process in the terminal where the server is running.
 **Cause**: Case sensitivity in symbol names
 
 **Solution**:
+
 - Use uppercase symbols: `CL:CAR` not `cl:car`
 - Check package prefixes are correct
 
@@ -127,6 +137,7 @@ Or kill the process in the terminal where the server is running.
 **Cause**: Swank server not running or wrong port
 
 **Solution**:
+
 ```lisp
 ;; Start Swank in your Lisp session
 (swank:create-server :port 4006 :dont-close t)
@@ -142,6 +153,7 @@ Or kill the process in the terminal where the server is running.
 **Cause**: Debugger waiting for input
 
 **Solution**:
+
 - Use `repl_get_restarts` to see options
 - Use `repl_invoke_restart` to abort
 - Or interrupt with `repl_abort`
@@ -155,6 +167,7 @@ Or kill the process in the terminal where the server is running.
 **Cause**: Large compilation or infinite loop
 
 **Solution**:
+
 - Use `profile_start` and `profile_stop` to measure
 - Check for infinite loops with `trace_function`
 - Use `thread_list` to see if threads are stuck
@@ -166,6 +179,7 @@ Or kill the process in the terminal where the server is running.
 **Cause**: Memory leak or large allocations
 
 **Solution**:
+
 ```lisp
 ;; Force garbage collection
 (cl-tron-mcp/monitor:gc-run)
@@ -183,6 +197,7 @@ Or kill the process in the terminal where the server is running.
 **Cause**: Object was garbage collected
 
 **Solution**:
+
 - Re-evaluate code to recreate object
 - Use `inspect_package` or `inspect_function` for persistent objects
 
@@ -193,6 +208,7 @@ Or kill the process in the terminal where the server is running.
 **Cause**: Code didn't run during profiling
 
 **Solution**:
+
 ```lisp
 (cl-tron-mcp/profiler:profile_start)
 ;; Run your code here
@@ -207,6 +223,7 @@ Or kill the process in the terminal where the server is running.
 **Cause**: Function not called or wrong package
 
 **Solution**:
+
 - Ensure function is actually called
 - Use full package name: `cl-tron-mcp/tools:get-tool`
 - Check with `trace_list` to see active traces

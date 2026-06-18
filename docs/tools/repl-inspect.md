@@ -5,11 +5,13 @@
 **Full Description:** Inspect an object in the connected REPL. REQUIRES: repl_connect first. EXPRESSION is evaluated - use quoted symbols for variables.
 
 **Parameters:**
+
 - `expression`: Lisp expression to inspect (required)
 
 **Returns:** Object inspection result with type, value, and slots
 
 **Example Usage:**
+
 ```lisp
 (repl_inspect :expression "'*my-var*")
 (repl_inspect :expression "'(make-hash-table)")

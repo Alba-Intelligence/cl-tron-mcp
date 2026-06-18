@@ -9,6 +9,7 @@
 **Returns:** Profiling start status
 
 **Example Usage:**
+
 ```lisp
 (profile_start)
 ```

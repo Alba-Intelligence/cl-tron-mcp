@@ -5,11 +5,13 @@
 **Full Description:** Inspect a function definition. Shows lambda list, documentation, and source location. Use to understand how a function should be called.
 
 **Parameters:**
+
 - `symbolName`: Function symbol name (required)
 
 **Returns:** Function information including lambda list, documentation, and source location
 
 **Example Usage:**
+
 ```lisp
 (inspect_function :symbolName "mapcar")
 ```

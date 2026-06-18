@@ -5,11 +5,13 @@
 **Full Description:** Toggle breakpoint enabled state via the connected REPL
 
 **Parameters:**
+
 - `breakpointId`: Breakpoint ID to toggle (required)
 
 **Returns:** New breakpoint state
 
 **Example Usage:**
+
 ```lisp
 (repl_toggle_breakpoint :breakpointId 1)
 ```

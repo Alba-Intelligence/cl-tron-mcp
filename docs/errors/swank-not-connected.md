@@ -18,10 +18,12 @@ This error occurs when attempting to use Swank functionality without an active c
 
 1. Connect to Swank server: `swank_connect`
 2. Verify Swank server is running in SBCL:
+
    ```lisp
    (ql:quickload :swank)
    (swank:create-server :port 4006)
    ```
+
 3. Check connection status: `swank_status`
 
 ## Example

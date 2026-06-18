@@ -9,6 +9,7 @@
 **Returns:** Call stack with function names, arguments, and source locations
 
 **Example Usage:**
+
 ```lisp
 (repl_backtrace)
 ```

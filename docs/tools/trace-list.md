@@ -9,6 +9,7 @@
 **Returns:** List of all traced functions
 
 **Example Usage:**
+
 ```lisp
 (trace_list)
 ```

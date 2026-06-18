@@ -5,11 +5,13 @@
 **Full Description:** Step out of the current frame in the debugger. REQUIRES: swank_connect first. Finishes the current function and stops at the return point.
 
 **Parameters:**
+
 - `frame`: Frame index (optional, default: 0)
 
 **Returns:** Current execution state after stepping
 
 **Example Usage:**
+
 ```lisp
 (swank_out :frame 0)
 ```

@@ -15,9 +15,11 @@ Tools for introspecting Lisp objects at runtime.
 ## inspect_object
 
 ### Overview
+
 Introspect any Lisp object and return structured information.
 
 ### Tool Definition
+
 ```json
 {
   "name": "inspect_object",
@@ -46,6 +48,7 @@ Introspect any Lisp object and return structured information.
 ```
 
 ### Return Value
+
 ```json
 {
   "type": "OBJECT",
@@ -65,6 +68,7 @@ Introspect any Lisp object and return structured information.
 ### Usage Examples
 
 **Inspect a list:**
+
 ```json
 {
   "tool": "inspect_object",
@@ -76,6 +80,7 @@ Introspect any Lisp object and return structured information.
 ```
 
 **Inspect a hash-table:**
+
 ```json
 {
   "tool": "inspect_object",
@@ -89,9 +94,11 @@ Introspect any Lisp object and return structured information.
 ## inspect_slot
 
 ### Overview
+
 Get or set slot values on CLOS instances.
 
 ### Tool Definition
+
 ```json
 {
   "name": "inspect_slot",
@@ -120,6 +127,7 @@ Get or set slot values on CLOS instances.
 ### Usage Examples
 
 **Get slot value:**
+
 ```json
 {
   "tool": "inspect_slot",
@@ -131,6 +139,7 @@ Get or set slot values on CLOS instances.
 ```
 
 **Set slot value:**
+
 ```json
 {
   "tool": "inspect_slot",
@@ -145,9 +154,11 @@ Get or set slot values on CLOS instances.
 ## inspect_class
 
 ### Overview
+
 Inspect class hierarchy, slots, and methods.
 
 ### Tool Definition
+
 ```json
 {
   "name": "inspect_class",
@@ -168,9 +179,11 @@ Inspect class hierarchy, slots, and methods.
 ## inspect_function
 
 ### Overview
+
 Inspect function definition, lambda list, and documentation.
 
 ### Tool Definition
+
 ```json
 {
   "name": "inspect_function",
@@ -193,6 +206,7 @@ Inspect function definition, lambda list, and documentation.
 ### Common Errors
 
 **Object ID not found:**
+
 ```json
 {
   "error": {
@@ -206,6 +220,7 @@ Inspect function definition, lambda list, and documentation.
 ```
 
 **Slot not found:**
+
 ```json
 {
   "error": {

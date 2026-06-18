@@ -17,12 +17,14 @@ Tools for performance profiling and analysis of SBCL applications.
 ## Profiling Types
 
 ### Deterministic Profiling (sb-profile)
+
 - Records every function call
 - High accuracy
 - Medium overhead (1-10x)
 - Use for development debugging
 
 ### Statistical Profiling (sb-sprof)
+
 - Samples call stack periodically
 - Statistical accuracy
 - Low overhead (1-5%)
@@ -31,9 +33,11 @@ Tools for performance profiling and analysis of SBCL applications.
 ## profile_start
 
 ### Overview
+
 Start deterministic profiling for specific functions.
 
 ### Tool Definition
+
 ```json
 {
   "name": "profile_start",
@@ -60,6 +64,7 @@ Start deterministic profiling for specific functions.
 ### Usage Examples
 
 **Profile specific functions:**
+
 ```json
 {
   "tool": "profile_start",
@@ -70,6 +75,7 @@ Start deterministic profiling for specific functions.
 ```
 
 **Profile all functions in package:**
+
 ```json
 {
   "tool": "profile_start",
@@ -82,9 +88,11 @@ Start deterministic profiling for specific functions.
 ## sprof_start
 
 ### Overview
+
 Start low-overhead statistical profiling.
 
 ### Tool Definition
+
 ```json
 {
   "name": "sprof_start",
@@ -110,9 +118,11 @@ Start low-overhead statistical profiling.
 ## profile_report
 
 ### Overview
+
 Generate a profiling report.
 
 ### Tool Definition
+
 ```json
 {
   "name": "profile_report",
@@ -133,6 +143,7 @@ Generate a profiling report.
 ### Report Formats
 
 **Flat format:**
+
 ```
 Function          Calls  %time  Sec/Call
 --------------------------------------------
@@ -141,6 +152,7 @@ MY-APP:PROCESS    5000    20.1   0.000040
 ```
 
 **Callers format:**
+
 ```
 Function          Caller                Calls  %time
 ------------------------------------------------------
@@ -151,9 +163,11 @@ MY-APP:COMPUTE   MY-APP:OUTER          2000    9.0
 ## profile_flamegraph
 
 ### Overview
+
 Generate a flamegraph SVG for visual profiling.
 
 ### Tool Definition
+
 ```json
 {
   "name": "profile_flamegraph",
@@ -177,6 +191,7 @@ Generate a flamegraph SVG for visual profiling.
 ```
 
 ### Usage Example
+
 ```json
 {
   "tool": "profile_flamegraph",
@@ -212,6 +227,7 @@ Generate a flamegraph SVG for visual profiling.
 ### Common Errors
 
 **No profiling data:**
+
 ```json
 {
   "error": {
@@ -225,6 +241,7 @@ Generate a flamegraph SVG for visual profiling.
 ```
 
 **Invalid format:**
+
 ```json
 {
   "error": {

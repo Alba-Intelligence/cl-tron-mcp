@@ -9,6 +9,7 @@
 **Returns:** Abort status
 
 **Example Usage:**
+
 ```lisp
 (repl_abort)
 ```

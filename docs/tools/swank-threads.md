@@ -9,6 +9,7 @@
 **Returns:** List of thread objects with name, status, and ID
 
 **Example Usage:**
+
 ```lisp
 (swank_threads)
 ```

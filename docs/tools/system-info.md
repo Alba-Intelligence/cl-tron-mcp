@@ -9,6 +9,7 @@
 **Returns:** System information including Lisp implementation, OS, and runtime details
 
 **Example Usage:**
+
 ```lisp
 (system_info)
 ```

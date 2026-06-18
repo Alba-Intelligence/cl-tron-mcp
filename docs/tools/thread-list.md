@@ -9,6 +9,7 @@
 **Returns:** List of threads with status information
 
 **Example Usage:**
+
 ```lisp
 (thread_list)
 ```

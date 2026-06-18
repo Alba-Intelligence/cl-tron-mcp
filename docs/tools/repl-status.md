@@ -9,6 +9,7 @@
 **Returns:** Status object with connection details
 
 **Example Usage:**
+
 ```lisp
 (repl_status)
 ```

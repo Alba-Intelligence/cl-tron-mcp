@@ -9,6 +9,7 @@
 **Returns:** Interrupt status
 
 **Example Usage:**
+
 ```lisp
 (swank_interrupt)
 ```

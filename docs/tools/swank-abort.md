@@ -5,11 +5,13 @@
 **Full Description:** Abort a specific thread in the connected SBCL. REQUIRES: swank_connect first. Useful when a thread is stuck or in an error condition.
 
 **Parameters:**
+
 - `threadId`: Thread ID to abort (required)
 
 **Returns:** Abort status
 
 **Example Usage:**
+
 ```lisp
 (swank_abort :threadId "main")
 ```

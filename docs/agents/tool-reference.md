@@ -96,20 +96,24 @@
 ## Swank Tools (21) - Slime/Portacle Integration
 
 **Connection:**
+
 - `swank_connect` - Connect to Swank server
 - `swank_disconnect` - Disconnect from Swank
 - `swank_status` - Get Swank connection status
 
 **Evaluation:**
+
 - `swank_eval` - Evaluate Lisp code via Swank (requires approval)
 - `swank_compile` - Compile Lisp code via Swank (requires approval)
 
 **Threads:**
+
 - `swank_threads` - List all threads in Swank-connected SBCL
 - `swank_abort` - Abort a specific thread (requires approval)
 - `swank_interrupt` - Interrupt evaluation (requires approval)
 
 **Debugging:**
+
 - `swank_backtrace` - Get the current backtrace
 - `swank_get_restarts` - Get available restarts
 - `swank_invoke_restart` - Invoke a restart by index
@@ -120,6 +124,7 @@
 - `swank_debugger_state` - Get debugger state
 
 **Inspection:**
+
 - `swank_inspect` - Inspect an object via Swank
 - `swank_describe` - Describe a symbol via Swank
 - `swank_autodoc` - Get documentation for a symbol
@@ -128,15 +133,18 @@
 ## Unified REPL Tools (23) - Swank
 
 **Connection:**
+
 - `repl_connect` - Connect to Swank REPL
 - `repl_disconnect` - Disconnect from the current REPL
 - `repl_status` - Check REPL connection status and type
 
 **Evaluation:**
+
 - `repl_eval` - Evaluate Lisp code via the connected REPL (requires approval)
 - `repl_compile` - Compile Lisp code via the connected REPL (requires approval)
 
 **Debugging:**
+
 - `repl_backtrace` - Get backtrace via the connected REPL
 - `repl_frame_locals` - Get local variables for a frame
 - `repl_get_restarts` - Get available restarts
@@ -147,20 +155,24 @@
 - `repl_continue` - Continue execution from debugger
 
 **Breakpoints:**
+
 - `repl_set_breakpoint` - Set a breakpoint on a function (requires approval)
 - `repl_remove_breakpoint` - Remove a breakpoint by ID
 - `repl_list_breakpoints` - List all breakpoints
 - `repl_toggle_breakpoint` - Toggle breakpoint enabled state
 
 **Inspection:**
+
 - `repl_inspect` - Inspect an object via the connected REPL
 - `repl_describe` - Describe a symbol via the connected REPL
 - `repl_completions` - Get symbol completions via the connected REPL
 - `repl_doc` - Get documentation for a symbol via the connected REPL
 
 **Threads:**
+
 - `repl_threads` - List all threads via the connected REPL
 - `repl_abort` - Abort/interrupt evaluation via the connected REPL
 
 **Help:**
+
 - `repl_help` - Get help on available unified REPL tools

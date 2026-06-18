@@ -5,11 +5,13 @@
 **Full Description:** Clear the approval whitelist
 
 **Parameters:**
+
 - `operation`: Operation type to clear (required)
 
 **Returns:** Whitelist clear status
 
 **Example Usage:**
+
 ```lisp
 (whitelist_clear :operation "eval")
 ```

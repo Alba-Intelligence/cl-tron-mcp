@@ -9,6 +9,7 @@
 **Returns:** Server health status and version information
 
 **Example Usage:**
+
 ```lisp
 (health_check)
 ```

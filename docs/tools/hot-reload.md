@@ -35,9 +35,11 @@ Tools for modifying Lisp code without restarting the application.
 ## code_compile_string
 
 ### Overview
+
 Compile a string of Lisp code and load it into the running image.
 
 ### Tool Definition
+
 ```json
 {
   "name": "code_compile_string",
@@ -64,9 +66,11 @@ Compile a string of Lisp code and load it into the running image.
 ```
 
 ### Approval Required
+
 Requires `:compile-file` approval.
 
 ### User Prompt
+
 ```
 AI agent wants to compile and load code:
 Filename: src/core.lisp
@@ -78,9 +82,11 @@ Allow? [Yes/No] Timeout: 120s
 ## code_reload_package
 
 ### Overview
+
 Reload an entire package from its source files.
 
 ### Tool Definition
+
 ```json
 {
   "name": "code_reload_package",
@@ -104,6 +110,7 @@ Reload an entire package from its source files.
 ```
 
 ### Usage Example
+
 ```json
 {
   "tool": "code_reload_package",
@@ -117,9 +124,11 @@ Reload an entire package from its source files.
 ## code_replace_function
 
 ### Overview
+
 Atomically replace a function definition. Safe for running threads.
 
 ### Tool Definition
+
 ```json
 {
   "name": "code_replace_function",
@@ -142,6 +151,7 @@ Atomically replace a function definition. Safe for running threads.
 ```
 
 ### Safety Guarantees
+
 - Atomic: New calls get new definition immediately
 - Threads executing old code continue with old code
 - No window of inconsistency
@@ -149,6 +159,7 @@ Atomically replace a function definition. Safe for running threads.
 ## Common Patterns
 
 ### Pattern 1: Safe Function Update
+
 ```json
 {
   "tool": "code_replace_function",
@@ -160,6 +171,7 @@ Atomically replace a function definition. Safe for running threads.
 ```
 
 ### Pattern 2: Package Hot Reload
+
 ```json
 {
   "tool": "code_reload_package",
@@ -170,6 +182,7 @@ Atomically replace a function definition. Safe for running threads.
 ```
 
 ### Pattern 3: System Reload with Dependencies
+
 ```json
 {
   "tool": "code_reload_system",
@@ -185,6 +198,7 @@ Atomically replace a function definition. Safe for running threads.
 ### Common Errors
 
 **Compilation error:**
+
 ```json
 {
   "error": {
@@ -203,6 +217,7 @@ Atomically replace a function definition. Safe for running threads.
 ```
 
 **Package not found:**
+
 ```json
 {
   "error": {

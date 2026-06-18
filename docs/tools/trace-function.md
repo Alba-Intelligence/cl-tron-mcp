@@ -5,11 +5,13 @@
 **Full Description:** Add trace to a function. Every call will print arguments and return value. Use to understand execution flow. Requires approval.
 
 **Parameters:**
+
 - `functionName`: Function name to trace (required)
 
 **Returns:** Trace status
 
 **Example Usage:**
+
 ```lisp
 (trace_function :functionName "my-function")
 ```

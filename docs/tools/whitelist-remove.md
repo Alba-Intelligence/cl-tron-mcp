@@ -5,12 +5,14 @@
 **Full Description:** Remove a pattern from the approval whitelist
 
 **Parameters:**
+
 - `operation`: Operation type (required)
 - `pattern`: Pattern to remove (required)
 
 **Returns:** Whitelist remove status
 
 **Example Usage:**
+
 ```lisp
 (whitelist_remove :operation "eval" :pattern ".*")
 ```

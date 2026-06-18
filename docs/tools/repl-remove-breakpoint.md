@@ -5,11 +5,13 @@
 **Full Description:** Remove a breakpoint by ID via the connected REPL
 
 **Parameters:**
+
 - `breakpointId`: Breakpoint ID to remove (required)
 
 **Returns:** Removal status
 
 **Example Usage:**
+
 ```lisp
 (repl_remove_breakpoint :breakpointId 1)
 ```

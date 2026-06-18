@@ -9,15 +9,18 @@ This document describes the key principles applied to reduce token usage for AI 
 **Principle:** Split large monolithic files into smaller, focused modules.
 
 **Application:**
+
 - Split 1,293-line `src/tools/register-tools.lisp` into 13 category-specific files
 - Split 832-line `AGENTS.md` into 6 focused documentation files
 
 **Benefits:**
+
 - Agents load only relevant modules for their task
 - Reduces context by 60-80% for specialized workflows
 - Improves discoverability through clear categorization
 
 **Example:**
+
 ```lisp
 ;; Before: All tools in one file
 ;; src/tools/register-tools.lisp (1,293 lines)
@@ -34,16 +37,19 @@ This document describes the key principles applied to reduce token usage for AI 
 **Principle:** Extract repetitive patterns into reusable macros.
 
 **Application:**
+
 - Created `define-validated-tool` macro for tools with validation
 - Created `define-simple-tool` macro for tools without validation
 - Eliminated 40% of repetitive boilerplate code
 
 **Benefits:**
+
 - Reduces token count by eliminating repeated patterns
 - Improves maintainability
 - Ensures consistent error handling
 
 **Example:**
+
 ```lisp
 ;; Before: Repetitive handler-case + validation
 (register-tool-handler "inspect_object"
@@ -76,16 +82,19 @@ This document describes the key principles applied to reduce token usage for AI 
 **Principle:** Load resources on-demand rather than upfront.
 
 **Application:**
+
 - Documentation files are not probed or read until `resources/read` is called
 - `resources/list` returns metadata without file system operations
 - File validation and size calculation deferred to read time
 
 **Benefits:**
+
 - Reduces initial context by 50-70%
 - Eliminates file system overhead during listing
 - Agents only load what they need for their specific task
 
 **Example:**
+
 ```lisp
 ;; resources/list returns metadata without probing files
 (resources/list)
@@ -98,18 +107,20 @@ This document describes the key principles applied to reduce token usage for AI 
 
 ### 4. Specialized Entry Points
 
-
 **Principle:** Create focused entry points for specific agent types.
 
 **Application:**
+
 - Agent-specific prompts for debugging, profiling, hot-reload
 - Workflow-specific tool subsets
 
 **Benefits:**
+
 - 60-80% token savings for specialized tasks
 - Clearer intent and better guidance
 
 **Example:**
+
 ```lisp
 ;; Debugging agent loads only:
 ;; - debugger-tools.lisp
@@ -129,14 +140,17 @@ This document describes the key principles applied to reduce token usage for AI 
 **Principle:** Merge duplicate or overlapping code.
 
 **Application:**
+
 - Swank and Unified clients share common protocol
 - Similar validation functions consolidated
 
 **Benefits:**
+
 - 30% reduction in redundant code
 - Single source of truth for shared functionality
 
 **Example:**
+
 ```lisp
 ;; Before: Separate Swank and Unified implementations
 ;; src/swank/client.lisp (200 lines)
@@ -153,14 +167,17 @@ This document describes the key principles applied to reduce token usage for AI 
 **Principle:** Reduce repetitive schema definitions.
 
 **Application:**
+
 - Common schema patterns extracted
 - Schema generation helpers
 
 **Benefits:**
+
 - 20% reduction in schema boilerplate
 - Consistent schema structure
 
 **Example:**
+
 ```lisp
 ;; Before: Repeated schema definitions
 :input-schema (list :objectid "string" :maxdepth "integer")

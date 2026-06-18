@@ -9,6 +9,7 @@
 **Returns:** Disconnection status object
 
 **Example Usage:**
+
 ```lisp
 (repl_disconnect)
 ```
