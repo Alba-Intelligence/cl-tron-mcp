@@ -1,0 +1,10 @@
+{
+  "mcp": {
+    "cl-tron-mcp": {
+      "type": "local",
+      "command": ["./run-mcp.sh", "--stdio-only"],
+      "enabled": true,
+      "timeout": 10000
+    }
+  }
+}
