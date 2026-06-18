@@ -29,7 +29,7 @@ in
 
       # Create ASCII GIFs
       vhs
-      asciinema_3
+      asciinema
       asciinema-agg
 
       sbcl
@@ -100,7 +100,13 @@ in
   tasks."tron-mcp:precompile" = {
     exec = ''
       echo "Precompiling cl-tron-mcp fasls..."
+      if [[ ! -f "$QUICKLISP_DIR/setup.lisp" ]]; then
+        echo "Quicklisp not found at $QUICKLISP_DIR — skipping precompile." >&2
+        echo "Install Quicklisp (https://www.quicklisp.org/beta/) for faster MCP startup." >&2
+        exit 0
+      fi
       sbcl --noinform --non-interactive \
+        --eval "(load #p\"$QUICKLISP_DIR/setup.lisp\")" \
         --eval "(push #p\"$DEVENV_ROOT/\" ql:*local-project-directories*)" \
         --eval "(ql:quickload :cl-tron-mcp :silent t)" \
         --eval "#+sbcl (sb-ext:exit :code 0)"
