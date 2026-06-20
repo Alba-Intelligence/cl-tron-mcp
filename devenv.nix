@@ -5,16 +5,25 @@
   inputs,
   ...
 }:
-let
-  llmsPkgs = inputs.llms.packages.${pkgs.stdenv.hostPlatform.system};
-in
 {
   # https://devenv.sh/basics/
   env.GREET = "devenv";
+  env.LD_LIBRARY_PATH = "${
+    pkgs.lib.makeLibraryPath (
+      with pkgs;
+      [
+        openssl_legacy
+        openssl_oqs
+        openssl_3_5
+        openssl_3_6
+      ]
+    )
+  }";
 
   # https://devenv.sh/packages/
-  packages =
-    (with pkgs; [
+  packages = (
+    with pkgs;
+    [
       git
       openssl_oqs
       openssl_3_5
@@ -34,18 +43,8 @@ in
 
       sbcl
       ecl
-      code-cursor
-      vscode
-    ])
-    ++ (with llmsPkgs; [
-      cursor-agent
-      amp
-      kilocode-cli
-      opencode
-      openskills
-      openspec
-      spec-kit
-    ]);
+    ]
+  );
 
   # https://devenv.sh/languages/
   # languages.rust.enable = true;
@@ -77,18 +76,6 @@ in
 
   # https://devenv.sh/basics/
   enterShell = ''
-    export LD_LIBRARY_PATH=${
-      pkgs.lib.makeLibraryPath (
-        with pkgs;
-        [
-          openssl_legacy
-          openssl_oqs
-          openssl_3_5
-          openssl_3_6
-        ]
-      )
-    }:$LD_LIBRARY_PATH
-
     hello         # Run scripts directly
     git --version # Use packages
     echo

@@ -885,6 +885,10 @@ ECL_ARGS=()
 log_info "Starting CL-TRON-MCP..."
 log_info "  Lisp: $LISP"
 log_info "  Transport: $TRANSPORT"
+log_info "  ASLR setting: $(cat /proc/sys/kernel/randomize_va_space 2>/dev/null || echo "unknown")"
+log_info "  LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-not set}"
+log_info "  setarch available: $(command -v setarch &>/dev/null && echo "yes" || echo "no")"
+log_info "  devenv active: $([[ -n "${DEVENV_STATE:-}" ]] && echo "yes" || echo "no")"
 if [[ "$TRANSPORT" != "stdio" ]]; then
     log_info "  Port: $PORT"
     log_info "  Mode: Long-running (use Ctrl+C or --stop to stop)"
