@@ -215,6 +215,12 @@ Point your MCP client at `run-mcp.sh` instead of `start-mcp.sh` directly:
 - **"Quicklisp not found"** — Ensure Quicklisp is installed at `~/quicklisp` or set `QUICKLISP_DIR` to the correct path before running `run-mcp.sh`.
 - **"devenv: command not found"** — Install [devenv](https://devenv.sh/install/) and ensure it is on your `PATH`.
 - **Precompile skipped** — Inside the devenv sandbox, the precompile task may skip if Quicklisp is not visible. This is expected; the MCP will still start correctly when `run-mcp.sh` injects `QUICKLISP_DIR`.
+- **Memory Faults, ASLR, or missing `libssl` inside `devenv`** — 
+  - **Dynamic Linker Paths**: In non-interactive mode (`run-mcp.sh` calling `devenv shell -- start-mcp.sh`), the interactive shell hook `enterShell` is not executed by `devenv`. To ensure libraries like OpenSSL are resolved correctly, `LD_LIBRARY_PATH` must be defined declaratively in `devenv.nix` under `env.LD_LIBRARY_PATH` rather than in `enterShell`. This has been resolved out-of-the-box in the provided `devenv.nix`.
+  - **Address Space Layout Randomization (ASLR)**: SBCL's memory manager (GENCGC) relies on fixed virtual memory address mappings. On some Linux kernels (where `/proc/sys/kernel/randomize_va_space` is set to `2`), ASLR can cause address space conflicts leading to SBCL startup memory faults ("Continuing with fingers crossed", `fatal error: ...` or sudden hangs). You can resolve this by wrapping the startup command using the `setarch` utility to disable ASLR for the SBCL process:
+    ```bash
+    setarch $(uname -m) -R ./run-mcp.sh
+    ```
 
 ## One-Time Precompile (Avoid First-Start Timeout)
 

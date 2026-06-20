@@ -283,8 +283,45 @@ If you encounter issues not covered here:
 4. Report with:
    - SBCL version
    - Transport mode used
-   - Full error message
-   - Steps to reproduce
+    - Full error message
+    - Steps to reproduce
+
+## Memory Faults, ASLR, and Linker Issues (Nix / devenv)
+
+### SBCL Memory Faults & Sudden Hangs (ASLR)
+
+**Symptom**: SBCL prints "Continuing with fingers crossed", crashes with `fatal error: memory mapping collision`, or hangs immediately on startup.
+
+**Cause**: Address Space Layout Randomization (ASLR) is fully enabled on the host Linux kernel (`/proc/sys/kernel/randomize_va_space` is `2`). This randomizes the base addresses of memory mappings, causing collisions with SBCL's static memory management strategy (GENCGC).
+
+**Solution**:
+Launch the script or command wrapped with `setarch $(uname -m) -R` to disable ASLR for the child process tree:
+```bash
+setarch $(uname -m) -R ./run-mcp.sh --http-only
+```
+The `start-mcp.sh` script automatically checks for this condition and logs diagnostic warnings if ASLR is active and `setarch` is not being used.
+
+### Missing OpenSSL or Dynamic Libraries in Non-Interactive Shells
+
+**Symptom**: Running the server manually in an interactive shell works, but running via an IDE or non-interactive launcher (e.g. `run-mcp.sh`) fails with missing `libssl` or other dynamic library errors.
+
+**Cause**: In `devenv.nix`, environment variables like `LD_LIBRARY_PATH` were declared inside `enterShell` instead of `env`. The `enterShell` block is an interactive initialization hook that is bypassed during non-interactive `devenv shell` execution.
+
+**Solution**:
+Export dependencies declaratively using `env.LD_LIBRARY_PATH` in `devenv.nix` rather than exporting them inside `enterShell`. The repository's `devenv.nix` handles this correctly by default:
+```nix
+  env.LD_LIBRARY_PATH = "${
+    pkgs.lib.makeLibraryPath (
+      with pkgs;
+      [
+        openssl_legacy
+        openssl_oqs
+        openssl_3_5
+        openssl_3_6
+      ]
+    )
+  }";
+```
 
 ## See Also
 
