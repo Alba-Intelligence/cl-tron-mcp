@@ -2,18 +2,23 @@
 
 (in-package :cl-tron-mcp/hot-reload)
 
-(defun compile-and-load (code &key filename position)
+(defun compile-and-load (code &key filename position package)
   "Compile and load a Lisp code string into the current image.
 For top-level forms (defun, defvar, etc.), uses eval which SBCL compiles.
 This is the local fallback; when Swank is connected, use repl-compile instead."
   (declare (ignore position))
   (handler-case
-      (let ((*package* (find-package :cl-user)))
-        (let ((form (read-from-string code)))
-          (eval form)
-          (list :success t
-                :message (format nil "~a compiled and loaded"
-                                 (or filename "code")))))
+      (let ((*package* (or (and package (find-package package))
+                           (find-package :cl-user))))
+        (unless *package*
+          (error "Package ~a not found" package))
+        (with-input-from-string (stream code)
+          (loop for form = (read stream nil :eof)
+                until (eq form :eof)
+                do (eval form)))
+        (list :success t
+              :message (format nil "~a compiled and loaded"
+                               (or filename "code"))))
     (error (e)
       (list :error t
             :type "COMPILATION-ERROR"

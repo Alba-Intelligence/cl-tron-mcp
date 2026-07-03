@@ -8,6 +8,44 @@
                             "(defun cl-tron-mcp/tests::__hot-reload-test-fn () 42)")))
                (ok (listp result))
                (ok (or (getf result :success) (getf result :compiled)))))
+  (testing "compile-and-load evaluates all top-level forms"
+           (let* ((package-name "CL-TRON-MCP/HOT-RELOAD-TEST-MULTI")
+                 (function-name "MULTI-FORM-TEST")
+                 (code (format nil "(defpackage ~a (:use :cl))~%(in-package ~a)~%(defun ~a () :ok)"
+                               package-name package-name function-name)))
+            (when (find-package package-name)
+              (delete-package package-name))
+            (unwind-protect
+                 (let ((result (cl-tron-mcp/hot-reload:compile-and-load code)))
+                   (ok (getf result :success))
+                   (let* ((package (find-package package-name))
+                          (symbol (and package
+                                       (find-symbol function-name package))))
+                     (ok package)
+                     (ok symbol)
+                     (ok (fboundp symbol))
+                     (ok (eq :ok (funcall symbol)))))
+              (when (find-package package-name)
+                (delete-package package-name)))))
+  (testing "compile-and-load honors requested package"
+           (let* ((package-name "CL-TRON-MCP/HOT-RELOAD-TEST-PACKAGE")
+                 (function-name "PACKAGE-SCOPED-FN"))
+            (when (find-package package-name)
+              (delete-package package-name))
+            (make-package package-name :use '(:cl))
+            (unwind-protect
+                 (let ((result (cl-tron-mcp/hot-reload:compile-and-load
+                                (format nil "(defun ~a () :package-ok)" function-name)
+                                :package package-name)))
+                   (ok (getf result :success))
+                   (let* ((package (find-package package-name))
+                          (symbol (and package
+                                       (find-symbol function-name package))))
+                     (ok symbol)
+                     (ok (fboundp symbol))
+                     (ok (eq :package-ok (funcall symbol)))))
+              (when (find-package package-name)
+                (delete-package package-name)))))
   (testing "compile-and-load returns error for invalid code"
            (let ((result (cl-tron-mcp/hot-reload:compile-and-load
                           "(defun")))

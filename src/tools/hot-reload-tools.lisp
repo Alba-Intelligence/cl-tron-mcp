@@ -16,7 +16,9 @@
             (cl-tron-mcp/unified:repl-compile :code code
                                               :package (or package "CL-USER")
                                               :filename (or filename "repl"))
-            (cl-tron-mcp/hot-reload:compile-and-load :code code :filename filename)))
+            (cl-tron-mcp/hot-reload:compile-and-load :code code
+                                                     :filename filename
+                                                     :package package)))
 
 (define-validated-tool "reload_system"
   "Reload an ASDF system in the connected Lisp image via Swank. Falls back to local reload when not connected."
