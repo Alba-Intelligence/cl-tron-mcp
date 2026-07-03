@@ -1,165 +1,160 @@
-# Tool Documentation Index
+# Tool Reference
 
-This directory contains detailed documentation for all MCP tools provided by cl-tron-mcp.
+This directory contains the per-tool documentation for the MCP surface exposed by `cl-tron-mcp`.
 
-## Tool Categories
+## How to Read the Tool Surface
 
-### Unified REPL Tools (24 tools)
+- **Use `repl_*` first** for normal agent workflows. These are the higher-level, unified tools built on top of Swank.
+- **Use `swank_*`** when you need lower-level control or want behavior that maps closely to raw Swank operations.
+- **Use the managed-process tools** when Tron itself should launch a fresh SBCL+Swank child process.
+- **Use inspector / debugger / xref / monitor tools** when no code execution is needed.
 
-- [repl-connect](repl-connect.md) - Connect to Swank REPL
-- [repl-disconnect](repl-disconnect.md) - Disconnect from REPL
-- [repl-status](repl-status.md) - Check REPL connection status
-- [repl-eval](repl-eval.md) - Evaluate Lisp code in REPL
-- [repl-compile](repl-compile.md) - Compile and load Lisp code
-- [repl-threads](repl-threads.md) - List all REPL threads
-- [repl-abort](repl-abort.md) - Abort/interrupt REPL evaluation
-- [repl-backtrace](repl-backtrace.md) - Get REPL call stack
-- [repl-inspect](repl-inspect.md) - Inspect object in REPL
-- [repl-describe](repl-describe.md) - Describe symbol in REPL
-- [repl-completions](repl-completions.md) - Get symbol completions
-- [repl-doc](repl-doc.md) - Get symbol documentation
-- [repl-frame-locals](repl-frame-locals.md) - Get frame local variables
-- [repl-step](repl-step.md) - Step into next expression
-- [repl-next](repl-next.md) - Step over next expression
-- [repl-out](repl-out.md) - Step out of current frame
-- [repl-continue](repl-continue.md) - Continue from debugger
-- [repl-get-restarts](repl-get-restarts.md) - Get available restarts
-- [repl-invoke-restart](repl-invoke-restart.md) - Invoke a restart
-- [repl-set-breakpoint](repl-set-breakpoint.md) - Set a breakpoint
-- [repl-remove-breakpoint](repl-remove-breakpoint.md) - Remove a breakpoint
-- [repl-list-breakpoints](repl-list-breakpoints.md) - List all breakpoints
-- [repl-toggle-breakpoint](repl-toggle-breakpoint.md) - Toggle breakpoint state
-- [repl-help](repl-help.md) - Get help on REPL tools
+The current registry contains **91 tools** across **14 categories**.
 
-### Swank Tools (20 tools)
+## Categories
 
-- [swank-connect](swank-connect.md) - Connect to Swank server
-- [swank-disconnect](swank-disconnect.md) - Disconnect from Swank
-- [swank-status](swank-status.md) - Get Swank connection status
-- [swank-eval](swank-eval.md) - Evaluate code in SBCL
-- [swank-compile](swank-compile.md) - Compile and load code
-- [swank-threads](swank-threads.md) - List all SBCL threads
-- [swank-abort](swank-abort.md) - Abort a thread
-- [swank-interrupt](swank-interrupt.md) - Interrupt current thread
-- [swank-backtrace](swank-backtrace.md) - Get call stack
-- [swank-inspect](swank-inspect.md) - Inspect object in SBCL
-- [swank-describe](swank-describe.md) - Describe symbol in SBCL
-- [swank-autodoc](swank-autodoc.md) - Get argument list and docs
-- [swank-completions](swank-completions.md) - Get symbol completions
-- [swank-get-restarts](swank-get-restarts.md) - Get available restarts
-- [swank-invoke-restart](swank-invoke-restart.md) - Invoke a restart
-- [swank-continue](swank-continue.md) - Continue from debugger
-- [swank-step](swank-step.md) - Step into next expression
-- [swank-next](swank-next.md) - Step over next expression
-- [swank-out](swank-out.md) - Step out of current frame
-- [swank-debugger-state](swank-debugger-state.md) - Get debugger state
+### Unified REPL Tools (24)
 
-### Inspector Tools (5 tools)
+Preferred high-level interface for live Lisp workflows:
 
-- [inspect-object](inspect-object.md) - Inspect object by ID
-- [inspect-slot](inspect-slot.md) - Get or set slot value
-- [inspect-class](inspect-class.md) - Inspect CLOS class
-- [inspect-function](inspect-function.md) - Inspect function definition
-- [inspect-package](inspect-package.md) - Inspect package symbols
+- [repl-connect](repl-connect.md)
+- [repl-disconnect](repl-disconnect.md)
+- [repl-status](repl-status.md)
+- [repl-eval](repl-eval.md)
+- [repl-compile](repl-compile.md)
+- [repl-threads](repl-threads.md)
+- [repl-abort](repl-abort.md)
+- [repl-backtrace](repl-backtrace.md)
+- [repl-inspect](repl-inspect.md)
+- [repl-describe](repl-describe.md)
+- [repl-completions](repl-completions.md)
+- [repl-doc](repl-doc.md)
+- [repl-frame-locals](repl-frame-locals.md)
+- [repl-step](repl-step.md)
+- [repl-next](repl-next.md)
+- [repl-out](repl-out.md)
+- [repl-continue](repl-continue.md)
+- [repl-get-restarts](repl-get-restarts.md)
+- [repl-invoke-restart](repl-invoke-restart.md)
+- [repl-set-breakpoint](repl-set-breakpoint.md)
+- [repl-remove-breakpoint](repl-remove-breakpoint.md)
+- [repl-list-breakpoints](repl-list-breakpoints.md)
+- [repl-toggle-breakpoint](repl-toggle-breakpoint.md)
+- [repl-help](repl-help.md)
 
-### Debugger Tools (6 tools)
+### Swank Tools (21)
 
-- [debugger-frames](debugger-frames.md) - Get debugger stack frames
-- [debugger-restarts](debugger-restarts.md) - List debugger restarts
-- [breakpoint-set](breakpoint-set.md) - Set a breakpoint
-- [breakpoint-remove](breakpoint-remove.md) - Remove a breakpoint
-- [breakpoint-list](breakpoint-list.md) - List all breakpoints
-- [step-frame](step-frame.md) - Step execution in frame
+Lower-level Swank-oriented operations:
 
-### REPL Tools (1 tool)
+- [swank-connect](swank-connect.md)
+- [swank-disconnect](swank-disconnect.md)
+- [swank-status](swank-status.md)
+- [swank-eval](swank-eval.md)
+- [swank-compile](swank-compile.md)
+- [swank-threads](swank-threads.md)
+- [swank-abort](swank-abort.md)
+- [swank-interrupt](swank-interrupt.md)
+- [swank-backtrace](swank-backtrace.md)
+- [swank-inspect](swank-inspect.md)
+- [swank-describe](swank-describe.md)
+- [swank-autodoc](swank-autodoc.md)
+- [swank-completions](swank-completions.md)
+- [swank-get-restarts](swank-get-restarts.md)
+- [swank-invoke-restart](swank-invoke-restart.md)
+- [swank-continue](swank-continue.md)
+- [swank-step](swank-step.md)
+- [swank-next](swank-next.md)
+- [swank-out](swank-out.md)
+- [swank-debugger-state](swank-debugger-state.md)
+- [swank-send-input](swank-send-input.md)
 
-- [repl-eval-repl](repl-eval-repl.md) - Evaluate code in REPL
+### Managed Swank Process Tools (4)
 
-### Hot Reload Tools (2 tools)
+Tools for launching and supervising SBCL+Swank child processes from Tron:
 
-- [code-compile-string](code-compile-string.md) - Compile and load code string
-- [reload-system](reload-system.md) - Reload ASDF system
+- [swank-launch](swank-launch.md)
+- [swank-kill](swank-kill.md)
+- [swank-process-list](swank-process-list.md)
+- [swank-process-status](swank-process-status.md)
 
-### Profiler Tools (3 tools)
+### Debugger Tools (7)
 
-- [profile-start](profile-start.md) - Start profiling
-- [profile-stop](profile-stop.md) - Stop profiling
-- [profile-report](profile-report.md) - Get profiling report
+- [debugger-frames](debugger-frames.md)
+- [debugger-restarts](debugger-restarts.md)
+- [breakpoint-set](breakpoint-set.md)
+- [breakpoint-remove](breakpoint-remove.md)
+- [breakpoint-list](breakpoint-list.md)
+- [breakpoint-toggle](breakpoint-toggle.md)
+- [step-frame](step-frame.md)
 
-### Tracer Tools (3 tools)
+### Inspector Tools (5)
 
-- [trace-function](trace-function.md) - Trace a function
-- [trace-remove](trace-remove.md) - Remove function trace
-- [trace-list](trace-list.md) - List traced functions
+- [inspect-object](inspect-object.md)
+- [inspect-slot](inspect-slot.md)
+- [inspect-class](inspect-class.md)
+- [inspect-function](inspect-function.md)
+- [inspect-package](inspect-package.md)
 
-### Thread Tools (3 tools)
+### Hot Reload Tools (2)
 
-- [thread-list](thread-list.md) - List all threads
-- [thread-inspect](thread-inspect.md) - Inspect thread details
-- [thread-backtrace](thread-backtrace.md) - Get thread backtrace
+- [code-compile-string](code-compile-string.md)
+- [reload-system](reload-system.md)
 
-### Monitor Tools (4 tools)
+### Profiler Tools (3)
 
-- [health-check](health-check.md) - Server health check
-- [runtime-stats](runtime-stats.md) - Get runtime statistics
-- [gc-run](gc-run.md) - Force garbage collection
-- [system-info](system-info.md) - Get system information
+- [profile-start](profile-start.md)
+- [profile-stop](profile-stop.md)
+- [profile-report](profile-report.md)
 
-### Logging Tools (5 tools)
+### Tracer Tools (3)
 
-- [log-configure](log-configure.md) - Configure logging level
-- [log-info](log-info.md) - Log info message
-- [log-debug](log-debug.md) - Log debug message
-- [log-warn](log-warn.md) - Log warning message
-- [log-error](log-error.md) - Log error message
+- [trace-function](trace-function.md)
+- [trace-remove](trace-remove.md)
+- [trace-list](trace-list.md)
 
-### XRef Tools (5 tools)
+### Thread Tools (3)
 
-- [who-calls](who-calls.md) - Find function callers
-- [who-references](who-references.md) - Find symbol references
-- [who-binds](who-binds.md) - Find symbol bindings
-- [who-sets](who-sets.md) - Find symbol modifications
-- [list-callees](list-callees.md) - List called functions
+- [thread-list](thread-list.md)
+- [thread-inspect](thread-inspect.md)
+- [thread-backtrace](thread-backtrace.md)
 
-### Security Tools (5 tools)
+### Monitor Tools (4)
 
-- [whitelist-add](whitelist-add.md) - Add whitelist pattern
-- [whitelist-remove](whitelist-remove.md) - Remove whitelist pattern
-- [whitelist-clear](whitelist-clear.md) - Clear whitelist
-- [whitelist-enable](whitelist-enable.md) - Enable/disable whitelist
-- [whitelist-status](whitelist-status.md) - Get whitelist status
+- [health-check](health-check.md)
+- [runtime-stats](runtime-stats.md)
+- [gc-run](gc-run.md)
+- [system-info](system-info.md)
 
-## Total Tools: 86
+### Logging Tools (5)
 
-## Documentation Format
+- [log-configure](log-configure.md)
+- [log-info](log-info.md)
+- [log-debug](log-debug.md)
+- [log-warn](log-warn.md)
+- [log-error](log-error.md)
 
-Each tool documentation file follows this structure:
+### XRef Tools (5)
 
-```markdown
-# Tool Name
+- [who-calls](who-calls.md)
+- [who-references](who-references.md)
+- [who-binds](who-binds.md)
+- [who-sets](who-sets.md)
+- [list-callees](list-callees.md)
 
-**Short Description:** Brief one-line description
+### Security Tools (5)
 
-**Full Description:** [The verbose description from the original code]
+- [whitelist-add](whitelist-add.md)
+- [whitelist-remove](whitelist-remove.md)
+- [whitelist-clear](whitelist-clear.md)
+- [whitelist-enable](whitelist-enable.md)
+- [whitelist-status](whitelist-status.md)
 
-**Parameters:**
-- `param1`: Description
-- `param2`: Description
+### Legacy REPL Tool (1)
 
-**Returns:** Description of return value
+- [repl-eval-repl](repl-eval-repl.md)
 
-**Example Usage:**
-```lisp
-(tool-name :param1 value1 :param2 value2)
-```
+## Related References
 
-**Notes:** Any additional notes, prerequisites, or warnings
-
-```
-
-## Accessing Documentation
-
-Documentation can be accessed via:
-1. MCP `resources/list` - Lists all documentation files
-2. MCP `resources/read` - Reads a specific documentation file
-3. Tool descriptors include `documentationUri` field pointing to the documentation
+- [Code Reference](../code-reference.md) - source-level subsystem map
+- [Architecture](../architecture.md) - process model and runtime flow
+- [Starting the MCP Server](../starting-the-mcp.md) - installation, startup, and verification

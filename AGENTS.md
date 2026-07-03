@@ -287,23 +287,24 @@ EXPLORE → EXPERIMENT → PERSIST → VERIFY → HOT-RELOAD
 | `hot-reload-specialist` | Hot code reloading specialist workflows                                      |
 | `performance-engineer` | Performance profiling and optimization workflows                             |
 
-## Tool Categories (86 tools total)
+## Tool Categories (91 tools total)
 
-| Category   | Purpose                | Key Tools                                                      |
-| ---------- | ---------------------- | -------------------------------------------------------------- |
-| Inspector  | Object introspection   | `inspect_object`, `inspect_class`, `inspect_function`          |
-| Debugger   | Debugging operations   | `debugger_frames`, `debugger_restarts`, `breakpoint_set`       |
-| REPL       | Code evaluation        | `repl_eval`, `repl_frame_locals`                               |
-| Hot Reload | Live code modification | `code_compile_string`, `reload_system`                         |
-| Profiler   | Performance analysis   | `profile_start`, `profile_stop`                                |
-| Tracer     | Function tracing       | `trace_function`, `trace_list`                                 |
-| Threads    | Thread management      | `thread_list`, `thread_inspect`, `thread_backtrace`            |
-| Monitor    | Production monitoring  | `health_check`, `runtime_stats`                                |
-| Logging    | Package logging        | `log_configure`, `log_info`                                    |
-| XRef       | Cross-reference        | `who_calls`, `who_references`, `list_callees`                  |
-| Security   | Approval whitelist     | `whitelist_add`, `whitelist_status`                            |
-| Swank      | Slime integration (21) | `swank_connect`, `swank_eval`, `swank_backtrace`, `swank_step` |
-| Unified    | Swank REPL             | `repl_connect`, `repl_eval`, `repl_step`, `repl_continue`      |
+| Category | Purpose | Key Tools |
+| --- | --- | --- |
+| Inspector | Object introspection | `inspect_object`, `inspect_class`, `inspect_function` |
+| Debugger | Debugging operations | `debugger_frames`, `debugger_restarts`, `breakpoint_set`, `breakpoint_toggle` |
+| REPL | Legacy direct code evaluation | `repl_eval` |
+| Hot Reload | Live code modification | `code_compile_string`, `reload_system` |
+| Profiler | Performance analysis | `profile_start`, `profile_stop` |
+| Tracer | Function tracing | `trace_function`, `trace_list` |
+| Threads | Thread management | `thread_list`, `thread_inspect`, `thread_backtrace` |
+| Monitor | Production monitoring | `health_check`, `runtime_stats` |
+| Logging | Package logging | `log_configure`, `log_info` |
+| XRef | Cross-reference | `who_calls`, `who_references`, `list_callees` |
+| Security | Approval whitelist | `whitelist_add`, `whitelist_status` |
+| Swank | Raw Swank operations (21) | `swank_connect`, `swank_eval`, `swank_backtrace`, `swank_step` |
+| Managed Processes | Launch and supervise SBCL+Swank children (4) | `swank_launch`, `swank_process_list`, `swank_kill` |
+| Unified | Preferred high-level REPL workflow (24) | `repl_connect`, `repl_eval`, `repl_step`, `repl_continue` |
 
 ## Project Structure
 
@@ -316,7 +317,7 @@ cl-tron-mcp/
 │   ├── tools/                   # Tool registry, definitions, and registration of MCP tools
 │   │   ├── macros.lisp          # Validation macros (define-validated-tool, define-simple-tool)
 │   │   ├── inspector-tools.lisp # Inspector tools (5)
-│   │   ├── debugger-tools.lisp  # Debugger tools (6)
+│   │   ├── debugger-tools.lisp  # Debugger tools (7)
 │   │   ├── repl-tools.lisp      # REPL tools (1)
 │   │   ├── hot-reload-tools.lisp # Hot reload tools (2)
 │   │   ├── profiler-tools.lisp  # Profiler tools (3)
@@ -327,7 +328,8 @@ cl-tron-mcp/
 │   │   ├── xref-tools.lisp      # XRef tools (5)
 │   │   ├── security-tools.lisp  # Security tools (5)
 │   │   ├── swank-tools.lisp     # Swank tools (21)
-│   │   ├── unified-tools.lisp   # Unified REPL tools (23)
+│   │   ├── process-tools.lisp   # Managed Swank process tools (4)
+│   │   ├── unified-tools.lisp   # Unified REPL tools (24)
 │   │   ├── registry.lisp        # Tool registry and load-all-tools
 │   │   └── register-tools.lisp  # Main loader (calls load-all-tools)
 │   ├── security/                # Approval workflow, audit logging
@@ -579,7 +581,7 @@ Expected response:
 - **Tests**: Rove in `tests/`, mirror source structure
 - **Security**: User approval required for modifying operations
 - **Docs**: See `docs/agents/` for detailed guides (modularized for token efficiency)
-- **Tools**: 86 tools implemented across 14 categories
+- **Tools**: 91 tools implemented across 14 categories
 - **Transport**: Combined (default: stdio + HTTP), stdio-only, http-only; WebSocket (placeholder)
 - **MCP Clients**: Verified working with OpenCode, Cursor, VS Code
 - **Token Optimization**: 49.5% token savings achieved through refactoring (Feb 2026)
