@@ -55,7 +55,7 @@ Example: (swank-sym \"EVAL-AND-GRAB-OUTPUT\") => SWANK:EVAL-AND-GRAB-OUTPUT"
   "Return current Unix timestamp as an integer."
   #+sbcl  (sb-ext:get-time-of-day)
   #+ccl   (ccl:get-time-of-day)
-  #+ecl   (multiple-value-bind (sec usec) (ext:get-time-of-day) (declare (ignore usec)) sec)
+  #+ecl   (- (get-universal-time) 2208988800)
   #-(or sbcl ccl ecl) (- (get-universal-time) 2208988800))
 
 ;;; ============================================================

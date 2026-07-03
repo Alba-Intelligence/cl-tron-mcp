@@ -139,3 +139,21 @@
                     (result (cl-tron-mcp/core:benchmark-tool test-fn 42)))
                (ok (stringp result))
                (ok (search "Result: 42" result)))))
+
+(deftest ecl-can-quickload-cl-tron-mcp
+    (testing "ECL can quickload cl-tron-mcp"
+             (let ((ecl-path (ignore-errors
+                               (string-right-trim
+                                '(#\Newline #\Return)
+                                (uiop:run-program '("bash" "-lc" "command -v ecl")
+                                                  :output :string)))))
+               (if (or (null ecl-path) (string= ecl-path ""))
+                   (ok t "ECL not installed - skipping")
+                   (let* ((repo-root (namestring (asdf:system-source-directory :cl-tron-mcp)))
+                          (command (format nil
+                                           "cd ~a && ecl -q -eval '(progn (setq *load-verbose* nil *compile-verbose* nil) (load #p\"/home/emmanuel/quicklisp/setup.lisp\"))' -eval '(push #p\"~a\" ql:*local-project-directories*)' -eval '(handler-case (progn (ql:quickload :cl-tron-mcp :silent t) (format t \"ECL-QUICKLOAD-OK~~%\")) (error (e) (format t \"ECL-QUICKLOAD-ERROR: ~~A~~%\" e)))' -eval '(ext:quit 0)'"
+                                           repo-root
+                                           repo-root))
+                          (output (uiop:run-program (list "bash" "-lc" command)
+                                                    :output :string)))
+                     (ok (search "ECL-QUICKLOAD-OK" output)))))))

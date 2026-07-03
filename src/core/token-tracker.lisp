@@ -131,14 +131,11 @@
 
 (defun benchmark-tool (tool-name &rest args)
   "Benchmark a single tool call and return the result as a string."
-  (let ((start-stats (get-token-stats))
-        (start-time (get-internal-real-time))
-        result)
+  (let (result)
     (unwind-protect
          (progn
            (setf result (apply tool-name args))
            (when (and (boundp '*token-tracking-enabled*)
-                      *token-tracking-enabled*)
+                     *token-tracking-enabled*)
              (track-response (princ-to-string tool-name) result))
-           (format nil "Result: ~a" result))
-      (declare (ignore start-stats start-time)))))
+           (format nil "Result: ~a" result)))))

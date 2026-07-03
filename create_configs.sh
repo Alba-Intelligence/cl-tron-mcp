@@ -25,7 +25,10 @@ set -e
 # ============================================================================
 
 PROOT="$(cd "$(dirname "$0")" && pwd)"
-SCRIPT_PATH="$PROOT/start-mcp.sh"
+START_SCRIPT_PATH="$PROOT/start-mcp.sh"
+RUN_SCRIPT_PATH="$PROOT/run-mcp.sh"
+SCRIPT_PATH=""
+SCRIPT_NAME=""
 
 # Colors for menu
 RED='\033[0;31m'
@@ -53,13 +56,32 @@ log_warn() {
 # Check if script exists
 check_script() {
     if [[ ! -f "$SCRIPT_PATH" ]]; then
-        log_error "start-mcp.sh not found at: $SCRIPT_PATH"
+        log_error "Launch script not found at: $SCRIPT_PATH"
         exit 1
     fi
     if [[ ! -x "$SCRIPT_PATH" ]]; then
-        log_error "start-mcp.sh is not executable. Run: chmod +x $SCRIPT_PATH"
+        log_error "Launch script is not executable. Run: chmod +x $SCRIPT_PATH"
         exit 1
     fi
+}
+
+host_lisp_available() {
+    command -v sbcl &>/dev/null ||
+        command -v ecl &>/dev/null ||
+        [[ -x /usr/local/bin/sbcl ]] ||
+        [[ -x /usr/local/bin/ecl ]]
+}
+
+select_launch_script() {
+    if host_lisp_available; then
+        SCRIPT_PATH="$START_SCRIPT_PATH"
+    elif command -v devenv &>/dev/null && [[ -x "$RUN_SCRIPT_PATH" ]]; then
+        SCRIPT_PATH="$RUN_SCRIPT_PATH"
+    else
+        SCRIPT_PATH="$START_SCRIPT_PATH"
+    fi
+
+    SCRIPT_NAME="$(basename "$SCRIPT_PATH")"
 }
 
 # ============================================================================
@@ -139,14 +161,14 @@ generate_vscode_config() {
         "cl-tron-mcp": {
             "type": "stdio",
             "command": "bash",
-            "args": ["-c", "cd $PROOT && ./start-mcp.sh --stdio-only"]
+            "args": ["-c", "cd $PROOT && ./$SCRIPT_NAME --stdio-only"]
         }
     }
 }
 VSCODEJSON
     
     log_info "Created: $config_file"
-    log_info "  - Command: cd $PROOT && ./start-mcp.sh --stdio-only"
+    log_info "  - Command: cd $PROOT && ./$SCRIPT_NAME --stdio-only"
 }
 
 generate_copilot_config() {
@@ -165,7 +187,7 @@ generate_copilot_config() {
         "cl-tron-mcp": {
             "type": "stdio",
             "command": "bash",
-            "args": ["-c", "cd $PROOT && ./start-mcp.sh --stdio-only"]
+            "args": ["-c", "cd $PROOT && ./$SCRIPT_NAME --stdio-only"]
         }
     }
 }
@@ -180,7 +202,7 @@ COPILOTWS
             "cl-tron-mcp": {
                 "type": "stdio",
                 "command": "bash",
-                "args": ["-c", "cd '"$PROOT"' && ./start-mcp.sh --stdio-only"]
+                "args": ["-c", "cd '"$PROOT"' && ./'"$SCRIPT_NAME"' --stdio-only"]
             }
         }
     }
@@ -202,7 +224,7 @@ generate_copilot_cli_config() {
         "cl-tron-mcp": {
             "type": "local",
             "command": "bash",
-            "args": ["-c", "cd $PROOT && ./start-mcp.sh --stdio-only"],
+            "args": ["-c", "cd $PROOT && ./$SCRIPT_NAME --stdio-only"],
             "env": {},
             "tools": ["*"]
         }
@@ -211,7 +233,7 @@ generate_copilot_cli_config() {
 COPILOTCLIJSON
 
     log_info "Created: $config_file"
-    log_info "  - Command: cd $PROOT && ./start-mcp.sh --stdio-only"
+    log_info "  - Command: cd $PROOT && ./$SCRIPT_NAME --stdio-only"
 }
 
 generate_devenv_config() {
@@ -406,6 +428,7 @@ generate_all() {
 # ============================================================================
 
 main() {
+    select_launch_script
     check_script
     
     # Parse command line arguments

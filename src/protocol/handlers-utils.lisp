@@ -197,10 +197,10 @@ If timeout occurs, a TIMEOUT-ERROR condition is signaled."
   (sb-ext:get-time-of-day)
   #+ccl
   (ccl:get-time-of-day)
-  #-(or sbcl ccl)
-  (- (/ (get-universal-time)
-        86400)
-     2))
+  #+ecl
+  (- (get-universal-time) 2208988800)
+  #-(or sbcl ccl ecl)
+  (- (get-universal-time) 2208988800))
 
 ;;; ============================================================
 ;;; Error Response Construction
@@ -218,19 +218,25 @@ MESSAGE can be a string or a plist with :code, :message, :hint, etc."
   (let ((error-data (if (listp message)
                         message
                         (list :message message))))
-    (jonathan:to-json (list :|jsonrpc| "2.0"
-                            :|id| id
-                            :|error| (list* :|code| code
-                                            (list :|message| (getf error-data :message))
-                                            (when (getf error-data :code)
-                                              (list :|errorCode| (getf error-data :code)))
-                                            (when (getf error-data :hint)
-                                              (list :|hint| (getf error-data :hint)))
-                                            (when (getf error-data :param)
-                                              (list :|param| (getf error-data :param)))
-                                            (when (getf error-data :min-length)
-                                              (list :|minLength| (getf error-data :min-length)))
-                                            (when (getf error-data :min)
-                                              (list :|min| (getf error-data :min))))))))
+    (let ((error-object (list :|code| code
+                              :|message| (getf error-data :message))))
+      (when (getf error-data :code)
+        (setf error-object
+              (append error-object (list :|errorCode| (getf error-data :code)))))
+      (when (getf error-data :hint)
+        (setf error-object
+              (append error-object (list :|hint| (getf error-data :hint)))))
+      (when (getf error-data :param)
+        (setf error-object
+              (append error-object (list :|param| (getf error-data :param)))))
+      (when (getf error-data :min-length)
+        (setf error-object
+              (append error-object (list :|minLength| (getf error-data :min-length)))))
+      (when (getf error-data :min)
+        (setf error-object
+              (append error-object (list :|min| (getf error-data :min)))))
+      (jonathan:to-json (list :|jsonrpc| "2.0"
+                              :|id| id
+                              :|error| error-object)))))
 
 (provide :cl-tron-mcp/protocol-handlers-utils)
