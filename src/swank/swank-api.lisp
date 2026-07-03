@@ -78,12 +78,23 @@
 ;;; Debugger Operations
 ;;; ============================================================
 
+(defun %debugger-abort-response-p (response)
+  "Return true when RESPONSE indicates Swank exited the current debugger level."
+  (let ((result (getf response :result)))
+    (and (consp result)
+        (symbolp (first result))
+        (string= "ABORT" (symbol-name (first result))))))
+
 (defun swank-invoke-restart (&key (restart_index 1))
   "Invoke the Nth restart (1-based) in the current debugger level."
   (let ((thread (or *debugger-thread* t))
         (level *debugger-level*))
-    (send-request `(,(swank-sym "INVOKE-NTH-RESTART-FOR-EMACS") ,level ,restart_index)
-                  :package "CL-USER" :thread thread)))
+    (let ((response (send-request `(,(swank-sym "INVOKE-NTH-RESTART-FOR-EMACS") ,level ,restart_index)
+                                 :package "CL-USER" :thread thread)))
+      (when (and (<= level 1)
+                (%debugger-abort-response-p response))
+        (note-debugger-return level))
+      response)))
 
 (defun swank-get-restarts (&optional (frame-index 0))
   "Return available restarts from the most recent cached :debug event."
@@ -103,9 +114,14 @@
 
 (defun swank-continue ()
   "Continue execution from debugger."
-  (send-request `(,(swank-sym "SLDB-CONTINUE"))
-                :package "CL-USER"
-                :thread (or *debugger-thread* t)))
+  (let* ((level *debugger-level*)
+         (response (send-request `(,(swank-sym "SLDB-CONTINUE"))
+                                 :package "CL-USER"
+                                 :thread (or *debugger-thread* t))))
+    (when (and (<= level 1)
+               (%debugger-abort-response-p response))
+      (note-debugger-return level))
+    response))
 
 ;;; ============================================================
 ;;; Stepping

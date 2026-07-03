@@ -169,13 +169,18 @@
   :documentation-uri "file://docs/tools/swank-out.md"
   :function cl-tron-mcp/swank:swank-out)
 
-(define-simple-tool "swank_debugger_state"
+(define-validated-tool "swank_debugger_state"
   "Get debugger state"
   :input-schema nil
   :output-schema (list :type "object")
   :requires-approval nil
   :documentation-uri "file://docs/tools/swank-debugger-state.md"
-  :function cl-tron-mcp/swank:swank-debugger-state)
+  :validation ()
+  :body (multiple-value-bind (thread level in-debugger)
+             (cl-tron-mcp/swank:swank-debugger-state)
+           (list :thread thread
+                 :level level
+                 :in-debugger in-debugger)))
 (define-validated-tool "swank_send_input"
   "Send input string to a pending Swank :read-string request"
   :input-schema (list :input "string")

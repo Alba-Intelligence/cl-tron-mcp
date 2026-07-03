@@ -4,6 +4,29 @@
 
 (defvar *tool-registry* (make-hash-table :test 'equal))
 
+(defun normalize-argument-key (key)
+  "Convert an incoming MCP argument key to the snake_case keyword expected by handlers."
+  (let* ((raw (string key))
+         (normalized
+           (with-output-to-string (out)
+             (loop for i from 0 below (length raw)
+                   for ch = (char raw i)
+                   for prev = (and (> i 0) (char raw (1- i)))
+                   do (cond
+                        ((char= ch #\-)
+                         (write-char #\_ out))
+                        ((and (alpha-char-p ch)
+                              (char= ch (char-upcase ch))
+                              (char/= ch (char-downcase ch))
+                              prev
+                              (or (lower-case-p prev)
+                                  (digit-char-p prev)))
+                         (write-char #\_ out)
+                         (write-char ch out))
+                        (t
+                         (write-char (char-upcase ch) out)))))))
+    (intern normalized :keyword)))
+
 (defstruct tool-entry
   name
   descriptor
@@ -65,7 +88,7 @@ The plist keys are JSON-style (e.g., :|port|) and converted to proper keywords (
     (unless handler
       (error "Unknown tool: ~a" name))
     (let ((args-list (loop for (key value) on arguments by #'cddr
-                           for keyword = (intern (string-upcase (string key)) :keyword)
+                           for keyword = (normalize-argument-key key)
                            append (list keyword value))))
       (apply handler args-list))))
 

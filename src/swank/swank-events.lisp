@@ -184,3 +184,19 @@ Returns NIL if no debug event is queued."
                  (return (values (getf data :condition)
                                  (getf data :restarts)
                                  (getf data :frames)))))))
+
+(defun note-debugger-return (level)
+  "Update cached debugger state after Swank reports a debugger return.
+Removes the most recent cached :debug event. If LEVEL is the outermost
+debugger level, clears debugger state entirely; otherwise decrements the
+tracked nesting level."
+  (bordeaux-threads:with-lock-held (*event-mutex*)
+    (loop for i from (1- (length *event-queue*)) downto 0
+          when (eq (swank-event-type (aref *event-queue* i)) :debug)
+            do (setf *event-queue*
+                    (delete (aref *event-queue* i) *event-queue* :test #'eq))
+               (return))
+    (if (<= level 1)
+        (setf *debugger-thread* nil
+              *debugger-level* 0)
+        (setf *debugger-level* (1- level)))))

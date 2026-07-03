@@ -92,6 +92,7 @@
                ;; treat it as non-fatal and retry.
                 (let ((inner (cl-tron-mcp/swank-protocol:swank-read-error-condition e)))
                  (cond
+                   #+sbcl
                    ((typep inner 'sb-sys:io-timeout)
                     (log-debug "Swank reader: stream I/O timeout, retrying"))
                    ;; Socket closed during disconnect is expected
@@ -186,9 +187,7 @@
         (:debug-return
          (destructuring-bind (thread-id level stepping-p) args
            (declare (ignore thread-id stepping-p))
-           (when (<= level 0)
-             (setf *debugger-thread* nil
-                   *debugger-level* 0))))
+           (note-debugger-return level)))
         (:new-package
          (destructuring-bind (name prompt-string) args
            (declare (ignore prompt-string))

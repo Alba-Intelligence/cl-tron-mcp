@@ -243,8 +243,9 @@ slot on :spawn-style servers)."
     (return-from repl-continue (make-not-connected-error)))
   (swank-continue))
 
-(defun repl-get-restarts ()
+(defun repl-get-restarts (&key frame)
   "Get available restarts for current debugger state."
+  (declare (ignore frame))
   (unless *repl-connected*
     (return-from repl-get-restarts (make-not-connected-error)))
   (swank-get-restarts))
