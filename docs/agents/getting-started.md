@@ -43,7 +43,7 @@ Tron exposes documentation and guided workflows via MCP standard mechanisms:
 
 ## First Steps
 
-We recommend using port 4006 for the Swank server. That way 4005 is available for the user's Slime.
+We recommend using port 4006 for the Swank server in the examples below. If your editor already uses another Swank port, keep that separate and point Tron at the port you want it to control.
 
 ### Starting Swank in SBCL
 
@@ -60,7 +60,7 @@ Use `repl_connect` or `swank_connect` to connect to the running Swank server.
 
 - **All tools use `&key` args with underscore names**: `symbol_name`, not `symbol-name`
 - **Results are plists**: Access with `(getf result :key)`
-- **Port 4005 = Swank** (Slime/Portacle/Sly)
+- **Use one explicit Swank port** and keep your Tron connection arguments consistent with it
 - **Use `tmp/` folder**, never `/tmp`
 
 ## Lisp Implementation Support

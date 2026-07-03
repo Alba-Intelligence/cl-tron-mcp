@@ -1,73 +1,84 @@
-# Architecture: One Long-Running Lisp Session
+# Architecture
 
-This document describes the recommended setup so the MCP can interact with a Lisp session (Swank) the same way a user in Slime would: see output, debugger state, step, move frames, invoke restarts, inspect, and compile.
+Tron's architecture is built around a simple constraint: **the live Lisp state stays in the target Swank session**. Tron provides MCP access to that session; it does not replace it.
 
-## Two Processes
+## Process Model
 
-### 1. Lisp session (Swank)
+### 1. Target Lisp session
 
-- **Who starts it:** The user (or automation). You start one SBCL (or other Lisp) with Swank and **leave it running**.
-- **Role:** This is the single session where all code is loaded and executed—by you or by the MCP. The debugger runs here. Slime/Sly/Emacs can attach to the same session.
-- **Typical start:** `(ql:quickload :swank)` then `(swank:create-server :port 4006)` (default port 4006).
-- **Dedicated port for MCP:** Use a separate Swank port for MCP (e.g. Swank on 4006) so you keep 4006 for your editor: `(swank:create-server :port 4006 :dont-close t)`.
+This is the SBCL (or other Common Lisp) image that contains your application code.
 
-### 2. MCP server
+- You start it.
+- You load Swank into it.
+- The debugger, stack frames, objects, threads, and loaded systems all live here.
 
-- **Who starts it:** The MCP client (Cursor, Kilocode, Opencode) via `start-mcp.sh` or the configured command. It runs in a **separate process**.
-- **Role:** Handles JSON-RPC over stdio (or HTTP via Hunchentoot / WebSocket). Connects to the Lisp session as a **Swank client**—the same way Slime does. The MCP then uses Swank facilities (eval, backtrace, restarts, stepping, inspect, compile) over the protocol.
-- **Connection:** After the MCP server is running, it must connect to your Lisp session (e.g. via MCP tool `repl_connect` or `swank_connect` with the port you used). Once connected, tools like `repl_eval`, `repl_backtrace`, `repl_inspect` operate on that session.
+Typical startup:
 
-## Agent Workflow
+```lisp
+(ql:quickload :swank)
+(swank:create-server :port 4006 :dont-close t)
+```
 
-1. **You:** Start the Lisp session with Swank (port 4006). Keep it running.
-2. **Client:** Starts the MCP server (e.g. Cursor runs `start-mcp.sh`). The agent (or you) connects the MCP to your session via `repl_connect` or `swank_connect`.
-3. **Agent:** Uses MCP tools (`repl_eval`, `repl_backtrace`, `repl_inspect`, `repl_compile`, etc.) to load code, run it, see output and debugger state, step, move frames, invoke restarts, and fix code—all through the connected session. No second REPL; one session, MCP as a client of it.
+### 2. Tron MCP server
 
-## Without a Connected Session
+This is a separate process started by the MCP client or by you through `start-mcp.sh`.
 
-If the MCP is not connected to any Swank session, tools that require it (e.g. `repl_eval`) return an error such as "Not connected to any REPL". Other tools (e.g. `inspect_function`, `health_check`, `tools/list`) do not require a REPL and work as long as the MCP server is running.
+- It speaks MCP over stdio or HTTP.
+- It exposes tools, resources, prompts, and approval flow.
+- It connects to the target Lisp session as a Swank client.
 
-## Implementation
+### 3. MCP client / AI agent
 
-### Protocol Layer
+The client launches or connects to Tron, then discovers and calls MCP tools such as `repl_connect`, `repl_eval`, `repl_backtrace`, `repl_compile`, and `repl_continue`.
 
-The MCP implements the JSON-RPC 2.0 protocol with modular handlers:
+## Runtime Flow
 
-- **Protocol Handlers** (`src/protocol/handlers*.lisp`): Message dispatch, routing, and request handling
-  - `handlers.lisp` - Main entry point with message dispatch
-  - `handlers-utils.lisp` - Validation, error recovery, utilities
-  - `handlers-initialize.lisp` - Initialize handler
-  - `handlers-tools.lisp` - Tools handlers with approval workflow
-  - `handlers-resources.lisp` - Resources handlers
-  - `handlers-prompts.lisp` - Prompts handlers
-  - `handlers-ping.lisp` - Ping handler
+1. The target Lisp image starts Swank.
+2. Tron starts and accepts MCP requests.
+3. The agent calls `repl_connect` or `swank_connect`.
+4. Tron forwards operations through Swank RPC.
+5. Results come back through Tron as MCP tool responses.
 
-See [protocol-handlers.md](protocol-handlers.md) for detailed handler documentation.
+That flow is what enables the "debug -> inspect -> patch -> continue" workflow without restarting the Lisp process.
 
-### Swank Client
+## Main Source Boundaries
 
-The MCP implements a full Swank protocol client:
+| Concern | Files |
+| --- | --- |
+| Server lifecycle | `src/core/server.lisp` |
+| MCP protocol dispatch | `src/protocol/handlers*.lisp` |
+| stdio / HTTP transport | `src/transport/stdio.lisp`, `src/transport/http-hunchentoot.lisp` |
+| Tool registry | `src/tools/registry.lisp`, `src/tools/register-tools.lisp`, `src/tools/*.lisp` |
+| Swank client | `src/swank/swank-connection.lisp`, `src/swank/swank-rpc.lisp`, `src/swank/swank-events.lisp`, `src/swank/swank-api.lisp` |
+| Unified high-level REPL API | `src/unified/client.lisp` |
+| Debugger wrappers | `src/debugger/` |
+| Inspection | `src/inspector/` |
+| Local hot-reload fallback | `src/hot-reload/core.lisp` |
 
-- **Protocol Layer** (`src/swank/protocol.lisp`): Length-prefixed message framing, UTF-8 encoding
-- **Client Layer** (`src/swank/client.lisp`): Connection management, reader thread, request/response correlation, event queue
+## Transport Notes
 
-See [swank-integration.md](swank-integration.md) for detailed protocol and API documentation.
+- **stdio-only** is for MCP clients that launch Tron directly.
+- **combined** and **http-only** are for longer-lived server setups.
+- The transport choice changes how clients talk to Tron; it does **not** change where the Lisp state lives.
 
-### Debugger Integration
+## Tool Layers
 
-The debugger tools (`src/debugger/`) are thin wrappers over Swank RPC:
+Tron exposes two overlapping REPL/debugger layers:
 
-- `debugger_frames` → `swank:backtrace`
-- `debugger_restarts` → `swank:compute-restarts-for-emacs`
-- `step_frame` → `swank:sldb-step-into/next/out`
-- `breakpoint_set` → `swank:break`
+- **`repl_*` tools** - preferred high-level interface for agents
+- **`swank_*` tools** - lower-level operations that map closely to raw Swank behavior
 
-See [tools/debugger.md](tools/debugger.md) for tool usage.
+Other tool families (inspector, monitor, xref, logging, security, managed processes) sit alongside those layers.
 
-## See Also
+## Caveats
 
-- [README: Swank Integration](../README.md#swank-integration-recommended-for-agent-workflow) — step-by-step setup.
-- [AGENTS.md: Recommended Workflow](../AGENTS.md#recommended-workflow-one-long-running-lisp-session) — agent-oriented summary.
-- [protocol-handlers.md](protocol-handlers.md) — JSON-RPC protocol handler documentation.
-- [swank-integration.md](swank-integration.md) — Swank protocol implementation details.
-- [docs/tools/](tools/) — tool documentation (debugger, inspector, hot-reload, etc.).
+- The richest workflow is still **SBCL + Swank**.
+- Hot reload without a connected Swank session uses a local fallback path; advanced debugger interaction still requires a live Swank connection.
+- Approval-sensitive tools are mediated by the security layer before execution.
+
+## Related Docs
+
+- [starting-the-mcp.md](starting-the-mcp.md)
+- [code-reference.md](code-reference.md)
+- [tools/index.md](tools/index.md)
+- [../AGENTS.md](../AGENTS.md)

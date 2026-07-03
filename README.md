@@ -1,545 +1,164 @@
 # CL-TRON-MCP
 
-**AI-Powered Debugging for Common Lisp**
+`cl-tron-mcp` is a Model Context Protocol (MCP) server for Common Lisp development. It connects to a live Swank session and lets an MCP client inspect objects, read debugger state, evaluate code, hot-reload fixes, invoke restarts, and keep working inside the same Lisp image.
 
-A Model Context Protocol (MCP) server that gives AI assistants deep access to
-running SBCL Common Lisp applications—debugger, inspector, profiler, and hot
-code reload.
+## What Tron Is For
 
-## How It Works
+Tron is built around the Common Lisp workflow that matters most for agentic programming:
 
-### See It In Action
+1. keep one Lisp session running,
+2. hit an error,
+3. inspect the stack and locals,
+4. compile a fix without restarting,
+5. continue or restart from the debugger.
 
-These demos show the **real MCP JSON-RPC protocol** that AI agents send to Tron
-— not internal function calls.
+The richest workflow uses **SBCL + Swank**. Tron itself can run under SBCL or ECL, but the debugger-heavy path is designed around Swank-backed Common Lisp development.
 
-**Protocol Discovery** — tools, resources, and guided prompts:
+## Architecture in One Picture
 
-![Protocol discovery](demo/mcp-overview-1.gif)
-
-**Live Health Monitoring** — health check and runtime statistics:
-
-![Health and runtime stats](demo/mcp-overview-2.gif)
-
----
-
-**In-Debugger Function Hot-Reload** — compile a function while the debugger is
-active, invoke `CONTINUE` to retry the failing call:
-
-A unique capability of Common Lisp is the ability to modify running code without
-unwinding the call stack.
-
-In this example, we define a function `f1` with 2 arguments that immediately
-calls an _undefined_ function `f2` with the same 2 arguments. Calling `(f1 1 2)`
-immediately throws the execution into the debugger. The MCP can then, while in
-the debugger, inject a definition of `f2` (a simple `(defun f2 (x y) (+ x y))`)
-and restart the execution where it was interrupted.
-
-The recording shows the sequence of calls and responses between the MCP and the
-Common Lisp Swank server.
-
-![f1/f2 in-debugger fix](demo/f1-f2-2.gif)
-
-See [demo/README.md](demo/README.md) for the setup phase (Swank launch + REPL connect).
-
----
-
-**Factorial: Debug, Fix, Verify** — `DIVISION-BY-ZERO`, inspect restarts, hot-reload the fix:
-
-![Factorial debug](demo/factorial-2.gif)
-
-See [demo/README.md](demo/README.md) for all 6 demo phases.
-
----
-
-### Architecture
-
-```
-┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
-│  SBCL + Swank   │◄───────►│   Tron (MCP)    │◄───────►│   AI Client     │
-│  (Port 4006)    │         │   (stdio)       │         │ (Kilocode, etc) │
-│                 │         │                 │         │                 │
-│  Your code      │         │  92 tools:      │         │  Sends prompts  │
-│  Debugger       │         │   - swank_eval  │         │  Receives       │
-│  Threads        │         │   - inspect     │         │  results        │
-│  State lives    │         │   - profile     │         │                 │
-└─────────────────┘         └─────────────────┘         └─────────────────┘
-        ▲                                                      │
-        │                                                      │
-        └──────────────────────────────────────────────────────┘
-                      Same session, no restart
+```text
+SBCL + Swank  <---->  Tron (MCP server)  <---->  MCP client / AI agent
+your code              tools/resources            Cursor, Copilot, etc.
+debugger state         approval flow
+loaded systems         stdio or HTTP transport
 ```
 
-**Key:** All state lives in the SBCL process. Tron connects as a client. The
-session persists across debugging, hot-reloads, and errors.
-
-📖 **[Full architecture documentation →](docs/architecture.md)**
-
-## Features
-
-| Category       | Description                                  | Documentation                                          |
-| -------------- | -------------------------------------------- | ------------------------------------------------------ |
-| **Debugger**   | Backtrace, restarts, stepping, breakpoints   | [docs/tools/debugger.md](docs/tools/debugger.md)       |
-| **Inspector**  | Objects, slots, classes, functions, packages | [docs/tools/inspector.md](docs/tools/inspector.md)     |
-| **Hot Reload** | Compile strings, reload systems              | [docs/tools/hot-reload.md](docs/tools/hot-reload.md)   |
-| **Profiler**   | Start/stop profiling, generate reports       | [docs/tools/profiler.md](docs/tools/profiler.md)       |
-| **Threads**    | List, inspect, get backtraces                | [docs/tools/threads.md](docs/tools/threads.md)         |
-| **Monitor**    | Health checks, runtime stats, GC             | [docs/tools/monitor.md](docs/tools/monitor.md)         |
-| **Swank**      | Slime/Portacle integration (21 tools)        | [docs/swank-integration.md](docs/swank-integration.md) |
-
-**92 tools total** across 14 categories.
-
-### Quick Tool Examples
-
-**Debug an error** (using MCP tool names):
-
-```
-repl_eval        code: "(my-buggy-function 7)"   ; triggers error
-debugger_frames                                   ; see stack frames
-repl_invoke_restart  restart_index: 5             ; abort to top level
-repl_compile     code: "(defun my-buggy-function ...)"  ; hot-reload fix
-```
-
-**Profile performance:**
-
-```
-profile_start
-repl_eval        code: "(process-data)"
-profile_stop
-profile_report   format: "flat"
-```
-
-**Find callers:**
-
-```
-who_calls        symbol_name: "my-package:process"
-```
-
-📖 **[More workflow examples →](prompts/workflow-examples.md)**
-
-## Discoverable by AI Agents
-
-The MCP is **fully discoverable**: an AI agent can learn how to use it without any user explanation.
-
-- **Short path:** The agent calls **`prompts/get`** with name
-  **`discover-mcp`**. That returns the exact steps: `resources/list` →
-  `resources/read` AGENTS.md → `prompts/list` → `prompts/get` getting-started →
-  `tools/list`. After that, the agent has everything needed to connect,
-  evaluate, debug, inspect, profile, and hot-reload.
-- **Read path:** The agent calls **`resources/list`**, then **`resources/read`**
-  with uri **`AGENTS.md`**. That document (and the other listed resources)
-  explains the one long-running Lisp session, connection, tools, workflows, and
-  conventions.
-
-No manual "how to use Tron" instructions are required. Standard MCP methods
-(`resources/list`, `resources/read`, `prompts/list`, `prompts/get`,
-`tools/list`) are enough.
-
-📖 **[MCP resources and prompts →](docs/mcp-resources-prompts.md)**
+**Key rule:** the state lives in the Lisp session, not inside Tron. Tron is a client of that session.
 
 ## Quick Start
 
-**Recommended:** Start Tron once as a long-running HTTP server, then configure
-MCP clients to connect via streamable HTTP. This keeps Tron running across IDE
-sessions without repeated startup.
+### 1. Install with Quicklisp
+
+The easiest path is to clone the repo into Quicklisp local projects:
 
 ```bash
-./start-mcp.sh                    # Start long-running HTTP server (port 4006)
-./start-mcp.sh --status           # Check if server is running
-./start-mcp.sh --stop             # Stop the server
+git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git \
+  ~/quicklisp/local-projects/cl-tron-mcp
+cd ~/quicklisp/local-projects/cl-tron-mcp
 ```
 
-For MCP clients that require stdio (e.g., older configurations), use `--stdio-only`. This creates a short-lived process that exits when the client disconnects.
+If you keep the repo elsewhere, make sure Quicklisp can still see it by pushing the directory into `ql:*local-project-directories*` or by symlinking it into `~/quicklisp/local-projects/`.
 
-| Mode | Command | Lifecycle | Use Case  |
-| ------ | --------- | ----------- | ---------- |
-| **combined** | (default) | Long-running HTTP | Recommended for IDE sessions |
-| **stdio-only** | `--stdio-only` | Exits when client disconnects | MCP client starts the server |
-| **http-only** | `--http-only` | Long-running HTTP | Same as combined |
+### 2. Preload the System Once
 
-Run `./start-mcp.sh --help` for all options. See [docs/starting-the-mcp.md](docs/starting-the-mcp.md) for details.
+This avoids the first-client-start timeout that can happen while SBCL compiles the project for the first time:
 
-### 1. Start a Swank Server
+```bash
+sbcl --non-interactive \
+  --eval '(load (merge-pathnames "quicklisp/setup.lisp" (user-homedir-pathname)))' \
+  --eval '(ql:quickload :cl-tron-mcp :silent t)'
+```
+
+### 3. Start a Swank Session
+
+In the Lisp image you want the agent to work with:
 
 ```lisp
-;; In SBCL
 (ql:quickload :swank)
 (swank:create-server :port 4006 :dont-close t)
 ```
 
-### 2. Configure Your AI Client
+### 4. Start Tron
 
-You can run the MCP from a **local copy** or from a **clone of the GitHub repo**. In both cases the client runs a command that starts `start-mcp.sh` (or equivalent) inside the project directory.
-
-#### Getting the server
-
-| Option          | What to do                                                                                                                                                                                                                                      |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Local copy**  | You already have the repo on disk (e.g. in `~/quicklisp/local-projects/cl-tron-mcp`). Use that path in the config below.                                                                                                                        |
-| **From GitHub** | Clone the repo, then use the path to the cloned directory: `git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git` and `cd cl-tron-mcp`. In config, set the path to where you cloned it (e.g. `~/cl-tron-mcp`). |
-
-The config examples below use **tilde expansion** (`~`) for the standard Quicklisp path. MCP clients support `~` but do not support `$HOME` or other environment variables. Adjust the path if your Quicklisp is in a different location.
-
-**Quick Setup:** Use the config generator script to create all MCP client configurations with absolute paths:
+From the repository root:
 
 ```bash
-# Interactive menu - select which clients to configure
-./create_configs.sh
-
-# Or generate all configs at once
-./create_configs.sh --all
-
-# Or generate a specific client config
-./create_configs.sh --client cursor
-./create_configs.sh --client kilocode
-./create_configs.sh --client vscode
-./create_configs.sh --client copilot
-./create_configs.sh --client copilot-cli
-./create_configs.sh --client opencode
-./create_configs.sh --client claude
-
-# Or use start-mcp.sh --config (same as create_configs.sh)
-./start-mcp.sh --config
+./start-mcp.sh --stdio-only   # for stdio-based MCP clients
+./start-mcp.sh                # long-running HTTP/combined mode
 ```
 
-The script generates configuration files with absolute paths (no `~` or `$HOME`), which is required for JSON config files.
+`start-mcp.sh` is the canonical runtime entrypoint. `run-mcp.sh` exists only as an optional convenience wrapper for `devenv` users.
 
-#### Kilocode
-
-Config file: **`.kilocode/mcp.json`** (project) or global MCP settings. The repo provides **both** Tron variants under different server names so you can **choose one**:
-
-| Server name           | Transport        | Choose this if…                          |
-|-----------------------|------------------|------------------------------------------|
-| **cl-tron-mcp-stdio** | STDIO            | You want Kilocode to start Tron (default)|
-| **cl-tron-mcp-http**  | Streamable HTTP  | You run `./start-mcp.sh --http` yourself  |
-
-Enable the one you want (`disabled: false`); leave the other disabled or remove it. See `examples/kilocode-mcp.json.example` for a template with both entries.
-
-**STDIO (cl-tron-mcp-stdio, recommended):**
-
-```json
-{
-  "mcpServers": {
-    "cl-tron-mcp": {
-      "command": "~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
-      "args": ["--stdio-only"],
-      "disabled": false
-    }
-  }
-}
-```
-
-**Streamable HTTP (cl-tron-mcp-http):** Start Tron with `./start-mcp.sh` (combined) or `./start-mcp.sh --http-only [--port 4006]`, then set `"type": "streamable-http"` and `"url": "http://127.0.0.1:4006/mcp"`.
-
-#### OpenCode
-
-Config file: **`~/.config/opencode/opencode.json`**.
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "cl-tron-mcp": {
-      "type": "local",
-      "command": "~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
-      "enabled": true
-    }
-  }
-}
-```
-
-#### Cursor
-
-Config file: **`~/.cursor/mcp.json`** (or Cursor MCP settings).
-
-```json
-{
-  "mcpServers": {
-    "cl-tron-mcp": {
-      "command": "~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
-      "args": ["--stdio-only"],
-      "disabled": false,
-      "env": {}
-    }
-  }
-}
-```
-
-#### GitHub Copilot (VS Code)
-
-GitHub Copilot uses VS Code's built-in MCP support (VS Code 1.99+). Add Tron to your **workspace** config at `.vscode/mcp.json`:
-
-```json
-{
-    "servers": {
-        "cl-tron-mcp": {
-            "type": "stdio",
-            "command": "bash",
-            "args": ["-c", "cd ~/quicklisp/local-projects/cl-tron-mcp && ./start-mcp.sh --stdio-only"]
-        }
-    }
-}
-```
-
-Or add to your **user settings** (`settings.json`):
-
-```json
-{
-    "mcp": {
-        "servers": {
-            "cl-tron-mcp": {
-                "type": "stdio",
-                "command": "bash",
-                "args": ["-c", "cd ~/quicklisp/local-projects/cl-tron-mcp && ./start-mcp.sh --stdio-only"]
-            }
-        }
-    }
-}
-```
-
-The repo's `.vscode/mcp.json` is pre-configured for this workspace. Run `./create_configs.sh --client copilot` to generate a user-level config.
-
-#### GitHub Copilot CLI
-
-The Copilot CLI uses **`~/.copilot/mcp-config.json`** with `mcpServers` at the top level and `"type": "local"`:
-
-```json
-{
-    "mcpServers": {
-        "cl-tron-mcp": {
-            "type": "local",
-            "command": "bash",
-            "args": ["-c", "cd ~/quicklisp/local-projects/cl-tron-mcp && ./start-mcp.sh --stdio-only"],
-            "env": {},
-            "tools": ["*"]
-        }
-    }
-}
-```
-
-Run `./create_configs.sh --client copilot-cli` to generate this file, or use `/mcp add` inside the CLI.
-
-#### From Outside the devenv Environment (run-mcp.sh)
-
-If you are **not** inside the devenv shell but want to use devenv-managed dependencies, use the bundled `run-mcp.sh` script. It auto-detects your host Quicklisp installation, enters the devenv environment, and starts the MCP:
+### 5. Verify the MCP Starts
 
 ```bash
-./run-mcp.sh --stdio-only   # For MCP clients
-./run-mcp.sh                # Long-running HTTP server (default)
+echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | \
+  ./start-mcp.sh --stdio-only 2>/dev/null | head -1
 ```
 
-This is the simplest way to run Tron from an coding assistant or IDE that spawns a shell outside the Nix environment. The script handles:
+You should receive a JSON-RPC response that includes `serverInfo` and the MCP protocol version.
 
-- Finding Quicklisp on the host (`$HOME/quicklisp` or `QUICKLISP_DIR`)
-- Entering the devenv shell with the correct environment
-- Forwarding all arguments to `start-mcp.sh`
+### 6. Connect Tron to Swank
 
-See [docs/starting-the-mcp.md#quick-start-outside-devenv](docs/starting-the-mcp.md#quick-start-outside-devenv) for details.
+Once the MCP server is running, use either:
 
-#### Claude Desktop
+- `repl_connect` for the higher-level unified workflow, or
+- `swank_connect` for lower-level Swank access.
 
-Config file: **`~/Library/Application Support/Claude/claude_desktop_config.json`** (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows).
+Example tool call:
 
 ```json
 {
-    "mcpServers": {
-        "cl-tron-mcp": {
-            "command": "bash",
-            "args": ["-c", "cd ~/quicklisp/local-projects/cl-tron-mcp && ./start-mcp.sh --stdio-only"]
-        }
-    }
+  "name": "repl_connect",
+  "arguments": { "port": 4006 }
 }
 ```
 
-Run `./create_configs.sh --client claude` to generate this file.
+## Tool Surface
 
-#### devenv (NixOS / Nix users)
+The current registry exposes **91 tools** across **14 categories**, including:
 
-If you manage your development environment with [devenv](https://devenv.sh), Tron integrates natively via `devenv.nix`. After cloning the repo, the devenv environment already includes SBCL and all required packages.
+- debugger tools (`debugger_*`, `breakpoint_*`, `step_frame`)
+- unified REPL tools (`repl_*`)
+- raw Swank tools (`swank_*`)
+- hot-reload tools (`code_compile_string`, `reload_system`)
+- inspection, profiling, tracing, monitoring, logging, xref, security, and managed Swank-process tools
 
-**Quick start — recommended:** Use the bundled `run-mcp.sh` script. It auto-detects your host Quicklisp, enters the devenv environment, and starts the MCP:
+See [docs/tools/index.md](docs/tools/index.md) for the full per-tool reference and [docs/code-reference.md](docs/code-reference.md) for the source-level map.
 
-```bash
-# Long-running HTTP server (combined mode)
-./run-mcp.sh
+## Recommended Workflow
 
-# Stdio for MCP clients
-./run-mcp.sh --stdio-only
+For interactive debugging and hot reload:
 
-# HTTP only
-./run-mcp.sh --http-only
+1. start the target Lisp image with Swank,
+2. start Tron,
+3. connect with `repl_connect`,
+4. use `repl_eval`, `repl_backtrace`, `repl_frame_locals`, `repl_get_restarts`, and `repl_compile`,
+5. continue with `repl_continue` or invoke a restart.
 
-# Force SBCL
-./run-mcp.sh --use-sbcl
-```
+If you need to launch a disposable SBCL session from Tron itself, use the managed-process tools:
 
-**Inside the devenv shell manually:**
+- `swank_launch`
+- `swank_process_list`
+- `swank_process_status`
+- `swank_kill`
 
-| Mode | Command | Best for |
-|------|---------|----------|
-| **HTTP server** (persistent) | `devenv up` | Development — keeps Tron running on port 4006 |
-| **Stdio** (on-demand) | `devenv shell -- tron-mcp` | MCP clients that spawn the server per session |
+## Documentation Map
 
-**Fast startup:** When you enter the devenv shell (`devenv shell`), the `tron-mcp:precompile` task automatically compiles Lisp sources to cached `.fasl` files. Subsequent MCP startups take ~2 seconds instead of ~8 seconds. If Quicklisp is not available in the sandbox, the task skips with a diagnostic rather than blocking shell entry.
+| Need | Read |
+| --- | --- |
+| Start/install/run Tron | [docs/starting-the-mcp.md](docs/starting-the-mcp.md) |
+| Understand the architecture | [docs/architecture.md](docs/architecture.md) |
+| Browse the full tool catalog | [docs/tools/index.md](docs/tools/index.md) |
+| Learn the source layout | [docs/code-reference.md](docs/code-reference.md) |
+| Contribute changes | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Work inside the codebase | [docs/DEVELOPERS.md](docs/DEVELOPERS.md) |
+| Consume the MCP from an agent | [AGENTS.md](AGENTS.md) |
 
-**MCP client config (using run-mcp.sh):**
+## Optional Nix / devenv Support
 
-```json
-{
-  "mcpServers": {
-    "cl-tron-mcp": {
-      "command": "/path/to/cl-tron-mcp/run-mcp.sh",
-      "args": ["--stdio-only"],
-      "disabled": false
-    }
-  }
-}
-```
+The project still ships a `devenv.nix` for contributors who want a reproducible shell with SBCL, ECL, and helper tools preinstalled. That is now an **optional development environment**, not the primary installation story.
 
-**MCP client config (using devenv directly):** Point your client at `devenv shell -- tron-mcp`. This ensures SBCL and all env vars come from devenv, even from outside the shell:
+## Current Caveats
 
-```json
-{
-  "mcpServers": {
-    "cl-tron-mcp": {
-      "command": "devenv",
-      "args": ["shell", "--", "tron-mcp"],
-      "cwd": "/path/to/cl-tron-mcp"
-    }
-  }
-}
-```
+- The best-supported debugger workflow is **SBCL + Swank**.
+- The local hot-reload fallback is useful when no REPL is connected, but the full debugger/restart workflow requires a live Swank session.
+- Some features are implementation-specific; the docs call those out where relevant.
 
-> **Note:** `devenv mcp` is devenv's own built-in MCP server (for querying Nix packages/options). It is unrelated to Tron and cannot be used to run Tron.
+## Testing
 
-#### Other clients (Claude Code, etc.)
-
-Any MCP client that runs a **local command** can use Tron the same way:
-
-1. Clone or copy the repo: `git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git` (or use an existing local path).
-2. In the client's MCP config, add a server entry whose **command** runs the MCP over stdio, for example:
-   - **Preferred:** `["~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh", "--stdio-only"]`
-   - **Alternative (SBCL only):** `["sbcl", "--non-interactive", "--noinform", "--eval", "(ql:quickload :cl-tron-mcp :silent t)", "--eval", "(cl-tron-mcp/core:start-server :transport :stdio-only)"]`
-
-Ensure **SBCL** (or ECL) and **Quicklisp** are on the PATH when the client starts the server. To force ECL, use `["~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh", "--use-ecl"]`.
-
-Example config files: [examples/cursor-mcp.json.example](examples/cursor-mcp.json.example), [examples/kilocode-mcp.json.example](examples/kilocode-mcp.json.example), [examples/opencode-mcp.json.example](examples/opencode-mcp.json.example).
-
-### 3. Start Debugging
-
-Ask your AI: _"Connect to Swank on port 4006 and debug factorial-example.lisp"_
-
-## Installation
-
-### Quicklisp
-
-```lisp
-(ql:quickload :cl-tron-mcp)
-```
-
-### From Source
-
-```bash
-git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git
-cd cl-tron-mcp
-sbcl --eval '(load "cl-tron-mcp.asd")' --eval '(ql:quickload :cl-tron-mcp)'
-```
-
-## Development
-
-### Running Tests
+Run the existing suite with:
 
 ```lisp
 (asdf:test-system :cl-tron-mcp)
-
-;; Or with Rove
-(ql:quickload :rove)
-(rove:run :cl-tron-mcp/tests)
 ```
 
-### Project Structure
-
-```
-cl-tron-mcp/
-├── src/                    # Source code
-│   ├── core/               # Core infrastructure
-│   ├── swank/              # Swank client
-│   ├── tools/              # Tool definitions
-│   └── ...
-├── tests/                  # Rove test suites
-├── scripts/                # run-http.sh, tutorial-run.lisp, debug-mcp-stdio.sh
-├── examples/               # MCP config examples, mcp-kilocode.json, example Python clients
-├── docs/                   # Documentation
-│   ├── architecture.md     # How it works
-│   ├── DEVELOPERS.md       # Developer guide (where to add features)
-│   ├── swank-integration.md
-│   └── tools/              # Tool docs
-├── prompts/                # Workflow guides
-├── demo/                   # Demo scripts, asciinema recordings (.cast), and GIFs (see [demo/README.md](demo/README.md))
-└── AGENTS.md              # AI agent guidelines
-```
-
-### Documentation
-
-| Document                                                         | Purpose                                                      |
-| ---------------------------------------------------------------- | ------------------------------------------------------------ |
-| [AGENTS.md](AGENTS.md)                                           | Quick start for AI agents using Tron                         |
-| [docs/architecture.md](docs/architecture.md)                     | System architecture and design                               |
-| [docs/swank-integration.md](docs/swank-integration.md)           | Swank protocol details                                       |
-| [docs/mcp-resources-prompts.md](docs/mcp-resources-prompts.md)   | MCP discoverability features                                 |
-| [docs/protocol-handlers.md](docs/protocol-handlers.md)           | JSON-RPC protocol handler documentation                     |
-| [docs/starting-the-mcp.md](docs/starting-the-mcp.md)             | Starting the MCP and troubleshooting                         |
-| [docs/demo-creation.md](docs/demo-creation.md)                   | How to create demo GIFs                                      |
-| [tutorial/e2e-mcp-workflow.md](tutorial/e2e-mcp-workflow.md)     | End-to-end workflow (connect, eval, error, restart, hot-fix) |
-| [prompts/workflow-examples.md](prompts/workflow-examples.md)     | Step-by-step usage examples                                  |
-| [prompts/debugging-workflows.md](prompts/debugging-workflows.md) | Debugging patterns                                           |
-
-### Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests, and PR process, and [docs/DEVELOPERS.md](docs/DEVELOPERS.md) for where to add features and how the codebase is organized.
-
-1. Fork the repository
-2. Create a feature branch
-3. Follow guidelines in [AGENTS.md](AGENTS.md)
-4. Add tests
-5. Submit a pull request
-
-## Requirements
-
-- **SBCL** 2.0.0 or later, or **ECL** (Embeddable Common Lisp). The MCP server runs with either. `start-mcp.sh` selects the Lisp by: **`--use-sbcl`** / **`--use-ecl`** (CLI) or auto-detect (sbcl, then ecl). Run **`./start-mcp.sh --help`** for full usage.
-- **Quicklisp**
-- **Swank** (for Slime/Portacle/Sly)
-
-## Server Management
-
-For HTTP and combined modes, `start-mcp.sh` includes server detection and session management:
+Or from the shell:
 
 ```bash
-./start-mcp.sh --status   # Check if server is running (shows PID, port, uptime)
-./start-mcp.sh --stop     # Stop a running server gracefully
-./start-mcp.sh --restart  # Stop existing and start new instance
+cd ~/quicklisp/local-projects/cl-tron-mcp
+sbcl --non-interactive \
+  --eval '(load (merge-pathnames "quicklisp/setup.lisp" (user-homedir-pathname)))' \
+  --eval '(pushnew (truename ".") ql:*local-project-directories* :test (function equal))' \
+  --eval '(asdf:test-system :cl-tron-mcp)'
 ```
-
-The PID file (`.tron-server.pid`) contains JSON metadata: `{"pid": 12345, "port": 4006, "transport": "combined", "started": 1709000000}`. The script automatically detects if a server is already running (via PID file and health endpoint) and exits successfully without starting a duplicate instance.
-
-Use `--restart` when you want to stop an old instance and start a fresh one (e.g., after updating code).
-
-## Troubleshooting
-
-| Problem                    | Solution                                         |
-| -------------------------- | ------------------------------------------------ |
-| "Package not found"        | `(ql:quickload :cl-tron-mcp)` first              |
-| Client shows "failed"      | Use `start-mcp.sh` which handles stdio correctly |
-| "Not connected to REPL"    | Run `swank_connect` or `repl_connect` first      |
-| Tests fail with stale FASL | `(asdf:compile-system :cl-tron-mcp :force t)`    |
-
-## License
-
-Apache License 2.0. See [LICENSE](LICENSE) file.
-
-## Resources
-
-- **Repository:** [https://github.com/Alba-Intelligence/cl-tron-mcp](https://github.com/Alba-Intelligence/cl-tron-mcp)
-- [SBCL Documentation](http://www.sbcl.org/)
-- [Model Context Protocol](https://modelcontextprotocol.io/)
-- [Swank/Slime](https://slime.common-lisp.dev/)

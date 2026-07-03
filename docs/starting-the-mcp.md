@@ -1,291 +1,165 @@
 # Starting the MCP Server
 
-This document explains how the MCP server is started and how to fix common "MCP won't start" issues.
+This is the canonical install, startup, and verification guide for Tron.
 
-## Who Starts the MCP
+## Recommended Model
 
-- **The MCP client** (Cursor, OpenCode, Kilocode) starts the server when you add it to your config and (re)start the client. The client runs the configured command (e.g. `start-mcp.sh`).
-- **The AI agent** only uses tools _after_ the server is running. The agent does not start the server; if the server fails to start, the cause is client config or environment.
+Tron works best when you keep **one long-running Lisp session** alive and let Tron connect to it through Swank:
 
-## Transport Modes
+1. start SBCL,
+2. start Swank inside that image,
+3. start Tron,
+4. connect Tron to Swank with `repl_connect` or `swank_connect`,
+5. debug, inspect, compile, and continue inside the same session.
 
-| Mode | Command | Lifecycle | Use Case |
-|------|---------|-----------|----------|
-| **stdio-only** | `--stdio-only` | Short-lived, exits when client disconnects | MCP client starts the server |
-| **http-only** | `--http-only` | Long-running until stopped | Manual start, multiple clients |
-| **combined** | (default) | Long-running HTTP server | Recommended for IDE sessions |
+## Installation Paths
 
-### stdio-only Mode
+### Recommended: Quicklisp-first
 
-Short-lived process for MCP client communication. The process exits when the client closes the connection.
+Clone the project into Quicklisp local projects:
+
+```bash
+git clone https://github.com/Alba-Intelligence/cl-tron-mcp.git \
+  ~/quicklisp/local-projects/cl-tron-mcp
+cd ~/quicklisp/local-projects/cl-tron-mcp
+```
+
+If the repository lives somewhere else, make sure Quicklisp can still find it by either:
+
+- symlinking it into `~/quicklisp/local-projects/`, or
+- pushing its path into `ql:*local-project-directories*` before loading.
+
+### Optional: devenv / Nix
+
+`devenv.nix` is available for contributors who want a reproducible shell with SBCL, ECL, OpenSSL variants, and helper tooling already installed. It is optional and not required for ordinary Quicklisp-based use.
+
+## First Load / Precompile
+
+The first load can take long enough to hit MCP-client startup timeouts. Preload once from the repository root:
+
+```bash
+sbcl --non-interactive \
+  --eval '(load (merge-pathnames "quicklisp/setup.lisp" (user-homedir-pathname)))' \
+  --eval '(ql:quickload :cl-tron-mcp :silent t)'
+```
+
+## Start the Target Lisp Session
+
+In the Lisp image you want Tron to control:
+
+```lisp
+(ql:quickload :swank)
+(swank:create-server :port 4006 :dont-close t)
+```
+
+### Port Guidance
+
+- Use **4006** for the Swank session shown in these examples.
+- If your editor already owns another Swank port, keep that separate and point Tron at the dedicated port you want it to use.
+
+## Start Tron
+
+From the repository root, `start-mcp.sh` is the primary runtime entrypoint:
 
 ```bash
 ./start-mcp.sh --stdio-only
-```
-
-### HTTP / Combined Mode (Recommended)
-
-Long-running HTTP server that stays alive across client sessions. This is the **recommended mode** for IDE usage.
-
-```bash
-./start-mcp.sh                    # Combined mode (long-running HTTP on 4006)
-./start-mcp.sh --http-only        # Same as default
-./start-mcp.sh --port 9000        # Use a different port
-```
-
-For MCP clients, configure **streamable HTTP** transport:
-```json
-{
-  "mcpServers": {
-    "cl-tron-mcp": {
-      "type": "streamable-http",
-      "url": "http://127.0.0.1:4006/mcp"
-    }
-  }
-}
-```
-
-## Portable Config Pattern
-
-Copy the example that matches your client from **`examples/`** (e.g. `examples/cursor-mcp.json.example`). The examples use **tilde expansion** (`~`) for the standard Quicklisp path:
-
-```json
-{
-  "mcpServers": {
-    "cl-tron-mcp": {
-      "command": "~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh",
-      "args": ["--stdio-only"],
-      "disabled": false
-    }
-  }
-}
-```
-
-If your Quicklisp is in a different location, replace the path accordingly. Do not commit machine-specific paths; use the examples as templates.
-
-### Why Tilde Expansion?
-
-MCP clients (Cursor, VS Code, Kilocode) support tilde (`~`) expansion but **do not** support environment variables like `$HOME` in the command path. Using `~` allows configs to be portable across machines with the same Quicklisp setup.
-
-### Config Generator Script
-
-For convenience, use the `create_configs.sh` script to generate MCP client configurations with absolute paths:
-
-```bash
-# Interactive menu - select which clients to configure
-./create_configs.sh
-
-# Or generate all configs at once
-./create_configs.sh --all
-
-# Or generate a specific client config
-./create_configs.sh --client cursor
-./create_configs.sh --client kilocode
-./create_configs.sh --client vscode
-./create_configs.sh --client opencode
-./create_configs.sh --client claude
-
-# Or use start-mcp.sh --config (same as create_configs.sh)
-./start-mcp.sh --config
-```
-
-The script generates configuration files with absolute paths (no `~` or `$HOME`), which is required for JSON config files. Supported clients:
-- **Cursor IDE**: `~/.cursor/mcp.json`
-- **Kilocode IDE**: `~/.kilocode/mcp.json`
-- **VS Code**: `~/.vscode/mcp.json`
-- **OpenCode IDE**: `~/.config/opencode/opencode.json`
-- **Claude Desktop**: `~/.config/claude_desktop_config.json`
-
-## Server Detection and Session Management
-
-For HTTP and combined modes, `start-mcp.sh` includes automatic server detection:
-
-### PID File
-
-The PID file (`.tron-server.pid`) contains JSON metadata:
-
-```json
-{
-  "pid": 12345,
-  "port": 4006,
-  "transport": "combined",
-  "started": 1709000000
-}
-```
-
-### Status Commands
-
-```bash
-./start-mcp.sh --status   # Check if server is running
-./start-mcp.sh --stop     # Stop a running server
-./start-mcp.sh --restart  # Stop existing and start new
-```
-
-### Example Output
-
-```
-$ ./start-mcp.sh --status
-Server is RUNNING
-  PID: 12345
-  Port: 4006
-  Transport: combined
-  Started: Tue Feb 27 10:30:00 UTC 2026
-```
-
-### Automatic Detection
-
-When starting the server:
-1. Checks if a server is already running (via PID file + health endpoint)
-2. If healthy server exists → exits successfully (no duplicate instance)
-3. If unhealthy → offers to restart
-4. If port in use by another process → exits with error
-
-## Kilocode Configuration
-
-The project's **`.kilocode/mcp.json`** provides both transport options:
-
-| Server name           | Transport        | Use when...                          |
-|-----------------------|------------------|--------------------------------------|
-| **cl-tron-mcp-stdio** | STDIO            | You want Kilocode to start Tron each session |
-| **cl-tron-mcp-http**  | Streamable HTTP  | You run Tron manually (recommended)  |
-
-**Recommended approach:**
-
-1. Start Tron once: `./start-mcp.sh`
-2. Configure Kilocode for streamable HTTP:
-```json
-{
-  "mcpServers": {
-    "cl-tron-mcp": {
-      "type": "streamable-http",
-      "url": "http://127.0.0.1:4006/mcp",
-      "disabled": false
-    }
-  }
-}
-```
-
-This keeps Tron running across Kilocode sessions without repeated startup.
-
-## Lisp Selection
-
-The script chooses the Lisp in this order:
-
-1. **CLI:** `--use-sbcl` or `--use-ecl` — use that Lisp (error if not installed).
-2. **Auto-detect:** try `sbcl`, then `ecl`; error if neither is found.
-
-Example: `./start-mcp.sh --use-ecl` to force ECL when both are installed.
-
-## Quick Start Outside devenv
-
-If you want an MCP client or coding assistant to start Tron from a shell **outside** the devenv environment, use the bundled `run-mcp.sh` script. It auto-detects your host Quicklisp installation, enters the devenv environment, and forwards all arguments to `start-mcp.sh`:
-
-```bash
-# From the project root:
-./run-mcp.sh                      # Combined (long-running HTTP on 4006)
-./run-mcp.sh --stdio-only         # Stdio for MCP clients
-./run-mcp.sh --http-only          # HTTP only
-./run-mcp.sh --use-sbcl           # Force SBCL
-```
-
-### How it works
-
-1. **Detect Quicklisp** — Checks `QUICKLISP_DIR` (if set), then `$HOME/quicklisp`.
-2. **Enter devenv** — Runs `devenv shell` with `QUICKLISP_DIR` inherited.
-3. **Launch MCP** — Executes `start-mcp.sh` inside the devenv environment with all your arguments.
-
-### MCP client config example
-
-Point your MCP client at `run-mcp.sh` instead of `start-mcp.sh` directly:
-
-```json
-{
-  "mcpServers": {
-    "cl-tron-mcp": {
-      "command": "/path/to/cl-tron-mcp/run-mcp.sh",
-      "args": ["--stdio-only"],
-      "disabled": false
-    }
-  }
-}
-```
-
-### Troubleshooting
-
-- **"Quicklisp not found"** — Ensure Quicklisp is installed at `~/quicklisp` or set `QUICKLISP_DIR` to the correct path before running `run-mcp.sh`.
-- **"devenv: command not found"** — Install [devenv](https://devenv.sh/install/) and ensure it is on your `PATH`.
-- **Precompile skipped** — Inside the devenv sandbox, the precompile task may skip if Quicklisp is not visible. This is expected; the MCP will still start correctly when `run-mcp.sh` injects `QUICKLISP_DIR`.
-- **Memory Faults, ASLR, or missing `libssl` inside `devenv`** — 
-  - **Dynamic Linker Paths**: In non-interactive mode (`run-mcp.sh` calling `devenv shell -- start-mcp.sh`), the interactive shell hook `enterShell` is not executed by `devenv`. To ensure libraries like OpenSSL are resolved correctly, `LD_LIBRARY_PATH` must be defined declaratively in `devenv.nix` under `env.LD_LIBRARY_PATH` rather than in `enterShell`. This has been resolved out-of-the-box in the provided `devenv.nix`.
-  - **Address Space Layout Randomization (ASLR)**: SBCL's memory manager (GENCGC) relies on fixed virtual memory address mappings. On some Linux kernels (where `/proc/sys/kernel/randomize_va_space` is set to `2`), ASLR can cause address space conflicts leading to SBCL startup memory faults ("Continuing with fingers crossed", `fatal error: ...` or sudden hangs). You can resolve this by wrapping the startup command using the `setarch` utility to disable ASLR for the SBCL process:
-    ```bash
-    setarch $(uname -m) -R ./run-mcp.sh
-    ```
-
-## One-Time Precompile (Avoid First-Start Timeout)
-
-The first time the client starts the server, SBCL may compile the system, which can take 1–2 minutes. Many clients use a startup timeout (e.g. 30–60 seconds) and may report "failed to start" if the first JSON line does not appear in time.
-
-**Do this once** before relying on the client to start the MCP:
-
-```bash
-cd ~/quicklisp/local-projects/cl-tron-mcp
-sbcl --noinform --eval '(ql:quickload :cl-tron-mcp)' --eval '(quit)'
-```
-
-Adjust the path if your Quicklisp is elsewhere. After this, the next client start should be fast.
-
-## Troubleshooting Checklist
-
-If the MCP or Tron "doesn't start" or the client says the server failed:
-
-1. **Check path in config** — Ensure the command uses the correct path. Tilde expansion (`~`) works in most MCP clients.
-2. **Precompile once** — Run the one-time precompile command above so the first client start stays under the client's timeout.
-3. **Lisp in PATH** — The client runs the command in its own environment. Ensure `sbcl` (or `ecl`) is on the PATH. To use ECL, pass **`--use-ecl`** in the command.
-4. **No stdout pollution** — Use `start-mcp.sh` (recommended) or, if you run Lisp directly, use SBCL with `--noinform` or ECL with `-q`. Any output on stdout before the first JSON line will break the MCP handshake.
-5. **Port conflicts** — If port 4006 is in use (e.g. by Swank), use `--port <different-port>`.
-6. **Check server status** — Run `./start-mcp.sh --status` to see if a server is already running.
-
-## Debugging Kilocode MCP
-
-Best workflow to isolate why Kilocode does not connect:
-
-### 1. Prove Tron works alone (stdio)
-
-From the project root, run:
-
-```bash
-echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | ./start-mcp.sh --stdio-only 2>/dev/null | head -1
-```
-
-**Expected:** A single line starting with `{` (a JSON object). If you see anything else (banner, log line, or nothing), fix Tron first: precompile once, ensure no stdout before the JSON line.
-
-### 2. Use streamable HTTP (recommended)
-
-For a persistent server:
-
-```bash
-# Start Tron
 ./start-mcp.sh
-
-# Verify it's running
-./start-mcp.sh --status
-
-# Configure Kilocode for HTTP
-# "url": "http://127.0.0.1:4006/mcp"
+./start-mcp.sh --http-only --port 9000
+./start-mcp.sh --use-sbcl
+./start-mcp.sh --use-ecl
 ```
 
-### 3. Check Kilocode / VS Code output
+### Transport Modes
 
-- In VS Code: **View > Output**, select **"Kilo Code"** or **"MCP"**.
-- Look for errors: "timeout", "failed to start", "invalid JSON", "connection refused".
+| Mode | Command | Lifecycle | Use when |
+| --- | --- | --- | --- |
+| `stdio-only` | `./start-mcp.sh --stdio-only` | exits with the client connection | the MCP client launches Tron directly |
+| `combined` | `./start-mcp.sh` | long-running | you want HTTP available and a persistent server process |
+| `http-only` | `./start-mcp.sh --http-only` | long-running | you only need HTTP transport |
 
-### 4. Increase timeout
+### Optional Wrapper: `run-mcp.sh`
 
-Kilocode defaults to a 1-minute network timeout. First start can exceed it. In Kilocode settings, try **Network Timeout** 2–5 minutes.
+`run-mcp.sh` enters `devenv shell` and then forwards to `start-mcp.sh`. Use it only if you explicitly want the Nix/devenv environment.
 
-## See Also
+## Verify Startup
 
-- [AGENTS.md](../AGENTS.md) — Quick start for agents
-- [README: Quick Start](../README.md#quick-start) — Client config snippets
-- [examples/](../examples/) — Portable example configs with tilde expansion
+### Verify the stdio handshake
+
+```bash
+echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | \
+  ./start-mcp.sh --stdio-only 2>/dev/null | head -1
+```
+
+Expected: one JSON-RPC line with `result.serverInfo`.
+
+### Verify HTTP health
+
+```bash
+./start-mcp.sh
+curl http://127.0.0.1:4006/health
+```
+
+Expected: a JSON response containing an `ok` status.
+
+## Connect Tron to Swank
+
+After the MCP server is running, connect it to the live Lisp session:
+
+```json
+{
+  "name": "repl_connect",
+  "arguments": { "port": 4006 }
+}
+```
+
+If you need the lower-level API:
+
+```json
+{
+  "name": "swank_connect",
+  "arguments": { "port": 4006 }
+}
+```
+
+## MCP Client Configuration
+
+Point the client at the repository's `start-mcp.sh` script. A common path is:
+
+```text
+~/quicklisp/local-projects/cl-tron-mcp/start-mcp.sh
+```
+
+Examples for several clients live under [`examples/`](../examples/). The helper script [`create_configs.sh`](../create_configs.sh) can generate config files with absolute paths.
+
+## Troubleshooting
+
+### Quicklisp not found
+
+Install Quicklisp or set `QUICKLISP_DIR` if your setup lives somewhere other than `~/quicklisp`.
+
+### First start is too slow
+
+Run the one-time preload command from the **First Load / Precompile** section.
+
+### Stdout is polluted
+
+For MCP stdio mode, use `start-mcp.sh`. It configures Lisp startup flags so the client sees JSON-RPC on stdout instead of banners or logs.
+
+### Port conflict
+
+If 4006 is already in use, choose a different port consistently for:
+
+1. the Swank session,
+2. the MCP client connection arguments, and
+3. any HTTP listener you start.
+
+### devenv-specific issues
+
+If you intentionally use `run-mcp.sh` and hit missing-library or shell-environment problems, debug the `devenv` layer separately. Those are optional-environment issues, not required parts of the normal Quicklisp setup.
+
+## Related Docs
+
+- [../README.md](../README.md) - project overview and shortest path
+- [architecture.md](architecture.md) - one-session runtime model
+- [code-reference.md](code-reference.md) - source-level map
+- [tools/index.md](tools/index.md) - full tool catalog
