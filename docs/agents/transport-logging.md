@@ -14,6 +14,8 @@ Runs both stdio and HTTP transports simultaneously:
 
 - **Stdio**: For MCP clients (Cursor, Kilocode, Opencode)
 - **HTTP**: For web clients and testing on port 4006
+- **Lifecycle**: The long-running shell launcher keeps HTTP as the process anchor and runs stdio in the background so EOF on stdin does not immediately tear down the server
+- **Shutdown**: `Ctrl+C` on `./start-mcp.sh` or `./start-mcp.sh --stop` should stop the supervised Lisp child cleanly
 
 ### Stdio-Only Mode
 

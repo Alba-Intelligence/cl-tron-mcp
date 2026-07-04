@@ -68,6 +68,7 @@ PORT_GIVEN=""
 LISP_CHOICE=""
 ACTION="start"
 FORCE_STOP=false
+SERVER_CHILD_PID=""
 
 # HTTP/WebSocket default port (avoid 4005 which is usually Swank)
 HTTP_DEFAULT_PORT="4006"
@@ -373,7 +374,7 @@ kill_by_port() {
         local count=0
         while is_process_running "$pid" && [[ $count -lt "$GRACE_PERIOD" ]]; do
             sleep 1
-            ((count++))
+            count=$((count + 1))
         done
         
         if is_process_running "$pid"; then
@@ -474,7 +475,7 @@ stop_server() {
             local count=0
             while is_process_running "$pid" && [[ $count -lt "$GRACE_PERIOD" ]]; do
                 sleep 1
-                ((count++))
+                count=$((count + 1))
             done
             # Force kill if still running
             if is_process_running "$pid"; then
@@ -505,16 +506,16 @@ preflight_checks() {
     if [[ ! -d "$QUICKLISP_DIR" ]]; then
         log_error "Quicklisp directory not found: $QUICKLISP_DIR"
         log_error "Set QUICKLISP_DIR environment variable or install Quicklisp."
-        ((errors++))
+        errors=$((errors + 1))
     elif [[ ! -f "$QUICKLISP_DIR/setup.lisp" ]]; then
         log_error "Quicklisp setup.lisp not found in: $QUICKLISP_DIR"
-        ((errors++))
+        errors=$((errors + 1))
     fi
     
     # Check if cl-tron-mcp system exists
     if [[ ! -f "$PROOT/cl-tron-mcp.asd" ]]; then
         log_error "cl-tron-mcp.asd not found in: $PROOT"
-        ((errors++))
+        errors=$((errors + 1))
     fi
     
     return $errors
@@ -672,7 +673,7 @@ Transport Modes:
   
   combined (default)  Long-running server with BOTH HTTP and stdio
                    - HTTP on port (for MCP clients via HTTP)
-                   - stdio on main thread (for MCP clients via stdio)
+                   - stdio supervised in the background
                    - Recommended for most use cases
   
   --http-only      Long-running HTTP server only (no stdio)
@@ -693,7 +694,7 @@ Session Management:
   --restart --force Force stop before restart
 
 Examples:
-  start-mcp.sh                      # Combined (long-running HTTP on 4006)
+  start-mcp.sh                      # Combined (long-running HTTP on 4006, Ctrl+C to stop)
   start-mcp.sh --stdio-only         # Stdio only (for MCP client config)
   start-mcp.sh --http-only          # HTTP only on port 4006
   start-mcp.sh --http-only --port 9000
@@ -911,6 +912,10 @@ fi
 # Function to clean up PID file on exit (only for HTTP/combined modes)
 cleanup() {
     local exit_code=$?
+    if [[ -n "${SERVER_CHILD_PID:-}" ]] && is_process_running "$SERVER_CHILD_PID"; then
+        kill "$SERVER_CHILD_PID" 2>/dev/null || true
+        wait "$SERVER_CHILD_PID" 2>/dev/null || true
+    fi
     if [[ "$TRANSPORT" != "stdio" ]] && [[ -f "$PID_FILE" ]]; then
         local pid_in_file=$(get_server_pid)
         if [[ "$pid_in_file" == "$$" ]]; then
@@ -920,9 +925,53 @@ cleanup() {
     exit $exit_code
 }
 
+handle_supervisor_signal() {
+    local signal_name="$1"
+    log_info ""
+    log_info "Received $signal_name, stopping server..."
+
+    if [[ -n "${SERVER_CHILD_PID:-}" ]] && is_process_running "$SERVER_CHILD_PID"; then
+        kill "$SERVER_CHILD_PID" 2>/dev/null || true
+
+        local count=0
+        while is_process_running "$SERVER_CHILD_PID" && [[ $count -lt "$GRACE_PERIOD" ]]; do
+            sleep 1
+            count=$((count + 1))
+        done
+
+        if is_process_running "$SERVER_CHILD_PID"; then
+            log_warn "Server did not terminate gracefully, force killing..."
+            kill -9 "$SERVER_CHILD_PID" 2>/dev/null || true
+        fi
+
+        wait "$SERVER_CHILD_PID" 2>/dev/null || true
+        SERVER_CHILD_PID=""
+    fi
+
+    remove_pid_file
+    exit 0
+}
+
+run_long_lived_lisp() {
+    if command -v setsid &>/dev/null; then
+        setsid "$@" &
+    else
+        log_warn "setsid not available; falling back to direct launch, so Ctrl+C may not stop cleanly"
+        "$@" &
+    fi
+
+    SERVER_CHILD_PID=$!
+    wait "$SERVER_CHILD_PID"
+    local child_status=$?
+    SERVER_CHILD_PID=""
+    return $child_status
+}
+
 # For HTTP/combined modes, set up PID file and cleanup trap
 if [[ "$TRANSPORT" != "stdio" ]]; then
     trap cleanup EXIT
+    trap 'handle_supervisor_signal SIGINT' INT
+    trap 'handle_supervisor_signal SIGTERM' TERM
     write_pid_file "$$" "$PORT" "$TRANSPORT"
 fi
 
@@ -943,6 +992,7 @@ if [[ "$TRANSPORT" == "stdio" ]]; then
         $LISP_EVAL "$COMPILE_EXPR" \
         ${LOAD_EXPR:+$LISP_EVAL "$LOAD_EXPR"} \
         $LISP_EVAL "(progn (cl-tron-mcp/core:start-server :transport :stdio-only) #+sbcl (sb-ext:exit :code 0) #+ecl (ext:quit 0) #-(or sbcl ecl) (cl-user::quit))"
+elif [[ "$TRANSPORT" == "combined" ]]; then
     # Combined mode: long-running HTTP server (stdio clients should use HTTP transport)
     log_info "-- Starting combined mode (long-running HTTP on port $PORT)"
     log_info "-- MCP clients can connect via streamable HTTP: http://127.0.0.1:$PORT/mcp"
@@ -970,7 +1020,7 @@ if [[ "$TRANSPORT" == "stdio" ]]; then
 #+ecl (ext:quit 0)
 #-(or sbcl ecl) (cl-user::quit 0)
 BOOTEOF
-    exec \
+    run_long_lived_lisp \
         "$LISP" \
         $LISP_QUIET \
         $LISP_EXTRA \
@@ -1004,7 +1054,7 @@ elif [[ "$TRANSPORT" == "http" ]]; then
 #+ecl (ext:quit 0)
 #-(or sbcl ecl) (cl-user::quit 0)
 BOOTEOF
-    exec \
+    run_long_lived_lisp \
         "$LISP" \
         $LISP_QUIET \
         $LISP_EXTRA \
@@ -1014,7 +1064,7 @@ elif [[ "$TRANSPORT" == "websocket" ]]; then
     log_info "-- Starting Websocket server on port $PORT"
     log_info "--"
     [[ "$LISP" = *sbcl* ]] && LISP_EXTRA="--non-interactive" || LISP_EXTRA=""
-    exec \
+    run_long_lived_lisp \
         "$LISP" \
         $LISP_QUIET \
         $LISP_EXTRA \

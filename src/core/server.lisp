@@ -21,7 +21,8 @@
 (defun start-server (&key (transport :combined) (port 4006))
   "Start the MCP server with the specified transport.
    TRANSPORT can be :combined (default), :stdio-only, :http-only, or :websocket.
-   :combined runs stdio and HTTP simultaneously (stdio on main thread, HTTP in background).
+   :combined runs stdio and HTTP simultaneously, but the HTTP transport keeps
+   the process alive so shell launches do not depend on stdio input remaining open.
    PORT is used for HTTP/WebSocket transports.
    For stdio, log4cl is configured to stderr so stdout contains only JSON-RPC."
   (%http-startup-log (format nil "start-server entered transport=~a port=~a" transport port))
@@ -36,10 +37,17 @@
         (case transport
           (:combined
            (setq *current-transport* :combined)
-           (%http-startup-log "start-server: starting HTTP (non-blocking)")
-           (cl-tron-mcp/transport:start-http-transport :port port :block nil)
-           (%http-startup-log "start-server: starting stdio")
-           (cl-tron-mcp/transport:start-stdio-transport))
+           (%http-startup-log "start-server: starting stdio in background")
+           (setq *transport-thread*
+                 (bordeaux-threads:make-thread
+                  (lambda ()
+                    (unwind-protect
+                         (cl-tron-mcp/transport:start-stdio-transport)
+                      (setq *transport-thread* nil)))
+                  :name "mcp-stdio-combined"))
+           (%http-startup-log "start-server: starting HTTP (blocking)")
+           (cl-tron-mcp/transport:start-http-transport :port port :block t)
+           (%http-startup-log "start-server: combined transport returned"))
           (:stdio-only
            (start-stdio-transport))
           (:stdio
@@ -81,6 +89,7 @@
     (:stdio (cl-tron-mcp/transport:stop-stdio-transport))
     (:http (cl-tron-mcp/transport:stop-http-transport))
     (:websocket (cl-tron-mcp/transport:stop-websocket-transport)))
+  (setq *transport-thread* nil)
   (setq *current-transport* nil)
   (setq *server-state* :stopped)
   (cl-tron-mcp/logging:log-info "[MCP] Server stopped"))

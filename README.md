@@ -68,6 +68,7 @@ From the repository root:
 ```
 
 `start-mcp.sh` is the canonical runtime entrypoint. `run-mcp.sh` exists only as an optional convenience wrapper for `devenv` users.
+For long-running modes, `Ctrl+C` now stops the launcher cleanly; `./start-mcp.sh --stop` also shuts down a running instance.
 
 ### 5. Verify the MCP Starts
 

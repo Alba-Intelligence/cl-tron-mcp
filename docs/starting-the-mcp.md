@@ -77,6 +77,8 @@ From the repository root, `start-mcp.sh` is the primary runtime entrypoint:
 | `combined` | `./start-mcp.sh` | long-running | you want HTTP available and a persistent server process |
 | `http-only` | `./start-mcp.sh --http-only` | long-running | you only need HTTP transport |
 
+In long-running modes, the shell launcher supervises the Lisp process. `Ctrl+C` cleanly stops the child process and removes the PID file instead of dropping ECL into its interactive debugger.
+
 ### Optional Wrapper: `run-mcp.sh`
 
 `run-mcp.sh` enters `devenv shell` and then forwards to `start-mcp.sh`. Use it only if you explicitly want the Nix/devenv environment.
@@ -100,6 +102,14 @@ curl http://127.0.0.1:4006/health
 ```
 
 Expected: a JSON response containing an `ok` status.
+
+### Stop a long-running server
+
+```bash
+./start-mcp.sh --stop
+```
+
+Or, if you started the server in the foreground, press `Ctrl+C`.
 
 ## Connect Tron to Swank
 
@@ -152,6 +162,10 @@ If 4006 is already in use, choose a different port consistently for:
 1. the Swank session,
 2. the MCP client connection arguments, and
 3. any HTTP listener you start.
+
+### Ctrl+C does not stop the server
+
+Use the current `start-mcp.sh` from this repository root. Long-running modes are expected to stop cleanly on `Ctrl+C`; if you still have an orphaned process, run `./start-mcp.sh --stop` or `./start-mcp.sh --stop --force`.
 
 ### devenv-specific issues
 
