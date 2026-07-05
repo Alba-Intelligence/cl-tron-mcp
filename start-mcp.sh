@@ -3,8 +3,8 @@
 # Outline of the script:
 # - Configuration
 # - Helper Functions
-# - PID File Management (Enhanced JSON format) 
-# - Process Verification (Safety Checks) 
+# - PID File Management (Enhanced JSON format)
+# - Process Verification (Safety Checks)
 # - Port-Based Process Discovery
 # - Server Status and Stop Functions
 # - Argument Parsing
@@ -148,7 +148,7 @@ is_port_in_use() {
 check_server_health() {
     local port="$1"
     local response
-    
+
     if command -v curl &>/dev/null; then
         response=$(curl -s -m "$HEALTH_TIMEOUT" "http://127.0.0.1:${port}/health" 2>/dev/null) || return 1
     elif command -v wget &>/dev/null; then
@@ -158,13 +158,13 @@ check_server_health() {
         is_port_in_use "$port"
         return $?
     fi
-    
+
     # Check for "ok" status in response
     echo "$response" | grep -q '"status".*"ok"' 2>/dev/null
 }
 
 # ============================================================================
-# PID File Management (Enhanced JSON format) 
+# PID File Management (Enhanced JSON format)
 # ============================================================================
 
 # Get current timestamp (seconds since epoch)
@@ -243,10 +243,10 @@ write_pid_file() {
     local user="${USER:-$(whoami 2>/dev/null || echo 'unknown')}"
     local ppid="$$"
     local unique_id=$(generate_unique_id)
-    
+
     # Store first few chars of command for verification (truncate to avoid JSON issues)
     local cmd_short="${0##*/} (transport: $transport, port: $port)"
-    
+
     cat > "$PID_FILE" << EOF
 {
   "pid": $pid,
@@ -286,13 +286,13 @@ verify_process() {
     local pid="$1"
     local stored_user="$2"
     local stored_command="$3"
-    
+
     # Check if process exists
     if ! is_process_running "$pid"; then
         log_debug "Process $pid does not exist"
         return 1
     fi
-    
+
     # Check if we can read /proc (Linux)
     if [[ -d "/proc/$pid" ]]; then
         # Get actual process command line
@@ -320,17 +320,17 @@ verify_process() {
             # Accept if it looks like our process or if we have no stored command
             return 0
         fi
-        
+
         # If user matches, trust it
         if [[ -n "$stored_user" ]] && [[ "$stored_user" == "$actual_user" ]]; then
             return 0
         fi
-        
+
         log_warn "Process $pid verification failed - may not be our server"
         log_warn "  Expected user: $stored_user, Actual: $actual_user"
         return 1
     fi
-    
+
     # For non-Linux or if /proc unavailable, just check if process exists
     log_debug "Cannot verify process $pid via /proc, relying on PID existence"
     return 0
@@ -344,7 +344,7 @@ verify_process() {
 find_pid_by_port() {
     local port="$1"
     local pid=""
-    
+
     # Try lsof first (most reliable)
     if command -v lsof &>/dev/null; then
         pid=$(lsof -t -i ":${port}" 2>/dev/null | head -1)
@@ -353,7 +353,7 @@ find_pid_by_port() {
             return 0
         fi
     fi
-    
+
     # Try ss
     if command -v ss &>/dev/null; then
         pid=$(ss -tlnp 2>/dev/null | grep ":${port} " | grep -o 'pid=[0-9]*' | head -1 | cut -d= -f2)
@@ -362,7 +362,7 @@ find_pid_by_port() {
             return 0
         fi
     fi
-    
+
     # Try netstat
     if command -v netstat &>/dev/null; then
         pid=$(netstat -tlnp 2>/dev/null | grep ":${port} " | grep -o 'pid=[0-9]*' | head -1 | cut -d= -f2)
@@ -371,7 +371,7 @@ find_pid_by_port() {
             return 0
         fi
     fi
-    
+
     return 1
 }
 
@@ -380,36 +380,36 @@ kill_by_port() {
     local port="$1"
     local force="$2"
     local pid
-    
+
     pid=$(find_pid_by_port "$port")
-    
+
     if [[ -z "$pid" ]]; then
         log_info "No process found listening on port $port"
         return 1
     fi
-    
+
     log_info "Found process $pid listening on port $port"
-    
+
     if [[ "$force" == "true" ]]; then
         log_info "Force killing process $pid..."
         kill -9 "$pid" 2>/dev/null || true
     else
         log_info "Sending SIGTERM to process $pid..."
         kill "$pid" 2>/dev/null || true
-        
+
         # Wait for graceful termination
         local count=0
         while is_process_running "$pid" && [[ $count -lt "$GRACE_PERIOD" ]]; do
             sleep 1
             count=$((count + 1))
         done
-        
+
         if is_process_running "$pid"; then
             log_info "Process $pid did not terminate gracefully, force killing..."
             kill -9 "$pid" 2>/dev/null || true
         fi
     fi
-    
+
     # Verify port is now free
     if ! is_port_in_use "$port"; then
         log_info "Port $port is now free"
@@ -428,15 +428,15 @@ kill_by_port() {
 check_server_status() {
     local pid
     local port
-    
+
     pid=$(get_server_pid)
     port=$(get_pid_port)
-    
+
     # If no PID file port, use http-port.txt or default
     if [[ -z "$port" ]]; then
         port=$(get_http_port)
     fi
-    
+
     if [[ -n "$pid" ]] && is_process_running "$pid"; then
         # Process exists, check if it's healthy
         if check_server_health "$port"; then
@@ -466,20 +466,20 @@ stop_server() {
     local pid
     local status
     local stored_user stored_command
-    
+
     pid=$(get_server_pid)
     status=$(check_server_status) || true
-    
+
     if [[ "$status" == "stopped" ]]; then
         log_info "Server is not running."
         remove_pid_file
         return 0
     fi
-    
+
     # Get stored verification info
     stored_user=$(get_pid_user)
     stored_command=$(get_pid_command)
-    
+
     if [[ -n "$pid" ]] && is_process_running "$pid"; then
         # Verify this is our process before killing
         if ! verify_process "$pid" "$stored_user" "$stored_command"; then
@@ -488,9 +488,9 @@ stop_server() {
             log_error "Use --kill-port to forcefully kill by port, or manually verify."
             return 1
         fi
-        
+
         log_info "Stopping server (PID: $pid)..."
-        
+
         if [[ "$FORCE_STOP" == "true" ]]; then
             # Force kill mode - skip graceful shutdown
             log_info "Force killing server (--force specified)..."
@@ -519,7 +519,7 @@ stop_server() {
             kill_by_port "$port" "$FORCE_STOP"
         fi
     fi
-    
+
     remove_pid_file
     log_info "Server stopped."
     return 0
@@ -528,7 +528,7 @@ stop_server() {
 # Pre-flight checks
 preflight_checks() {
     local errors=0
-    
+
     # Check if QUICKLISP_DIR exists
     if [[ ! -d "$QUICKLISP_DIR" ]]; then
         log_error "Quicklisp directory not found: $QUICKLISP_DIR"
@@ -538,13 +538,13 @@ preflight_checks() {
         log_error "Quicklisp setup.lisp not found in: $QUICKLISP_DIR"
         errors=$((errors + 1))
     fi
-    
+
     # Check if cl-tron-mcp system exists
     if [[ ! -f "$PROOT/cl-tron-mcp.asd" ]]; then
         log_error "cl-tron-mcp.asd not found in: $PROOT"
         errors=$((errors + 1))
     fi
-    
+
     return $errors
 }
 
@@ -601,7 +601,7 @@ detect_lisp() {
             exit 1
         fi
     fi
-    
+
     log_debug "Detected Lisp: $LISP"
 }
 
@@ -706,19 +706,19 @@ Options:
 Transport Modes:
   --stdio-only     Short-lived process for MCP client communication
                    Process exits when the MCP client disconnects
-  
+
   combined (default)  Long-running server with BOTH HTTP and stdio
                    - HTTP on port (for MCP clients via HTTP)
                    - stdio supervised in the background
                    - Recommended for most use cases
-  
+
   --http-only      Long-running HTTP server only (no stdio)
                    Use this if you only need HTTP transport
 
 Server Detection:
   For HTTP/combined modes, the script checks if a server is already running.
   If a healthy server is found, it exits successfully without starting a new one.
-  
+
   PID file: .tron-server.pid (JSON format with pid, port, transport, user, command, unique_id)
 
 Session Management:
@@ -785,12 +785,12 @@ if [[ "$ACTION" == "status" ]]; then
     started=$(get_pid_started)
     user=$(get_pid_user)
     unique_id=$(get_pid_unique_id)
-    
+
     # If no port from PID file, use http-port.txt or default
     if [[ -z "$port" ]]; then
         port=$(get_http_port)
     fi
-    
+
     case "$status" in
     running)
         log_info "Server is RUNNING"
@@ -857,7 +857,7 @@ fi
 if [[ "$TRANSPORT" != "stdio" ]]; then
     status=$(check_server_status) || true
     pid=$(get_server_pid)
-    
+
     case "$status" in
     running)
         log_info "Server is already running (PID: $pid, Port: $(get_pid_port))"
@@ -1034,26 +1034,26 @@ write_boot_lisp_header(){
           (defun %boot-log (msg)
             (ignore-errors
               (when (eq boot-message-count 0)
-                (with-open-file (f #p"/tmp/cl-tron-mcp-boot.log" 
+                (with-open-file (f #p"/tmp/cl-tron-mcp-boot.log"
                   :direction :output
                   :if-exists :append
                   :if-does-not-exist :create)
                   (write-line (format nil "") f)))
 
               (incf boot-message-count)
-              (with-open-file (f #p"/tmp/cl-tron-mcp-boot.log" 
+              (with-open-file (f #p"/tmp/cl-tron-mcp-boot.log"
                                 :direction :output
                                 :if-exists :append
                                 :if-does-not-exist :create)
-                (write-line (format nil 
-                                    "Time: ~a Boot message: ~3d ~a" 
+                (write-line (format nil
+                                    "Time: ~a Boot message: ~3d ~a"
                                     (get-universal-time) boot-message-count msg) f)))))
 
 
         (%boot-log "ensure :quicklisp is available")
         (unless (member :quicklisp *features* :test #'eq)
-          (setf *load-verbose* nil *compile-verbose* nil) 
-          (let ((*standard-output* *error-output*)) 
+          (setf *load-verbose* nil *compile-verbose* nil)
+          (let ((*standard-output* *error-output*))
             (load #p"$QUICKLISP_DIR/setup.lisp")))
         (%boot-log ":quicklisp is available")
 
@@ -1063,16 +1063,10 @@ write_boot_lisp_header(){
         (%boot-log "quickloaded :swank")
 
         (%boot-log "quickloading :cl-tron-mcp")
-        (let ((*standard-output* *error-output*)) 
+        (let ((*standard-output* *error-output*))
           (ql:quickload :cl-tron-mcp :silent t))
         ;; (asdf:load-system :cl-tron-mcp)
         (%boot-log "quickloaded :cl-tron-mcp")
-
-        ;; (%boot-log "0: entered")
-        ;; (setq *compile-verbose* nil *load-verbose* nil)
-        ;; (%boot-log "1: setq done")
-
-          (%boot-log "5: start-server returned")
 
         (let ((port (parse-integer (with-open-file (f #p"$PROOT/http-port.txt")
                                                    (read-line f)))))
@@ -1121,7 +1115,7 @@ elif [[ "$TRANSPORT" == "websocket" ]]; then
     log_info "--"
     write_boot_lisp_header
     cat >> "$BOOT_FILE" << BOOTEOF
-                    (cl-tron-mcp/core:start-server :transport :websocket :port $PORT) 
+                    (cl-tron-mcp/core:start-server :transport :websocket :port $PORT)
                     (%boot-log (format nil "starting Tron server with websocket on port ~a" port))
 BOOTEOF
     write_boot_lisp_footer
