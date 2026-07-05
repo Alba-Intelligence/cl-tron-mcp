@@ -20,10 +20,12 @@ Thumbs.db
 
 # IDE
 .vscode
+.kilo
 
 # Project-specific
 .sbclrc
 http-port.txt
+scripts/boot-generated.lisp
 scripts/http-boot.lisp
 startup.log
 system-index.txt
@@ -46,6 +48,7 @@ tmp
 .devenv*
 devenv.local.nix
 devenv.local.yaml
+result
 
 # direnv
 .direnv
