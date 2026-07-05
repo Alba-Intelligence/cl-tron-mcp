@@ -13,7 +13,9 @@
   (flet ((try (path)
            (ignore-errors
             (ensure-directories-exist (make-pathname :name nil :type nil :defaults path))
-            (with-open-file (f path :direction :output :if-exists :append :if-does-not-exist :create)
+            (with-open-file (f path :direction :output 
+                                    :if-exists :append 
+                                    :if-does-not-exist :create)
               (write-line (format nil "~a ~a" (get-universal-time) msg) f)))))
     (or (try (merge-pathnames "reports/http-startup.log" (or (ignore-errors (truename #p"./")) *default-pathname-defaults*)))
         (try #p"/tmp/cl-tron-mcp-http-startup.log"))))
@@ -37,6 +39,7 @@
         (case transport
           (:combined
            (setq *current-transport* :combined)
+           
            (%http-startup-log "start-server: starting stdio in background")
            (setq *transport-thread*
                  (bordeaux-threads:make-thread
@@ -45,6 +48,7 @@
                          (cl-tron-mcp/transport:start-stdio-transport)
                       (setq *transport-thread* nil)))
                   :name "mcp-stdio-combined"))
+
            (%http-startup-log "start-server: starting HTTP (blocking)")
            (cl-tron-mcp/transport:start-http-transport :port port :block t)
            (%http-startup-log "start-server: combined transport returned"))

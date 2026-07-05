@@ -76,6 +76,8 @@ Wraps each request in a trace context (when tracing is enabled)."
         ;; Tools
         ((string= method "tools/list")
          (handle-tools-list id))
+        ((string= method "listMethods")
+         (handle-tools-list id))
         ((string= method "tools/call")
          (handle-tool-call id params))
         ;; Resources (documentation exposure)
