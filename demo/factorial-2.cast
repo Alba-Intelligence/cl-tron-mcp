@@ -4,7 +4,7 @@
 [1.500, "o", "\r\n\u001b[1m── Step 1: Initialize MCP\u001b[0m\r\n\u001b[36m\u001b[36m→\u001b[0m\u001b[0m {\r\n  \"jsonrpc\": \"2.0\",\r\n  \"method\": \"initialize\",\r\n  \"params\": {\r\n    \"protocolVersion\": \"2024-11-05\",\r\n    \"capabilities\": {},\r\n    \"clientInfo\": {\r\n      \"name\": \"tron-demo\",\r\n      \"version\": \"1.0\"\r\n    }\r\n  },\r\n  \"id\": \"(next)\"\r\n}"]
 [0.000, "o", "\r\n"]
 [1.377, "o", "\u001b[32m← \u001b[0m\u001b[32mServer: cl-tron-mcp v0.1.0  protocol: 2024-11-05\u001b[0m\r\n"]
-[5.575, "o", "\u001b[2m  (Swank launched, REPL connected on port 14006)\u001b[0m\r\n"]
+[5.575, "o", "\u001b[2m  (Swank launched, REPL connected on port 4006)\u001b[0m\r\n"]
 [0.537, "o", "\u001b[2m  (buggy factorial compiled — base case has (/ 1 0))\u001b[0m\r\n"]
 [1.000, "o", "\r\n\u001b[1m── Step 1: Eval (factorial 5) — triggers DIVISION-BY-ZERO\u001b[0m\r\n"]
 [0.000, "o", "\u001b[36m\u001b[36m→\u001b[0m\u001b[0m {\r\n  \"method\": \"tools/call\",\r\n  \"params\": {\r\n    \"name\": \"repl_eval\",\r\n    \"arguments\": {\r\n      \"code\": \"(factorial 5)\"\r\n    }\r\n  }\r\n}\r\n"]

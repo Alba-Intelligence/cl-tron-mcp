@@ -14,31 +14,31 @@
 
 ;; If you don't have a Swank server running, launch one via MCP:
 ;;
-;;   Tool: swank_launch   Arguments: { "port": 4006 }
+;;   Tool: swank_launch   Arguments: { "port": 4005 }
 ;;
 ;; Or from Lisp:
 ;;   (ql:quickload :cl-tron-mcp :silent t)
-;;   (cl-tron-mcp/swank:launch-sbcl-with-swank :port 14006)
-;;   (cl-tron-mcp/swank:wait-for-port 14006 :timeout 30)
+;;   (cl-tron-mcp/swank:launch-sbcl-with-swank :port 4005)
+;;   (cl-tron-mcp/swank:wait-for-port 4005 :timeout 30)
 ;;
 ;; Or manually in another terminal:
 ;;   sbcl --eval "(ql:quickload :swank :silent t)" \
-;;        --eval "(swank:create-server :port 4006 :dont-close t)"
+;;        --eval "(swank:create-server :port 4005 :dont-close t)"
 
 ;; ============================================================
 ;; Part 1: Connecting with the Unified Interface
 ;; ============================================================
 
 ;; Connect to a Swank server (auto-detects type):
-;; (cl-tron-mcp/unified:repl-connect :port 4006)
-;; ;; => (:SUCCESS T :TYPE :SWANK :HOST "127.0.0.1" :PORT 4006 ...)
+;; (cl-tron-mcp/unified:repl-connect :port 4005)
+;; ;; => (:SUCCESS T :TYPE :SWANK :HOST "127.0.0.1" :PORT 4005 ...)
 
 ;; With explicit type and host:
-;; (cl-tron-mcp/unified:repl-connect :type :swank :host "127.0.0.1" :port 4006)
+;; (cl-tron-mcp/unified:repl-connect :type :swank :host "127.0.0.1" :port 4005)
 
 ;; Check status:
 ;; (cl-tron-mcp/unified:repl-status)
-;; ;; => (:CONNECTED T :TYPE :SWANK :HOST "127.0.0.1" :PORT 4006)
+;; ;; => (:CONNECTED T :TYPE :SWANK :HOST "127.0.0.1" :PORT 4005)
 
 ;; ============================================================
 ;; Part 2: Evaluation
@@ -107,7 +107,7 @@
 
 ;; MCP agents use the equivalent JSON tools:
 ;;
-;; { "tool": "repl_connect",   "arguments": {"port": 4006} }
+;; { "tool": "repl_connect",   "arguments": {"port": 4005} }
 ;; { "tool": "repl_eval",      "arguments": {"code": "(+ 1 2 3)"} }
 ;; { "tool": "repl_compile",   "arguments": {"code": "(defun f2 (x y) (+ x y))"} }
 ;; { "tool": "repl_backtrace", "arguments": {} }
@@ -115,6 +115,6 @@
 ;; { "tool": "repl_describe",  "arguments": {"expression": "car"} }
 
 (print "Unified REPL tutorial loaded!")
-(print "Bootstrap:  (cl-tron-mcp/swank:launch-sbcl-with-swank :port 14006)")
-(print "Connect:    (cl-tron-mcp/unified:repl-connect :port 4006)")
+(print "Bootstrap:  (cl-tron-mcp/swank:launch-sbcl-with-swank :port 4005)")
+(print "Connect:    (cl-tron-mcp/unified:repl-connect :port 4005)")
 (print "Evaluate:   (cl-tron-mcp/unified:repl-eval :code \"(+ 1 2)\")")

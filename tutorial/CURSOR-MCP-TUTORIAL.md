@@ -29,7 +29,7 @@ This tutorial demonstrates how to set up and use CL-TRON-MCP with Cursor IDE for
 (ql:quickload :cl-tron-mcp)
 
 ;; Verify installation
-(format t "Version: ~a~%" cl-tron-mcp/core:*version*)
+(format t "Version: ~a~%" cl-tron-mcp/config:*version*)
 (format t "Tools registered: ~d~%" (hash-table-count cl-tron-mcp/tools:*tool-registry*))
 ```
 
@@ -265,13 +265,13 @@ AI Agent equivalent - use the debugger tool:
 
 ### Trace Options Reference
 
-| Option | Description | AI Tool |
-|--------|-------------|---------|
-| `:break` | Invoke debugger before call | `breakpoint_set` |
-| `:break-after` | Invoke debugger after call | (future) |
-| `:condition` | Trace only if condition true | (future) |
-| `:wherein` | Trace only when called from | (future) |
-| `:print` | Print additional info | (future) |
+| Option         | Description                  | AI Tool          |
+| -------------- | ---------------------------- | ---------------- |
+| `:break`       | Invoke debugger before call  | `breakpoint_set` |
+| `:break-after` | Invoke debugger after call   | (future)         |
+| `:condition`   | Trace only if condition true | (future)         |
+| `:wherein`     | Trace only when called from  | (future)         |
+| `:print`       | Print additional info        | (future)         |
 
 ---
 
@@ -511,110 +511,110 @@ AI Agent: Recommends:
 
 ### Inspector Tools (5)
 
-| Tool | Description |
-|------|-------------|
-| `inspect_object` | Inspect an object by ID |
-| `inspect_slot` | Get/set slot values on objects |
-| `inspect_class` | Inspect CLOS class definitions |
-| `inspect_function` | Inspect function definitions |
-| `inspect_package` | Inspect packages and list contents |
+| Tool               | Description                        |
+| ------------------ | ---------------------------------- |
+| `inspect_object`   | Inspect an object by ID            |
+| `inspect_slot`     | Get/set slot values on objects     |
+| `inspect_class`    | Inspect CLOS class definitions     |
+| `inspect_function` | Inspect function definitions       |
+| `inspect_package`  | Inspect packages and list contents |
 
 ### Debugger Tools (6)
 
-| Tool | Description |
-|------|-------------|
-| `debugger_frames` | Get debugger stack frames |
-| `debugger_restarts` | List available restarts |
-| `breakpoint_set` | Set breakpoint on function |
-| `breakpoint_remove` | Remove breakpoint by ID |
-| `breakpoint_list` | List all active breakpoints |
-| `step_frame` | Step execution in a frame |
+| Tool                | Description                 |
+| ------------------- | --------------------------- |
+| `debugger_frames`   | Get debugger stack frames   |
+| `debugger_restarts` | List available restarts     |
+| `breakpoint_set`    | Set breakpoint on function  |
+| `breakpoint_remove` | Remove breakpoint by ID     |
+| `breakpoint_list`   | List all active breakpoints |
+| `step_frame`        | Step execution in a frame   |
 
 ### REPL Tool (1)
 
-| Tool | Description |
-|------|-------------|
+| Tool        | Description                            |
+| ----------- | -------------------------------------- |
 | `repl_eval` | Evaluate Lisp code (requires approval) |
 
 ### Hot Reload Tools (2)
 
-| Tool | Description |
-|------|-------------|
+| Tool                  | Description                  |
+| --------------------- | ---------------------------- |
 | `code_compile_string` | Compile and load code string |
-| `reload_system` | Reload ASDF system |
+| `reload_system`       | Reload ASDF system           |
 
 ### Profiler Tools (3)
 
-| Tool | Description |
-|------|-------------|
-| `profile_start` | Start deterministic profiling |
-| `profile_stop` | Stop profiling |
-| `profile_report` | Get profiling report |
+| Tool             | Description                   |
+| ---------------- | ----------------------------- |
+| `profile_start`  | Start deterministic profiling |
+| `profile_stop`   | Stop profiling                |
+| `profile_report` | Get profiling report          |
 
 ### Tracer Tools (3)
 
-| Tool | Description |
-|------|-------------|
-| `trace_function` | Add trace to a function |
-| `trace_remove` | Remove trace from a function |
-| `trace_list` | List all traced functions |
+| Tool             | Description                  |
+| ---------------- | ---------------------------- |
+| `trace_function` | Add trace to a function      |
+| `trace_remove`   | Remove trace from a function |
+| `trace_list`     | List all traced functions    |
 
 ### Thread Tools (3)
 
-| Tool | Description |
-|------|-------------|
-| `thread_list` | List all threads |
-| `thread_inspect` | Get thread details |
+| Tool               | Description          |
+| ------------------ | -------------------- |
+| `thread_list`      | List all threads     |
+| `thread_inspect`   | Get thread details   |
 | `thread_backtrace` | Get thread backtrace |
 
 ### Monitor Tools (4)
 
-| Tool | Description |
-|------|-------------|
-| `health_check` | Basic health check |
-| `runtime_stats` | Runtime statistics |
-| `gc_run` | Force garbage collection |
-| `system_info` | Comprehensive system info |
+| Tool            | Description               |
+| --------------- | ------------------------- |
+| `health_check`  | Basic health check        |
+| `runtime_stats` | Runtime statistics        |
+| `gc_run`        | Force garbage collection  |
+| `system_info`   | Comprehensive system info |
 
 ### Logging Tools (5)
 
-| Tool | Description |
-|------|-------------|
+| Tool            | Description       |
+| --------------- | ----------------- |
 | `log_configure` | Configure logging |
-| `log_info` | Log info message |
-| `log_debug` | Log debug message |
-| `log_warn` | Log warning |
-| `log_error` | Log error |
+| `log_info`      | Log info message  |
+| `log_debug`     | Log debug message |
+| `log_warn`      | Log warning       |
+| `log_error`     | Log error         |
 
 ### XRef Tools (7)
 
-| Tool | Description |
-|------|-------------|
-| `who_calls` | Find callers of symbol |
-| `who_references` | Find references |
-| `who_binds` | Find bindings |
-| `who_sets` | Find setq/makunbound |
+| Tool              | Description              |
+| ----------------- | ------------------------ |
+| `who_calls`       | Find callers of symbol   |
+| `who_references`  | Find references          |
+| `who_binds`       | Find bindings            |
+| `who_sets`        | Find setq/makunbound     |
 | `who_specializes` | Find method specializers |
-| `list_callees` | List called functions |
+| `list_callees`    | List called functions    |
 
 ### Security Tools (5)
 
-| Tool | Description |
-|------|-------------|
-| `whitelist_add` | Add approval whitelist pattern |
-| `whitelist_remove` | Remove pattern |
-| `whitelist_clear` | Clear all patterns |
-| `whitelist_enable` | Enable/disable whitelist |
-| `whitelist_status` | Get whitelist status |
+| Tool               | Description                    |
+| ------------------ | ------------------------------ |
+| `whitelist_add`    | Add approval whitelist pattern |
+| `whitelist_remove` | Remove pattern                 |
+| `whitelist_clear`  | Clear all patterns             |
+| `whitelist_enable` | Enable/disable whitelist       |
+| `whitelist_status` | Get whitelist status           |
 
 ### Process Management Tools (4)
 
-| Tool | Description |
-|------|-------------|
-| `swank_launch` | Launch a managed SBCL+Swank subprocess |
-| `swank_kill` | Kill a managed Swank process |
-| `swank_process_list` | List all managed processes |
-| `swank_process_status` | Get status of a managed process |
+| Tool                   | Description                            |
+| ---------------------- | -------------------------------------- |
+| `swank_launch`         | Launch a managed SBCL+Swank subprocess |
+| `swank_kill`           | Kill a managed Swank process           |
+| `swank_process_list`   | List all managed processes             |
+| `swank_process_status` | Get status of a managed process        |
 
 ---
 

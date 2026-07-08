@@ -23,7 +23,7 @@ Use swank_connect / repl_connect afterwards to connect to it."
                       '("spawn" "fd-handler" "sigio"))))
   :body
   (cl-tron-mcp/swank:launch-sbcl-with-swank
-   :port    (or port 4006)
+   :port    (or port (cl-tron-mcp/config:get-config :swank-port))
    :timeout (or timeout 30)
    :communication-style (if communication_style
                              (intern (string-upcase communication_style) :keyword)

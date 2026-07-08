@@ -1,6 +1,6 @@
-;;;; src/core/config.lisp
+;;;; src/config/config.lisp
 
-(in-package :cl-tron-mcp/core)
+(in-package :cl-tron-mcp/config)
 
 (defparameter *config* (make-hash-table))
 
@@ -29,7 +29,7 @@
 (defun load-config-file (path)
   "Load configuration from a Lisp file at PATH.
 The file should contain setf forms like:
-  (setf (get-config :port) 4006)
+  (setf (get-config :port) 4005)
   (setf (get-config :transport) :http)
 Returns T if loaded successfully, NIL otherwise."
   (handler-case
@@ -54,7 +54,7 @@ Supported variables:
   CL_TRON_MCP_APPROVAL_TIMEOUT - Approval timeout in seconds
   CL_TRON_MCP_DEBUG - Enable debug mode (true/false)
   CL_TRON_MCP_SWANK_HOST - Swank host (default: 127.0.0.1)
-  CL_TRON_MCP_SWANK_PORT - Swank port (default: 4006)
+  CL_TRON_MCP_SWANK_PORT - Swank port (default: 4005)
   CL_TRON_MCP_LOG_LEVEL - Log level (debug, info, warn, error)
 Returns number of variables loaded."
   (let ((loaded 0))
@@ -155,8 +155,9 @@ Also checks environment variables for the key."
 
 (set-config :transport :stdio)
 (set-config :port 4006)
+(set-config :http-port 4006)
 (set-config :approval-timeout 300)
 (set-config :debug nil)
 (set-config :swank-host "127.0.0.1")
-(set-config :swank-port 4006)
+(set-config :swank-port 4005)
 (set-config :log-level :info)

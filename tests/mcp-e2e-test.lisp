@@ -94,7 +94,7 @@
 
 (defun swank-available-p ()
   (or *swank-available*
-      (setf *swank-available* (handler-case (let ((socket (usocket:socket-connect "127.0.0.1" 4006 :timeout 2)))
+      (setf *swank-available* (handler-case (let ((socket (usocket:socket-connect "127.0.0.1" (cl-tron-mcp/config:get-config :swank-port) :timeout 2)))
                                               (usocket:socket-close socket)
                                               t)
                                 (error ()
@@ -104,7 +104,7 @@
          (testing "Call swank_connect tool"
                   (if (not (swank-available-p))
                       (ok t "Swank server not available - skipping")
-                    (let* ((args (list :|port| 4006))
+                    (let* ((args (list :|port| (cl-tron-mcp/config:get-config :swank-port)))
                            (params (list :|name| "swank_connect"
                                          :|arguments| args))
                            (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
@@ -123,7 +123,7 @@
                   (if (not (swank-available-p))
                       (ok t "Swank server not available - skipping")
                     (progn
-                      (cl-tron-mcp/swank:swank-connect :port 4006)
+                      (cl-tron-mcp/swank:swank-connect :port (cl-tron-mcp/config:get-config :swank-port))
                       (cl-tron-mcp/security:whitelist-enable t)
                       (cl-tron-mcp/security:whitelist-add :eval "*")
                       (unwind-protect
@@ -190,7 +190,7 @@
                     (if (not (swank-available-p))
                         (ok t "Swank not available - skipping re-invocation with approval")
                       (progn
-                        (cl-tron-mcp/swank:swank-connect :port 4006)
+                        (cl-tron-mcp/swank:swank-connect :port (cl-tron-mcp/config:get-config :swank-port))
                         (unwind-protect
                             (let* ((params2 (list :|name| "swank_eval"
                                                   :|arguments| (list :|code| "(+ 1 2)"
@@ -246,7 +246,7 @@
                   (if (not (swank-available-p))
                       (ok t "Swank not available - skipping whitelist test")
                     (progn
-                      (cl-tron-mcp/swank:swank-connect :port 4006)
+                      (cl-tron-mcp/swank:swank-connect :port (cl-tron-mcp/config:get-config :swank-port))
                       (cl-tron-mcp/security:whitelist-enable t)
                       (cl-tron-mcp/security:whitelist-add :eval "*")
                       (unwind-protect

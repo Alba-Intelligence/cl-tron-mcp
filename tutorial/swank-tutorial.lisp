@@ -17,19 +17,19 @@
 ;; swank_launch starts a child SBCL process and waits for it to be ready.
 
 ;; Via MCP tool:
-;; Tool: swank_launch   Arguments: { "port": 4006 }
+;; Tool: swank_launch   Arguments: { "port": 4005 }
 
 ;; Via Lisp (self-contained):
 ;; (ql:quickload :cl-tron-mcp :silent t)
-;; (cl-tron-mcp/swank:launch-sbcl-with-swank :port 14006)
-;; (cl-tron-mcp/swank:wait-for-port 14006 :timeout 30)
+;; (cl-tron-mcp/swank:launch-sbcl-with-swank :port 4005)
+;; (cl-tron-mcp/swank:wait-for-port 4005 :timeout 30)
 
 ;;; ============================================================
 ;;; STEP 1: Connect to Swank
 ;;; ============================================================
 
-;; (cl-tron-mcp/swank:swank-connect :port 4006)
-;; => (:SUCCESS T :HOST "127.0.0.1" :PORT 4006 :MESSAGE "Connected to Swank at 127.0.0.1:4006")
+;; (cl-tron-mcp/swank:swank-connect :port 4005)
+;; => (:SUCCESS T :HOST "127.0.0.1" :PORT 4005 :MESSAGE "Connected to Swank at 127.0.0.1:4005")
 
 ;; Check connection status:
 ;; (cl-tron-mcp/swank:swank-status)
@@ -127,7 +127,7 @@
 
 ;; The unified repl-* API wraps the above for a cleaner interface:
 
-;; (cl-tron-mcp/unified:repl-connect :port 4006)
+;; (cl-tron-mcp/unified:repl-connect :port 4005)
 ;; (cl-tron-mcp/unified:repl-eval :code "(+ 1 2 3)")
 ;; (cl-tron-mcp/unified:repl-backtrace)
 ;; (cl-tron-mcp/unified:repl-get-restarts)
@@ -147,8 +147,8 @@
 
 ;; Workflow:
 ;;
-;; 1. Bootstrap:   (swank_launch :port 4006)  or manual swank:create-server
-;; 2. Connect:     (swank-connect :port 4006)
+;; 1. Bootstrap:   (swank_launch :port 4005)  or manual swank:create-server
+;; 2. Connect:     (swank-connect :port 4005)
 ;; 3. Evaluate:    (swank-eval :code "(+ 1 2)")
 ;; 4. Debug:       (mcp-swank-backtrace), (mcp-swank-frame-locals :frame 0)
 ;; 5. Disconnect:  (swank-disconnect)

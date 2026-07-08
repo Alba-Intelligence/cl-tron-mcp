@@ -103,9 +103,9 @@
         :tools (list
                 (list :name "repl_connect"
                       :description "Connect to a Swank REPL server. This tool establishes a connection to a running Swank server (used by Slime, Portacle, and Sly). You can specify the host and port, or use auto-detection to find the server. Once connected, you can use all other REPL tools to interact with the Lisp session. The connection persists until you explicitly disconnect or the server is stopped."
-                      :usage "(repl-connect :host \"127.0.0.1\" :port 4006)"
-                      :examples (list (list :auto "repl_connect :port 4006")
-                                      (list :explicit "repl_connect :type :swank :host \"127.0.0.1\" :port 4006")))
+                      :usage "(repl-connect :host \"127.0.0.1\" :port 4005)"
+                      :examples (list (list :auto "repl_connect :port 4005")
+                                      (list :explicit "repl_connect :type :swank :host \"127.0.0.1\" :port 4005")))
                 (list :name "repl_eval"
                       :description "Evaluate Lisp code in the connected REPL. This tool sends code to the Swank server for evaluation and returns the result. You can specify the package context for evaluation. Useful for testing code, inspecting values, and performing live debugging. The code is evaluated in the SBCL session, giving you access to the full runtime environment."
                       :usage "(repl-eval :code \"(+ 1 2)\")"
@@ -152,7 +152,7 @@
   (list :error t
         :code "REPL_NOT_CONNECTED"
         :message "Not connected to a REPL. You must connect to a Swank server before using REPL tools."
-        :hint "To connect to a REPL, use the repl_connect tool with the appropriate host and port. For example: repl_connect :host \"127.0.0.1\" :port 4006. Make sure you have a Swank server running in your SBCL session. You can start Swank by evaluating (swank:create-server :port 4006) in your Lisp session. If you're using Slime, Portacle, or Sly, they typically start Swank automatically. Check that the port is correct and not blocked by a firewall. If you're connecting to a remote server, ensure the host is reachable and the port is open."
+        :hint "To connect to a REPL, use the repl_connect tool with the appropriate host and port. For example: repl_connect :host \"127.0.0.1\" :port 4005. Make sure you have a Swank server running in your SBCL session. You can start Swank by evaluating (swank:create-server :port 4005) in your Lisp session. If you're using Slime, Portacle, or Sly, they typically start Swank automatically. Check that the port is correct and not blocked by a firewall. If you're connecting to a remote server, ensure the host is reachable and the port is open."
         :details (list :expected-state "connected"
                        :current-state "disconnected"
                        :suggested-action "Call repl_connect first")))
@@ -167,11 +167,11 @@
 
 (defun actual-after-repl-help ()
   "Get actual repl-help response AFTER refactoring."
-  (cl-tron-mcp/unified:repl-help))
+  (repl-help))
 
 (defun actual-after-error-response ()
   "Get actual error response AFTER refactoring."
-  (cl-tron-mcp/core:make-error-full "REPL_NOT_CONNECTED"))
+  (cl-tron-mcp/resources:make-error-full "REPL_NOT_CONNECTED"))
 
 (defun actual-after-health-check ()
   "Get actual health_check response."

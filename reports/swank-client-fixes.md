@@ -15,11 +15,13 @@ This document summarizes all fixes implemented to support long-running, non-bloc
 **Problem:** Global connection state variables were accessed without synchronization, causing potential race conditions.
 
 **Solution:**
+
 - Added `*connection-lock*` (bordeaux-threads lock) to protect all connection state
 - Protected all access to `*swank-socket*`, `*swank-io*`, `*swank-connected*`, `*swank-running*`, `*last-activity-time*`, `*heartbeat-thread*`, `*event-processor-thread*`, `*swank-reader-thread*`
 - Updated `swank-connect`, `swank-disconnect`, `swank-connected-p`, `swank-status`, and `swank-reader-loop` to use the lock
 
 **Code Changes:**
+
 ```lisp
 (defvar *connection-lock* (bordeaux-threads:make-lock "swank-connection")
   "Lock for synchronizing access to connection state variables.")
@@ -30,12 +32,14 @@ This document summarizes all fixes implemented to support long-running, non-bloc
 **Problem:** Hardcoded 30-second timeout in `wait-for-response` and `send-request`.
 
 **Solution:**
+
 - Added `*default-eval-timeout*` global variable (default 30 seconds)
 - Modified `wait-for-response` to use `*default-eval-timeout*` as default
 - Modified `send-request` to accept optional `timeout` parameter
 - Allows per-request timeout customization
 
 **Code Changes:**
+
 ```lisp
 (defvar *default-eval-timeout* 30
   "Default timeout for evaluation requests in seconds.")
@@ -51,11 +55,13 @@ This document summarizes all fixes implemented to support long-running, non-bloc
 **Problem:** All evaluations were synchronous, blocking the MCP server.
 
 **Solution:**
+
 - Created `send-request-async` function that returns immediately with a request ID
 - Created `get-async-result` function to retrieve results later
 - Enables non-blocking, parallel evaluations
 
 **Code Changes:**
+
 ```lisp
 (defun send-request-async (form &key (package "CL-USER") (thread t))
   "Send :emacs-rex request asynchronously and return immediately with request ID.
@@ -73,11 +79,13 @@ This document summarizes all fixes implemented to support long-running, non-bloc
 **Problem:** `dequeue-event` had a timeout parameter that was ignored, causing indefinite blocking.
 
 **Solution:**
+
 - Modified `dequeue-event` to actually use the timeout parameter
 - Returns NIL immediately if timeout expires
 - Prevents event processor from blocking when queue is empty
 
 **Code Changes:**
+
 ```lisp
 (defun dequeue-event (&optional (timeout 0.1))
   "Dequeue and return next non-debug event, or NIL if timeout.
@@ -100,12 +108,14 @@ This document summarizes all fixes implemented to support long-running, non-bloc
 **Problem:** No mechanism to detect dead connections or silent failures.
 
 **Solution:**
+
 - Added `*heartbeat-interval*` (default 60 seconds)
 - Added `*last-activity-time*` to track last response
 - Created `heartbeat-loop` thread that sends periodic pings
 - Detects dead connections and triggers reconnection
 
 **Code Changes:**
+
 ```lisp
 (defvar *heartbeat-interval* 60
   "Heartbeat interval in seconds for keepalive pings.")
@@ -136,11 +146,13 @@ This document summarizes all fixes implemented to support long-running, non-bloc
 **Problem:** `swank-interrupt` lacked error handling and logging.
 
 **Solution:**
+
 - Added comprehensive error handling to `swank-interrupt`
 - Added logging for success and failure cases
 - Ensures interruption failures are properly reported
 
 **Code Changes:**
+
 ```lisp
 (defun swank-interrupt ()
   "Interrupt current evaluation.
@@ -166,11 +178,13 @@ This document summarizes all fixes implemented to support long-running, non-bloc
 **Problem:** No mechanism for real-time output feedback during long evaluations.
 
 **Solution:**
+
 - Added `*output-callback*` variable for callback registration
 - Modified `handle-output` to call the callback when output is received
 - Enables real-time progress feedback
 
 **Code Changes:**
+
 ```lisp
 (defvar *output-callback* nil
   "Callback function called when output is received from Swank.
@@ -192,12 +206,14 @@ This document summarizes all fixes implemented to support long-running, non-bloc
 **Problem:** Event queue could grow unbounded, causing memory leaks.
 
 **Solution:**
+
 - Added `*max-event-queue-size*` (default 1000 events)
 - Created `cleanup-old-events` function to remove old events
 - Modified `enqueue-debugger-event` and `enqueue-output-event` to check queue size
 - Removes oldest events when queue exceeds limit
 
 **Code Changes:**
+
 ```lisp
 (defvar *max-event-queue-size* 1000
   "Maximum number of events to keep in the queue before dropping oldest.")
@@ -224,6 +240,7 @@ This document summarizes all fixes implemented to support long-running, non-bloc
 **Problem:** No automatic reconnection on connection loss.
 
 **Solution:**
+
 - Added `*reconnect-enabled*` flag (default t)
 - Added `*reconnect-max-attempts*` (default 5)
 - Added `*reconnect-delay*` (default 5 seconds)
@@ -231,6 +248,7 @@ This document summarizes all fixes implemented to support long-running, non-bloc
 - Integrated with heartbeat mechanism for automatic reconnection
 
 **Code Changes:**
+
 ```lisp
 (defvar *reconnect-enabled* t
   "Whether automatic reconnection is enabled.")
@@ -285,12 +303,14 @@ This document summarizes all fixes implemented to support long-running, non-bloc
 **Problem:** No cleanup on fatal errors, leaving system in inconsistent state.
 
 **Solution:**
+
 - Created `cleanup-on-error` function
 - Wraps critical operations in `handler-case` with cleanup
 - Ensures `swank-disconnect` is called on fatal errors
 - Clears pending requests, event queue, and debugger state
 
 **Code Changes:**
+
 ```lisp
 (defun cleanup-on-error ()
   "Clean up resources on fatal errors.
@@ -321,12 +341,14 @@ This document summarizes all fixes implemented to support long-running, non-bloc
 **Problem:** Many tool handlers didn't validate input parameters.
 
 **Solution:**
+
 - Added input validation to `swank-eval`, `swank-compile`, `swank-eval-in-frame`, `swank-inspect-object`, `swank-describe`, `swank-autodoc`, `swank-completions`
 - Validates that required parameters are non-empty strings
 - Validates that numeric parameters are non-negative integers
 - Returns clear error messages for invalid inputs
 
 **Code Changes:**
+
 ```lisp
 (defun swank-eval (&key code (package "CL-USER"))
   "Evaluate Lisp code via Swank RPC."
@@ -356,6 +378,7 @@ This document summarizes all fixes implemented to support long-running, non-bloc
 ### Package Exports
 
 Updated `src/swank/package.lisp` to export all new functions and variables:
+
 - `send-request-async`
 - `get-async-result`
 - `attempt-reconnect`
@@ -373,6 +396,7 @@ Updated `src/swank/package.lisp` to export all new functions and variables:
 ## Testing
 
 All fixes have been tested:
+
 1. System loads successfully: `(ql:quickload :cl-tron-mcp)`
 2. All new functions are exported and accessible
 3. All new variables have correct default values
@@ -381,6 +405,7 @@ All fixes have been tested:
 ## Backward Compatibility
 
 All changes maintain backward compatibility:
+
 - Existing synchronous `send-request` function still works
 - Default timeout (30 seconds) matches previous hardcoded value
 - All existing public APIs unchanged
@@ -450,6 +475,7 @@ All changes maintain backward compatibility:
 ## Summary
 
 All 11 fixes from the code review have been successfully implemented:
+
 - ✅ Thread safety for global state
 - ✅ Configurable evaluation timeout
 - ✅ Asynchronous evaluation support

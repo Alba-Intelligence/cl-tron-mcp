@@ -86,16 +86,16 @@ Debug events remain in the queue for pop-debugger-event."
 ;;; Reconnection (circuit breaker with exponential backoff)
 ;;; ============================================================
 
-(defun attempt-reconnect (&key (host "127.0.0.1") (port 4006))
+(defun attempt-reconnect (&key (host "127.0.0.1") (port (cl-tron-mcp/config:get-config :swank-port)))
   "Attempt to reconnect to Swank with exponential backoff.
 Returns connection status plist or error plist."
   (unless *reconnect-enabled*
     (return-from attempt-reconnect
-      (cl-tron-mcp/core:make-error "RECONNECTION_DISABLED")))
+      (cl-tron-mcp/resources:make-error "RECONNECTION_DISABLED")))
   (bordeaux-threads:with-lock-held (*connection-lock*)
     (when *swank-connected*
       (return-from attempt-reconnect
-        (cl-tron-mcp/core:make-error "SWANK_ALREADY_CONNECTED"))))
+        (cl-tron-mcp/resources:make-error "SWANK_ALREADY_CONNECTED"))))
   (let ((attempt-count (bordeaux-threads:with-lock-held (*connection-lock*)
                          (incf *reconnect-attempt-count*))))
     (when (> attempt-count *reconnect-max-attempts*)
@@ -103,7 +103,7 @@ Returns connection status plist or error plist."
       (bordeaux-threads:with-lock-held (*connection-lock*)
         (setf *reconnect-attempt-count* 0))
       (return-from attempt-reconnect
-        (cl-tron-mcp/core:make-error "MAX_RECONNECTION_ATTEMPTS"
+        (cl-tron-mcp/resources:make-error "MAX_RECONNECTION_ATTEMPTS"
                                      :details (list :max-attempts *reconnect-max-attempts*))))
     (let ((delay (* *reconnect-delay* (expt 2 (1- attempt-count)))))
       (log-info (format nil "Reconnection attempt ~d/~d, waiting ~d seconds"
@@ -123,7 +123,7 @@ Returns connection status plist or error plist."
                 result)))
       (error (e)
         (log-error (format nil "Reconnection attempt ~d error: ~a" attempt-count e))
-        (cl-tron-mcp/core:make-error "RECONNECTION_ERROR"
+        (cl-tron-mcp/resources:make-error "RECONNECTION_ERROR"
                                      :details (list :error (princ-to-string e)))))))
 
 (defun cleanup-on-error ()

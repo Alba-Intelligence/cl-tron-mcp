@@ -29,6 +29,6 @@ Response is used by both stdio and HTTP transports unchanged."
                                                            ;; Prompts capability - exposes guided workflows
                                                            :|prompts| (list :|listChanged| t))
                                           :|serverInfo| (list :|name| "cl-tron-mcp"
-                                                              :|version| cl-tron-mcp/core:*version*)))))
+                                                              :|version| cl-tron-mcp/config:*version*)))))
 
 (provide :cl-tron-mcp/protocol-handlers-initialize)

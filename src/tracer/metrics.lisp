@@ -6,7 +6,7 @@
 ;;;; Thread-safe via a single lock. Designed for low overhead — only atomic
 ;;;; increments and time measurements; no heap allocation per request.
 
-(in-package :cl-tron-mcp/core)
+(in-package :cl-tron-mcp/tracer)
 
 ;;; ============================================================
 ;;; State

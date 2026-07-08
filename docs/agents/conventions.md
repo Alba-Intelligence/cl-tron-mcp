@@ -206,7 +206,7 @@ sbcl --non-interactive \
 
 (deftest version-test
   (testing "Version is defined"
-    (ok (stringp cl-tron-mcp/core:*version*))))
+    (ok (stringp cl-tron-mcp/config:*version*))))
 ```
 
 ### Test Coverage Requirements
@@ -298,25 +298,25 @@ All MCP tools should validate their inputs. The `src/tools/validation.lisp` modu
 
 ### Choosing the Right Macro
 
-| Use case | Macro |
-|---|---|
-| No parameters | `define-simple-tool` |
+| Use case                   | Macro                   |
+| -------------------------- | ----------------------- |
+| No parameters              | `define-simple-tool`    |
 | Parameters with validation | `define-validated-tool` |
 
 ### Built-in Validators
 
-| Function | Validates |
-|---|---|
-| `validate-string` | Non-empty string |
-| `validate-integer` | Integer, optional `:min`/`:max` |
-| `validate-boolean` | `t` or `nil` |
-| `validate-choice` | Member of `:choices` list |
-| `validate-symbol-name` | `"pkg::sym"` format |
-| `validate-package-name` | Known package name |
-| `validate-object-id` | Registered object integer ID |
-| `validate-url` | HTTP/HTTPS URL string |
-| `validate-uri` | `scheme:path` URI string |
-| `validate-list` | List, optional `:min-length`/`:max-length`/`:element-validator` |
+| Function                | Validates                                                       |
+| ----------------------- | --------------------------------------------------------------- |
+| `validate-string`       | Non-empty string                                                |
+| `validate-integer`      | Integer, optional `:min`/`:max`                                 |
+| `validate-boolean`      | `t` or `nil`                                                    |
+| `validate-choice`       | Member of `:choices` list                                       |
+| `validate-symbol-name`  | `"pkg::sym"` format                                             |
+| `validate-package-name` | Known package name                                              |
+| `validate-object-id`    | Registered object integer ID                                    |
+| `validate-url`          | HTTP/HTTPS URL string                                           |
+| `validate-uri`          | `scheme:path` URI string                                        |
+| `validate-list`         | List, optional `:min-length`/`:max-length`/`:element-validator` |
 
 ### Writing a Validated Tool
 

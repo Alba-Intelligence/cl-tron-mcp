@@ -68,23 +68,22 @@ set -e
 
 export QUICKLISP_DIR="${QUICKLISP_DIR:-$HOME/quicklisp}"
 PROOT="$(cd "$(dirname "$0")" && pwd)"
-PID_FILE="$PROOT/.tron-server.pid"
 HTTP_PORT_FILE="$PROOT/http-port.txt"
+PID_FILE="$PROOT/.tron-server.pid"
+SERVER_CHILD_PID=""
 HEALTH_TIMEOUT=2
 
 # Default: combined (long-running HTTP server)
-TRANSPORT="combined"
-PORT="4006"
-SWANK_PORT="4005"
-PORT_GIVEN=""
 LISP_CHOICE=""
+TRANSPORT="combined"
 ACTION="start"
 FORCE_STOP=false
-SERVER_CHILD_PID=""
+
+SWANK_PORT=4005
 LAUNCH_SWANK=true
 
 # HTTP/WebSocket default port (avoid 4005 which is usually Swank)
-HTTP_DEFAULT_PORT="4006"
+HTTP_PORT=4006
 
 # Grace period for graceful shutdown (seconds)
 GRACE_PERIOD=10
@@ -238,7 +237,8 @@ get_pid_ppid() {
 write_pid_file() {
     local pid="$1"
     local port="$2"
-    local transport="$3"
+    local swankport="$3"
+    local transport="$4"
     local started=$(get_timestamp)
     local user="${USER:-$(whoami 2>/dev/null || echo 'unknown')}"
     local ppid="$$"
@@ -251,6 +251,7 @@ write_pid_file() {
 {
   "pid": $pid,
   "port": $port,
+  "swankport": $swankport,
   "transport": "$transport",
   "started": $started,
   "user": "$user",
@@ -259,7 +260,7 @@ write_pid_file() {
   "unique_id": "$unique_id"
 }
 EOF
-    log_debug "Wrote PID file: pid=$pid, port=$port, transport=$transport, user=$user, unique_id=$unique_id"
+    log_debug "Wrote PID file: pid=$pid, port=$port, swank_port=$swankport, transport=$transport, user=$user, unique_id=$unique_id"
 }
 
 # Remove PID file
@@ -270,11 +271,7 @@ remove_pid_file() {
 
 # Get port from file or default
 get_http_port() {
-    if [[ -f "$HTTP_PORT_FILE" ]]; then
-        cat "$HTTP_PORT_FILE" 2>/dev/null || echo "$HTTP_DEFAULT_PORT"
-    else
-        echo "$HTTP_DEFAULT_PORT"
-    fi
+    echo "$HTTP_DEFAULT_PORT"
 }
 
 # ============================================================================
@@ -632,22 +629,20 @@ while [[ $# -gt 0 ]]; do
         shift
         ;;
     --port)
-        PORT="$2"
-        PORT_GIVEN=1
+        HTTP_PORT="$2"
         shift 2
         ;;
     --websocket)
         TRANSPORT="websocket"
         shift
         ;;
-    --launch-swank)
-        LAUNCH_SWANK=true
-        if [[ -n "$2" && "$2" != --* ]]; then
-            SWANK_PORT="$2"
-            shift 2
-        else
-            shift
-        fi
+    --no-swank)
+        LAUNCH_SWANK=false
+        shift
+        ;;
+    --swank-port)
+        SWANK_PORT="$2"
+        shift 2
         ;;
     --status)
         ACTION="status"
@@ -663,8 +658,7 @@ while [[ $# -gt 0 ]]; do
         ;;
     --kill-port)
         ACTION="kill-port"
-        PORT="$2"
-        shift 2
+        shift
         ;;
     --restart)
         ACTION="restart"
@@ -688,32 +682,34 @@ Usage: start-mcp.sh [OPTIONS]
 Start the CL-TRON-MCP server for MCP clients (OpenCode, Cursor, Kilocode).
 
 Options:
-  --use-sbcl       Use SBCL (error if not installed)
-  --use-ecl        Use ECL (error if not installed)
-  --stdio-only     Stdio only (short-lived, exits when client disconnects)
-  --http-only      HTTP only (long-running)
-  --port PORT      HTTP/WebSocket port (default: 4006)
-  --websocket      Use WebSocket transport
-  --status         Check if server is running
-  --stop           Stop a running server gracefully
-  --stop --force   Force kill a non-responsive server (skip graceful shutdown)
-  --kill-port PORT Kill any process listening on specified port
-  --restart        Stop existing server and start new one
-  --restart --force Force stop before restart
-  --config         Generate MCP client configuration files
-  --help           Show this help
+  --use-sbcl                Use SBCL (error if not installed)
+  --use-ecl                 Use ECL (error if not installed)
+  --stdio-only              Stdio only (short-lived, exits when client disconnects)
+  --http-only               HTTP only (long-running)
+  --no-swank                Do not launch the Swank server (if given, Swank poirt is ignored)
+  --swank-port SWANK_PORT   Swank port (default: 4005)
+  --port HTTP_PORT          HTTP/WebSocket port (default: 4006)
+  --websocket               Use WebSocket transport
+  --status                  Check if server is running
+  --stop                    Stop a running server gracefully
+  --stop --force            Force kill a non-responsive server (skip graceful shutdown)
+  --kill-port               Kill any process listening on specified port
+  --restart                 Stop existing server and start new one
+  --restart --force         Force stop before restart
+  --config                  Generate MCP client configuration files
+  --help                    Show this help
 
 Transport Modes:
-  --stdio-only     Short-lived process for MCP client communication
-                   Process exits when the MCP client disconnects
+  --stdio-only          Short-lived process for MCP client communication
+                        Process exits when the MCP client disconnects
 
-  combined (default)  Long-running server with BOTH HTTP and stdio
-                   - HTTP on port (for MCP clients via HTTP)
-                   - stdio supervised in the background
-                   - Recommended for most use cases
+  --combined (default)  Long-running server with BOTH HTTP and stdio
+                        - HTTP on port (for MCP clients via HTTP)
+                        - stdio supervised in the background
+                        - Recommended for most use cases
 
-  --http-only      Long-running HTTP server only (no stdio)
-                   Use this if you only need HTTP transport
+  --http-only           Long-running HTTP server only (no stdio)
+                        Use this if you only need HTTP transport
 
 Server Detection:
   For HTTP/combined modes, the script checks if a server is already running.
@@ -722,12 +718,12 @@ Server Detection:
   PID file: .tron-server.pid (JSON format with pid, port, transport, user, command, unique_id)
 
 Session Management:
-  --status         Show server status (running/stopped, PID, port)
-  --stop           Stop a running server gracefully (SIGTERM, then SIGKILL after 10s)
-  --stop --force   Force kill immediately (SIGKILL)
-  --kill-port PORT Kill any process using the specified port (bypasses PID file)
-  --restart        Stop any existing server and start a new one
-  --restart --force Force stop before restart
+  --status              Show server status (running/stopped, PID, port)
+  --stop                Stop a running server gracefully (SIGTERM, then SIGKILL after 10s)
+  --stop --force        Force kill immediately (SIGKILL)
+  --kill-port           Kill any process using the specified port (bypasses PID file)
+  --restart             Stop any existing server and start a new one
+  --restart --force     Force stop before restart
 
 Examples:
   start-mcp.sh                      # Combined (long-running HTTP on 4006, Ctrl+C to stop)
@@ -737,15 +733,15 @@ Examples:
   start-mcp.sh --status             # Check server status
   start-mcp.sh --stop               # Stop running server gracefully
   start-mcp.sh --stop --force       # Force kill non-responsive server
-  start-mcp.sh --kill-port 4006     # Kill whatever is on port 4006
+  start-mcp.sh --kill-port          # Kill whatever is on port 4006 or port provided by --port
   start-mcp.sh --restart            # Restart server
   start-mcp.sh --restart --force    # Force restart
 
 Troubleshooting:
-  - Server won't stop:     ./start-mcp.sh --stop --force
-  - Port stuck:            ./start-mcp.sh --kill-port 4006
-  - Stuck PID file:        ./start-mcp.sh --kill-port 4006 (then remove .tron-server.pid manually if needed)
-  - Debug:                TRON_DEBUG=1 ./start-mcp.sh ...
+  - Server won't stop:      ./start-mcp.sh --stop --force
+  - Port stuck:             ./start-mcp.sh --kill-port 4006
+  - Stuck PID file:         ./start-mcp.sh --kill-port 4006 (then remove .tron-server.pid manually if needed)
+  - Debug:                  TRON_DEBUG=1 ./start-mcp.sh ...
 
 MCP Client Config (Cursor ~/.cursor/mcp.json):
   {
@@ -836,8 +832,8 @@ fi
 
 # Handle --kill-port action
 if [[ "$ACTION" == "kill-port" ]]; then
-    log_info "Killing process on port $PORT..."
-    kill_by_port "$PORT" "$FORCE_STOP"
+    log_info "Killing process on port $HTTP_PORT..."
+    kill_by_port "$HTTP_PORT" "$FORCE_STOP"
     exit $?
 fi
 
@@ -890,13 +886,6 @@ fi
 # Detect Lisp binary
 detect_lisp
 
-# HTTP port: when --port was not given, use 4006 for http or combined to avoid clashing with Swank (4005)
-if [[ "$TRANSPORT" == "http" || "$TRANSPORT" == "combined" || "$TRANSPORT" == "websocket" ]]; then
-    if [[ -z "$PORT_GIVEN" ]]; then
-        PORT="$HTTP_DEFAULT_PORT"
-    fi
-fi
-
 # ECL does not load Quicklisp from init; load setup.lisp before any ql: use.
 # Set *load-verbose* nil before load so ECL does not print to stdout (stdio = JSON only).
 # Bind *standard-output* to *error-output* during load/compile so ECL style warnings go to stderr.
@@ -925,7 +914,7 @@ log_info "  LD_LIBRARY_PATH: ${LD_LIBRARY_PATH:-not set}"
 log_info "  setarch available: $(command -v setarch &>/dev/null && echo "yes" || echo "no")"
 log_info "  devenv active: $([[ -n "${DEVENV_STATE:-}" ]] && echo "yes" || echo "no")"
 if [[ "$TRANSPORT" != "stdio" ]]; then
-    log_info "  Port: $PORT"
+    log_info "  Port: $HTTP_PORT"
     log_info "  Mode: Long-running (use Ctrl+C or --stop to stop)"
 else
     log_info "  Mode: Short-lived (exits when client disconnects)"
@@ -940,7 +929,7 @@ log_info ""
 
 # Write port file for HTTP modes (used by health checks)
 if [[ "$TRANSPORT" != "stdio" ]]; then
-    echo "$PORT" > "$HTTP_PORT_FILE"
+    echo "$HTTP_PORT" > "$HTTP_PORT_FILE"
 fi
 
 # Function to clean up PID file on exit (only for HTTP/combined modes)
@@ -1007,7 +996,7 @@ if [[ "$TRANSPORT" != "stdio" ]]; then
     trap cleanup EXIT
     trap 'handle_supervisor_signal SIGINT' INT
     trap 'handle_supervisor_signal SIGTERM' TERM
-    write_pid_file "$$" "$PORT" "$TRANSPORT"
+    write_pid_file "$$" "$HTTP_PORT" "$SWANK_PORT" "$TRANSPORT"
 fi
 
 BOOT_FILE="$PROOT/scripts/boot-generated.lisp"
@@ -1068,21 +1057,24 @@ write_boot_lisp_header(){
         ;; (asdf:load-system :cl-tron-mcp)
         (%boot-log "quickloaded :cl-tron-mcp")
 
-        (let ((port (parse-integer (with-open-file (f #p"$PROOT/http-port.txt")
-                                                   (read-line f)))))
+        (let ((http-port (parse-integer "$HTTP_PORT"))
+              (swank-port (parse-integer "$SWANK_PORT")))
+          (%boot-log "setting the http port")
+          (cl-tron-mcp/config:set-config :http_port http-port)
+          (%boot-log "setting the swank port")
+          (cl-tron-mcp/config:set-config :swank_port swank-port)
+
           ;; Auto-launch Swank if LAUNCH_SWANK=true and not already running
           (when (string= "$LAUNCH_SWANK" "true")
-                (let ((swank-port (parse-integer (or "$SWANK_PORT" "4005"))))
-                  (ignore-errors
-                    (%boot-log (format nil "creating Swank server on port=~a" swank-port))
-                    (swank:create-server :port swank-port
-                                         :dont-close t)
-                    (%boot-log (format nil "Swank server created on port ~a" swank-port))
-
-                    (%boot-log (format nil "starting Tron server on port ~a" port))
-                    ;;
-                    ;; The start server is inserted here within the progn
-                    ;;
+            (ignore-errors
+              (%boot-log (format nil "Starting Swank server on port=~a" swank-port))
+              (swank:create-server :port swank-port :dont-close t)
+              (%boot-log (format nil "Swank server started on port ~a" swank-port))
+              
+              (%boot-log (format nil "starting Tron server on port ~a" http-port))
+              ;;
+              ;; The start server is inserted here within the progn
+              ;;
 BOOTEOF
 }
 
@@ -1092,7 +1084,7 @@ write_boot_lisp_footer() {
     log_info "--"
 
     cat >> "$BOOT_FILE" << BOOTEOF
-                    ))))
+              )))
        #+sbcl (sb-ext:exit :code 0)
        #+ecl (ext:quit 0)
        #-(or sbcl ecl) (cl-user::quit 0)
@@ -1105,31 +1097,31 @@ if [[ "$TRANSPORT" == "stdio" ]]; then
     log_info "--"
     write_boot_lisp_header
     cat >> "$BOOT_FILE" << BOOTEOF
-                    (cl-tron-mcp/core:start-server :transport :stdio-only)
-                    (%boot-log (format nil "starting Tron server with stdio-only on port ~a" port))
+              (cl-tron-mcp/core:start-server :transport :stdio-only)
+              (%boot-log (format nil "Tron server launched with stdio-only on port ~a" http-port))
 BOOTEOF
     write_boot_lisp_footer
 
 elif [[ "$TRANSPORT" == "websocket" ]]; then
-    log_info "-- Starting Websocket server on port $PORT"
+    log_info "-- Starting Websocket server on port $HTTP_PORT"
     log_info "--"
     write_boot_lisp_header
     cat >> "$BOOT_FILE" << BOOTEOF
-                    (cl-tron-mcp/core:start-server :transport :websocket :port $PORT)
-                    (%boot-log (format nil "starting Tron server with websocket on port ~a" port))
+              (cl-tron-mcp/core:start-server :transport :websocket :port http-port)
+              (%boot-log (format nil "Tron server launched with websocket on port ~a" http-port))
 BOOTEOF
     write_boot_lisp_footer
 
 elif [[ "$TRANSPORT" == "combined" ]]; then
     # Combined mode: long-running HTTP server (stdio clients should use HTTP transport)
-    log_info "-- Starting combined mode (long-running HTTP on port $PORT)"
-    log_info "-- MCP clients can connect via streamable HTTP: http://127.0.0.1:$PORT/mcp"
+    log_info "-- Starting combined mode (long-running HTTP on port $HTTP_PORT)"
+    log_info "-- MCP clients can connect via streamable HTTP: http://127.0.0.1:$HTTP_PORT/mcp"
     log_info "--"
     # Write boot script then load it
     write_boot_lisp_header
     cat >> "$BOOT_FILE" << BOOTEOF
-                    (cl-tron-mcp/core:start-server :transport :combined :port port)
-                    (%boot-log (format nil "starting Tron server with combined access on port ~a" port))
+              (cl-tron-mcp/core:start-server :transport :combined :port http-port)
+              (%boot-log (format nil "Tron server launched with combined access on port ~a" http-port))
 BOOTEOF
     write_boot_lisp_footer
 
@@ -1137,9 +1129,9 @@ BOOTEOF
     export LAUNCH_SWANK SWANK_PORT
 
 elif [[ "$TRANSPORT" == "http" ]]; then
-    log_info "-- Starting the HTTP server on port $PORT"
-    log_info "-- (Keep this running; use Ctrl+C to stop. If port $PORT is in use, e.g. by Swank, use --port N)"
-    log_info '-- Test: curl -X POST http://127.0.0.1:'"$PORT"'/rpc -H "Content-Type: application/json" -d '"'"'{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}'"'"''
+    log_info "-- Starting the HTTP server on port $HTTP_PORT"
+    log_info "-- (Keep this running; use Ctrl+C to stop. If port $HTTP_PORT is in use, e.g. by Swank, use --port N)"
+    log_info '-- Test: curl -X POST http://127.0.0.1:'"$HTTP_PORT"'/rpc -H "Content-Type: application/json" -d '"'"'{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}'"'"''
     log_info "--"
     # Write boot script (logs steps to /tmp/cl-tron-mcp-boot.log) then load it with one short --eval.
     write_boot_lisp_header

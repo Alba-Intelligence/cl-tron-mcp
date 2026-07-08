@@ -217,7 +217,7 @@ THREAD   — which thread to use (t, :repl-thread, or integer).
 TIMEOUT  — maximum seconds to wait (default: *default-eval-timeout*)."
   (unless (swank-connected-p)
     (return-from send-request
-      (cl-tron-mcp/core:make-error "SWANK_NOT_CONNECTED")))
+      (cl-tron-mcp/resources:make-error "SWANK_NOT_CONNECTED")))
   (let* ((id (make-request-id))
          (req (make-swank-request :id id
                                   :condition (bordeaux-threads:make-condition-variable)
@@ -235,7 +235,7 @@ TIMEOUT  — maximum seconds to wait (default: *default-eval-timeout*)."
           (remhash id *pending-requests*)
           (when (eql *current-request-id* id)
             (setf *current-request-id* nil)))
-        (cl-tron-mcp/core:make-error "INTERNAL_ERROR"
+        (cl-tron-mcp/resources:make-error "INTERNAL_ERROR"
                                      :details (list :error (princ-to-string e)))))))
 
 (defun handle-output (string target)
@@ -257,7 +257,7 @@ TIMEOUT  — maximum seconds to wait (default: *default-eval-timeout*)."
 Use get-async-result with the returned ID to retrieve the result later."
   (unless (swank-connected-p)
     (return-from send-request-async
-      (cl-tron-mcp/core:make-error "SWANK_NOT_CONNECTED")))
+      (cl-tron-mcp/resources:make-error "SWANK_NOT_CONNECTED")))
   (let* ((id (make-request-id))
          (req (make-swank-request :id id
                                   :condition (bordeaux-threads:make-condition-variable)
@@ -275,7 +275,7 @@ Use get-async-result with the returned ID to retrieve the result later."
           (remhash id *pending-requests*)
           (when (eql *current-request-id* id)
             (setf *current-request-id* nil)))
-        (cl-tron-mcp/core:make-error "INTERNAL_ERROR"
+        (cl-tron-mcp/resources:make-error "INTERNAL_ERROR"
                                      :details (list :error (princ-to-string e)))))))
 
 (defun get-async-result (id &key (timeout *default-eval-timeout*))
@@ -284,7 +284,7 @@ Use get-async-result with the returned ID to retrieve the result later."
     (let ((req (gethash id *pending-requests*)))
       (unless req
         (return-from get-async-result
-          (cl-tron-mcp/core:make-error "REQUEST_NOT_FOUND"
+          (cl-tron-mcp/resources:make-error "REQUEST_NOT_FOUND"
                                        :details (list :request-id id))))
       (if (swank-request-completed-p req)
           (progn

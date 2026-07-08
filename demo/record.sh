@@ -46,10 +46,10 @@ echo "asciinema: $(asciinema --version 2>&1)"
 echo "agg:       $(agg --version 2>&1 | head -1)"
 echo ""
 
-# Kill any orphan Swank on port 14006
-if ss -tlnp 2>/dev/null | grep -q 14006; then
-    echo "Warning: port 14006 in use, killing orphan process..."
-    pid=$(ss -tlnp 2>/dev/null | grep 14006 | grep -oP '(?<=pid=)\d+' | head -1)
+# Kill any orphan Swank on port 4006
+if ss -tlnp 2>/dev/null | grep -q 4006; then
+    echo "Warning: port 4006 in use, killing orphan process..."
+    pid=$(ss -tlnp 2>/dev/null | grep 4006 | grep -oP '(?<=pid=)\d+' | head -1)
     [ -n "$pid" ] && kill "$pid" 2>/dev/null && sleep 1
 fi
 

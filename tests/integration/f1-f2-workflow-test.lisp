@@ -8,19 +8,19 @@
 ;;;;   3. Hot-compile f2 into the running image
 ;;;;   4. Verify (f2 1 2) => 3 and (f1 1 2) => 3
 ;;;;
-;;;; REQUIRES: a live SBCL+Swank session on localhost:4006.
+;;;; REQUIRES: a live SBCL+Swank session on localhost:4005.
 ;;;; Skips gracefully when no Swank server is available.
 ;;;;
 ;;;; To start a Swank server:
 ;;;;   sbcl --eval '(ql:quickload :swank)' \
-;;;;        --eval '(swank:create-server :port 4006 :dont-close t)'
+;;;;        --eval '(swank:create-server :port 4005 :dont-close t)'
 
 (defpackage :cl-tron-mcp/tests/integration/f1-f2
   (:use #:cl #:rove))
 
 (in-package :cl-tron-mcp/tests/integration/f1-f2)
 
-(defvar *swank-port* 4006)
+(defvar *swank-port* 4005)
 
 (defvar *swank-available* nil)
 
@@ -43,7 +43,7 @@ Sets *AUTO-LAUNCHED-PORT* when a new process was started."
   (when (swank-available-p)
     (return-from ensure-swank *swank-port*))
   ;; No existing Swank — launch one ourselves
-  (let* ((port 14006)
+  (let* ((port 4005)
          (result (cl-tron-mcp/swank:launch-sbcl-with-swank
                   :port port
                   :timeout timeout

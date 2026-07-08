@@ -159,8 +159,8 @@
   (demo-record-start)
 
   ;; Connect
-  (demo-record-message "🔧 Connecting to Swank on port 4006...")
-  (demo-record-tool-call "swank_connect" '(:port 4006))
+  (demo-record-message "🔧 Connecting to Swank on port 4005...")
+  (demo-record-tool-call "swank_connect" '(:port 4005))
   (demo-record-tool-response "swank_connect" '(:success t))
   (demo-record-message "✓ Connected" :style :success)
 

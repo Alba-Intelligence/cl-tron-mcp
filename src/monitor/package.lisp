@@ -9,4 +9,15 @@
    #:health-check
    #:metrics-export
    #:gc-run
-   #:system-info))
+   #:system-info
+  ;; Request tracing
+   #:*tracing-enabled*
+   #:*trace-buffer-size*
+   #:*current-trace-id*
+   #:with-request-trace
+   #:trace-log
+   #:current-trace-id
+   #:get-trace-log
+   #:clear-trace-log
+   #:with-request-trace
+   ))

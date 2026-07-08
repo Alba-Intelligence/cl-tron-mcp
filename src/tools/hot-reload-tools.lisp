@@ -12,8 +12,8 @@
   :validation ((validate-string "code" code :required t :min-length 1)
                (when filename (validate-string "filename" filename))
                (when package (validate-string "package" package)))
-  :body (if (cl-tron-mcp/unified:repl-connected-p)
-            (cl-tron-mcp/unified:repl-compile :code code
+  :body (if (repl-connected-p)
+            (repl-compile :code code
                                               :package (or package "CL-USER")
                                               :filename (or filename "repl"))
             (cl-tron-mcp/hot-reload:compile-and-load :code code
@@ -28,8 +28,8 @@
   :documentation-uri "file://docs/tools/reload-system.md"
   :validation ((validate-string "system_name" system_name :required t :min-length 1)
                (when force (validate-boolean "force" force)))
-  :body (if (cl-tron-mcp/unified:repl-connected-p)
-            (cl-tron-mcp/unified:repl-eval
+  :body (if (repl-connected-p)
+            (repl-eval
              :code (format nil "(asdf:load-system ~s~a)"
                            system_name (if force " :force :all" "")))
             (cl-tron-mcp/hot-reload:reload-system :system-name system_name :force force)))

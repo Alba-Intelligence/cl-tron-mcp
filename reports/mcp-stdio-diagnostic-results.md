@@ -7,8 +7,9 @@ Run date: 2026-02-13. These tests diagnose why the MCP server works from CLI but
 **Command:** `echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | bash -c "cd ... && ./start-mcp.sh" 2>/dev/null | head -30`
 
 **Result:** First line of stdout is **not** JSON. Observed:
+
 - "Starting CL-TRON-MCP..."
-- "  SBCL: sbcl", "  Transport: stdio"
+- " SBCL: sbcl", " Transport: stdio"
 - "Available tools: 80", banner, "Starting the stdio MCP"
 - Then SBCL banner and compilation messages
 
@@ -21,6 +22,7 @@ Run date: 2026-02-13. These tests diagnose why the MCP server works from CLI but
 **Command:** `echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | sbcl --non-interactive --eval '...' 2>/dev/null | head -20`
 
 **Result:** First line of stdout is **not** JSON. Observed:
+
 - SBCL banner (4 lines)
 - "[MCP] Starting server with STDIO transport"
 - "[MCP] Starting stdio transport (MCP protocol)"
@@ -63,6 +65,7 @@ Run date: 2026-02-13. These tests diagnose why the MCP server works from CLI but
 **Command:** Redirected stdout and stderr to `tmp/mcp_stdout.txt` and `tmp/mcp_stderr.txt`.
 
 **Result:**
+
 - **stdout:** SBCL banner (4 lines), "[MCP] Starting server with STDIO transport", "[MCP] Starting stdio transport (MCP protocol)", then the JSON response line.
 - **stderr:** Empty.
 
@@ -72,14 +75,14 @@ Run date: 2026-02-13. These tests diagnose why the MCP server works from CLI but
 
 ## Summary of root causes confirmed
 
-| Cause | Confirmed by |
-|-------|----------------|
-| Script banner on stdout when using `start-mcp.sh` | Test 1 |
-| Lisp `format t` ([MCP] messages) on stdout | Tests 2, 6 |
-| Notification handler writes to stdout | Test 3 |
-| SBCL startup banner on stdout when stdin is pipe | Tests 2, 6 |
-| Minimal PATH can prevent script from running (no bash) | Test 4 |
-| Working directory not an issue when script path is absolute | Test 5 |
+| Cause                                                       | Confirmed by |
+| ----------------------------------------------------------- | ------------ |
+| Script banner on stdout when using `start-mcp.sh`           | Test 1       |
+| Lisp `format t` ([MCP] messages) on stdout                  | Tests 2, 6   |
+| Notification handler writes to stdout                       | Test 3       |
+| SBCL startup banner on stdout when stdin is pipe            | Tests 2, 6   |
+| Minimal PATH can prevent script from running (no bash)      | Test 4       |
+| Working directory not an issue when script path is absolute | Test 5       |
 
 ## Recommended fixes (for implementation later)
 

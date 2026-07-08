@@ -1,4 +1,4 @@
-;;;; src/core/request-tracing.lisp
+;;;; src/monitor/request-tracing.lisp
 ;;;;
 ;;;; Request tracing with correlation IDs for the MCP protocol lifecycle.
 ;;;;
@@ -9,7 +9,7 @@
 ;;;; The current trace ID is stored in a dynamic variable so it propagates
 ;;;; automatically through the call stack without explicit threading.
 
-(in-package :cl-tron-mcp/core)
+(in-package :cl-tron-mcp/monitor)
 
 ;;; ============================================================
 ;;; Configuration

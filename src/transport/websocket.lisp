@@ -10,12 +10,12 @@
 (defvar *websocket-clients* nil)
 (defvar *websocket-running* nil)
 
-(defun start-websocket-transport (&key (port 4006))
+(defun start-websocket-transport (&key (port (cl-tron-mcp/config:get-config :http-port)))
   "WebSocket transport is not yet implemented.
 Use :stdio-only or :http-only transport instead.
 
 Example:
-  (cl-tron-mcp/core:start-server :transport :http-only :port 4006)
+  (cl-tron-mcp/core:start-server :transport :http-only :port (cl-tron-mcp/config:get-config :http-port))
   (cl-tron-mcp/core:start-server :transport :stdio-only)"
   (declare (ignore port))
   (cl-tron-mcp/logging:log-error

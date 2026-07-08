@@ -7,7 +7,7 @@
   (let ((object (cl-tron-mcp/sbcl:lookup-object object-id)))
     (unless object
       (return-from inspect-object
-        (cl-tron-mcp/core:make-error "OBJECT_NOT_FOUND"
+        (cl-tron-mcp/resources:make-error "OBJECT_NOT_FOUND"
                                      :details (list :object-id object-id))))
     (inspect-object-recursive object 0 max-depth max-elements)))
 
@@ -62,7 +62,7 @@
   (let ((object (cl-tron-mcp/sbcl:lookup-object object_id)))
     (unless object
       (return-from inspect-slot
-        (cl-tron-mcp/core:make-error "OBJECT_NOT_FOUND"
+        (cl-tron-mcp/resources:make-error "OBJECT_NOT_FOUND"
                                      :details (list :object-id object_id))))
     (let ((slot-symbol (intern (string-upcase slot_name) :keyword)))
       (when value
@@ -79,7 +79,7 @@
          (class (when sym (find-class sym nil))))
     (unless class
       (return-from inspect-class
-        (cl-tron-mcp/core:make-error "CLASS_NOT_FOUND"
+        (cl-tron-mcp/resources:make-error "CLASS_NOT_FOUND"
                                      :details (list :class-name class_name))))
     (list :name (class-name class)
           :direct-superclasses (mapcar #'class-name (closer-mop:class-direct-superclasses class))
@@ -108,7 +108,7 @@
       ((and symbol (macro-function symbol))
        (list :symbol (format nil "~a::~a" package-str (string-upcase symbol-name-only)) :type "macro"))
       (t
-       (cl-tron-mcp/core:make-error "NOT_A_FUNCTION"
+       (cl-tron-mcp/resources:make-error "NOT_A_FUNCTION"
                                     :details (list :symbol symbol_name))))))
 
 (defun inspect-package (&key package_name)
@@ -116,7 +116,7 @@
   (let ((package (find-package (string-upcase package_name))))
     (unless package
       (return-from inspect-package
-        (cl-tron-mcp/core:make-error "PACKAGE_NOT_FOUND"
+        (cl-tron-mcp/resources:make-error "PACKAGE_NOT_FOUND"
                                      :details (list :package-name package_name))))
     (let ((external-count 0)
           (internal-count 0)

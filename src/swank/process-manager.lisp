@@ -69,7 +69,7 @@ Ends with (loop (sleep 3600)) to keep the process alive — it is killed explici
     (loop for form in forms
           nconc (list "--eval" form))))
 
-(defun launch-sbcl-with-swank (&key (port 4006)
+(defun launch-sbcl-with-swank (&key (port (cl-tron-mcp/config:get-config :swank-port))
                                      (host "127.0.0.1")
                                      (communication-style :spawn)
                                      (timeout 30)

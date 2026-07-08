@@ -25,19 +25,32 @@
   (:use :cl)
   (:nicknames :tron/resources)
   (:export
-   ;; Resource listing
-   #:list-resources
-   #:resource-descriptor
-
-   ;; Resource reading
-   #:read-resource
-   #:resource-not-found-error
-
-   ;; Whitelist management
-   #:*resource-whitelist*
-   #:add-resource-to-whitelist
-   #:clear-resource-whitelist
-
-   ;; MCP handlers
-   #:handle-resources-list
-   #:handle-resources-read))
+    ;; Resource listing
+    #:list-resources
+    #:resource-descriptor
+ 
+    ;; Resource reading
+    #:read-resource
+    #:resource-not-found-error
+ 
+    ;; Whitelist management
+    #:*resource-whitelist*
+    #:add-resource-to-whitelist
+    #:clear-resource-whitelist
+ 
+    ;; MCP handlers
+    #:handle-resources-list
+    #:handle-resources-read
+    
+    ;; Error codes
+    #:*error-codes*
+    #:get-error-info
+    #:get-error-message
+    #:get-error-hint
+    #:get-error-setup
+    #:get-error-documentation-uri
+    #:make-error
+    #:make-error-with-hint
+    #:make-error-full
+    #:make-not-connected-error
+    #:make-already-connected-error))

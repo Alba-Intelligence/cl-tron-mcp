@@ -12,7 +12,7 @@
 
 (deftest who-references-test
     (testing "who-references returns results for known variable"
-             (let ((result (cl-tron-mcp/xref:who-references "cl-tron-mcp/core:*version*")))
+             (let ((result (cl-tron-mcp/xref:who-references "cl-tron-mcp/config:*version*")))
                (ok (listp result)))))
 
 (deftest list-callees-test
@@ -22,10 +22,10 @@
 
 (deftest who-binds-test
     (testing "who-binds returns results for known variable"
-             (let ((result (cl-tron-mcp/xref:who-binds "cl-tron-mcp/core:*version*")))
+             (let ((result (cl-tron-mcp/xref:who-binds "cl-tron-mcp/config:*version*")))
                (ok (listp result)))))
 
 (deftest who-sets-test
     (testing "who-sets returns results for known variable"
-             (let ((result (cl-tron-mcp/xref:who-sets "cl-tron-mcp/core:*version*")))
+             (let ((result (cl-tron-mcp/xref:who-sets "cl-tron-mcp/config:*version*")))
                (ok (listp result)))))

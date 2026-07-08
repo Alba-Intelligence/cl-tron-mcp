@@ -9,14 +9,14 @@
 (deftest port-available-p-test
     (testing "port-available-p returns nil for a closed port"
              (ok (not (cl-tron-mcp/swank:port-available-p 19999))))
-  (testing "port-available-p returns t for an open port (Swank on 4006 if present)"
+  (testing "port-available-p returns t for an open port (Swank on 4005 if present)"
            (let ((swank-up (ignore-errors
-                             (let ((s (usocket:socket-connect "127.0.0.1" 4006 :timeout 1)))
+                             (let ((s (usocket:socket-connect "127.0.0.1" (cl-tron-mcp/config:get-config :swank-port) :timeout 1)))
                                (usocket:socket-close s)
                                t))))
              (if swank-up
-                 (ok (cl-tron-mcp/swank:port-available-p 4006))
-                 (ok t "Swank not on 4006 - skip live check")))))
+                 (ok (cl-tron-mcp/swank:port-available-p (cl-tron-mcp/config:get-config :swank-port)))
+                 (ok t "Swank not on 4005 - skip live check")))))
 
 ;;; ============================================================
 ;;; Process Registry Tests
@@ -59,14 +59,14 @@
 (deftest launch-port-already-in-use-test
     (testing "launch-sbcl-with-swank returns error when port already open"
              (let ((swank-up (ignore-errors
-                               (let ((s (usocket:socket-connect "127.0.0.1" 4006 :timeout 1)))
+                               (let ((s (usocket:socket-connect "127.0.0.1" (cl-tron-mcp/config:get-config :swank-port) :timeout 1)))
                                  (usocket:socket-close s)
                                  t))))
                (if swank-up
-                   (let ((result (cl-tron-mcp/swank:launch-sbcl-with-swank :port 4006 :timeout 5)))
+                   (let ((result (cl-tron-mcp/swank:launch-sbcl-with-swank :port (cl-tron-mcp/config:get-config :swank-port) :timeout 5)))
                      (ok (getf result :error))
                      (ok (string= (getf result :code) "PORT_ALREADY_IN_USE")))
-                   (ok t "Swank not on 4006 - skip")))))
+                   (ok t "Swank not on 4005 - skip")))))
 
 ;;; ============================================================
 ;;; MCP Tool Wiring

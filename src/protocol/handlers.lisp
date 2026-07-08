@@ -66,7 +66,7 @@ Messages without ID are treated as notifications."
 Routes to appropriate handler based on METHOD string.
 Wraps each request in a trace context (when tracing is enabled)."
   (let ((*request-id* id))
-    (cl-tron-mcp/core:with-request-trace (method :request-id id)
+    (cl-tron-mcp/monitor:with-request-trace (method :request-id id)
       (cond
         ;; Core protocol
         ((string= method "initialize")

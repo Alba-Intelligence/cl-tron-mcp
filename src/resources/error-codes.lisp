@@ -1,4 +1,4 @@
-;;;; src/core/error-codes.lisp - Centralized error code system
+;;;; src/resources/error-codes.lisp - Centralized error code system
 ;;;;
 ;;;; This module provides a centralized error code system to reduce
 ;;;; token usage by replacing verbose error messages with compact codes.
@@ -13,7 +13,7 @@
 ;;;;   (make-error "REPL_NOT_CONNECTED" :details (list :tool "repl_eval"))
 ;;;;   (make-error-with-hint "MISSING_REQUIRED_PARAMETER" :details (list :param "code"))
 
-(in-package :cl-tron-mcp/core)
+(in-package :cl-tron-mcp/resources)
 
 ;;; ============================================================
 ;;; Error Code Definitions
@@ -23,8 +23,8 @@
   (list
    (list :code "REPL_NOT_CONNECTED"
          :message "Not connected to any REPL"
-         :hint "Run repl_connect first. Example: repl_connect :port 4006"
-         :setup "To start Swank in SBCL: (ql:quickload :swank) (swank:create-server :port 4006 :dont-close t)"
+         :hint "Run repl_connect first. Example: repl_connect :port 4005"
+         :setup "To start Swank in SBCL: (ql:quickload :swank) (swank:create-server :port 4005 :dont-close t)"
          :documentation-uri "docs/errors/repl-not-connected.md")
 
    (list :code "REPL_ALREADY_CONNECTED"
@@ -35,14 +35,14 @@
 
    (list :code "NREPL_NOT_SUPPORTED"
          :message "nrepl is no longer supported; use Swank"
-         :hint "Use repl_connect :type :swank :port 4006 or start Swank: (ql:quickload :swank) (swank:create-server :port 4006)"
+         :hint "Use repl_connect :type :swank :port 4005 or start Swank: (ql:quickload :swank) (swank:create-server :port 4005)"
          :setup nil
          :documentation-uri "docs/errors/nrepl-not-supported.md")
 
    (list :code "REPL_DETECTION_FAILED"
          :message "Could not detect Swank"
          :hint "Ensure Swank server is running on the specified port"
-         :setup "For Swank: (ql:quickload :swank) (swank:create-server :port 4006)"
+         :setup "For Swank: (ql:quickload :swank) (swank:create-server :port 4005)"
          :documentation-uri "docs/errors/repl-detection-failed.md")
 
    (list :code "MISSING_REQUIRED_PARAMETER"
@@ -90,13 +90,13 @@
    (list :code "SWANK_CONNECTION_FAILED"
          :message "Failed to connect to Swank"
          :hint "Ensure Swank server is running and accessible"
-         :setup "Start Swank: (ql:quickload :swank) (swank:create-server :port 4006 :dont-close t)"
+         :setup "Start Swank: (ql:quickload :swank) (swank:create-server :port 4005 :dont-close t)"
          :documentation-uri "docs/errors/swank-connection-failed.md")
 
    (list :code "SWANK_NOT_CONNECTED"
          :message "Not connected to Swank server"
          :hint "Use swank_connect to establish a connection"
-         :setup "Start Swank: (ql:quickload :swank) (swank:create-server :port 4006 :dont-close t)"
+         :setup "Start Swank: (ql:quickload :swank) (swank:create-server :port 4005 :dont-close t)"
          :documentation-uri "docs/errors/swank-not-connected.md")
 
    (list :code "REQUEST_NOT_FOUND"
@@ -316,4 +316,4 @@ DETAILS is an optional plist with additional context."
                  (when docs (list :docs docs))))
         (list :error t :code code :message (format nil "Unknown error code: ~a" code)))))
 
-(provide :cl-tron-mcp/core/error-codes)
+(provide :cl-tron-mcp/resources/error-codes)

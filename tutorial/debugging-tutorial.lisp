@@ -12,8 +12,8 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (ql:quickload :cl-tron-mcp :silent t))
 
-;; Launch a managed Swank process on port 14006 (self-contained):
-(let ((port 14006))
+;; Launch a managed Swank process on port 4005 (self-contained):
+(let ((port 4005))
   (cl-tron-mcp/swank:launch-sbcl-with-swank :port port)
   (cl-tron-mcp/swank:wait-for-port port :timeout 30)
   (cl-tron-mcp/unified:repl-connect :port port))

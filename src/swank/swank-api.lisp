@@ -15,11 +15,11 @@
   "Evaluate Lisp code string via Swank (swank:eval-and-grab-output)."
   (unless (and code (stringp code) (plusp (length code)))
     (return-from swank-eval
-      (cl-tron-mcp/core:make-error-with-hint "INVALID_CODE_PARAMETER"
+      (cl-tron-mcp/resources:make-error-with-hint "INVALID_CODE_PARAMETER"
                                              :details (list :function "swank-eval"))))
   (unless (and package (stringp package) (plusp (length package)))
     (return-from swank-eval
-      (cl-tron-mcp/core:make-error-with-hint "INVALID_PACKAGE_PARAMETER"
+      (cl-tron-mcp/resources:make-error-with-hint "INVALID_PACKAGE_PARAMETER"
                                              :details (list :function "swank-eval"))))
   (send-request `(,(swank-sym "EVAL-AND-GRAB-OUTPUT") ,code)
                 :package package :thread t))
@@ -28,15 +28,15 @@
   "Compile Lisp code string via Swank (swank:compile-string-for-emacs)."
   (unless (and code (stringp code) (plusp (length code)))
     (return-from swank-compile
-      (cl-tron-mcp/core:make-error-with-hint "INVALID_CODE_PARAMETER"
+      (cl-tron-mcp/resources:make-error-with-hint "INVALID_CODE_PARAMETER"
                                              :details (list :function "swank-compile"))))
   (unless (and package (stringp package) (plusp (length package)))
     (return-from swank-compile
-      (cl-tron-mcp/core:make-error-with-hint "INVALID_PACKAGE_PARAMETER"
+      (cl-tron-mcp/resources:make-error-with-hint "INVALID_PACKAGE_PARAMETER"
                                              :details (list :function "swank-compile"))))
   (unless (and filename (stringp filename) (plusp (length filename)))
     (return-from swank-compile
-      (cl-tron-mcp/core:make-error-with-hint "INVALID_FILENAME_PARAMETER"
+      (cl-tron-mcp/resources:make-error-with-hint "INVALID_FILENAME_PARAMETER"
                                              :details (list :function "swank-compile"))))
   (send-request `(,(swank-sym "COMPILE-STRING-FOR-EMACS") ,code ,filename nil ,filename nil)
                 :package package :thread t))
@@ -61,15 +61,15 @@
   "Evaluate CODE (string) in the context of FRAME-INDEX."
   (unless (and code (stringp code) (plusp (length code)))
     (return-from swank-eval-in-frame
-      (cl-tron-mcp/core:make-error-with-hint "INVALID_CODE_PARAMETER"
+      (cl-tron-mcp/resources:make-error-with-hint "INVALID_CODE_PARAMETER"
                                              :details (list :function "swank-eval-in-frame"))))
   (unless (and package (stringp package) (plusp (length package)))
     (return-from swank-eval-in-frame
-      (cl-tron-mcp/core:make-error-with-hint "INVALID_PACKAGE_PARAMETER"
+      (cl-tron-mcp/resources:make-error-with-hint "INVALID_PACKAGE_PARAMETER"
                                              :details (list :function "swank-eval-in-frame"))))
   (unless (and (integerp frame-index) (>= frame-index 0))
     (return-from swank-eval-in-frame
-      (cl-tron-mcp/core:make-error-with-hint "INVALID_FRAME_INDEX"
+      (cl-tron-mcp/resources:make-error-with-hint "INVALID_FRAME_INDEX"
                                              :details (list :function "swank-eval-in-frame"))))
   (send-request `(,(swank-sym "EVAL-STRING-IN-FRAME") ,code ,frame-index ,package)
                 :package package :thread t))
@@ -106,7 +106,7 @@
           (list :restarts (getf (swank-event-data debug-event) :restarts)
                 :thread *debugger-thread*
                 :level *debugger-level*)
-          (cl-tron-mcp/core:make-error "NO_DEBUGGER_EVENT")))))
+          (cl-tron-mcp/resources:make-error "NO_DEBUGGER_EVENT")))))
 
 (defun swank-debugger-state ()
   "Return (values thread-id level in-debugger-p)."
@@ -137,7 +137,7 @@
         (if pos
             (send-request `(,(swank-sym "INVOKE-NTH-RESTART-FOR-EMACS") ,level ,(1+ pos))
                           :package "CL-USER" :thread thread)
-            (cl-tron-mcp/core:make-error "NOT_IN_STEPPER"))))))
+            (cl-tron-mcp/resources:make-error "NOT_IN_STEPPER"))))))
 
 (defun swank-step (&key (frame-index 0))
   "Step into next expression."
@@ -222,12 +222,6 @@ instead of using swank:break directly."
   "List all breakpoints via Swank."
   (send-request `(,(swank-sym "BREAK-LIST")) :package "CL-USER" :thread t))
 
-(defun swank-toggle-breakpoint (&key breakpoint-id)
-  "Toggle breakpoint state — callers should use breakpoints.lisp:toggle-breakpoint
-which implements this via remove/re-add using the saved breakpoint state."
-  (declare (ignore breakpoint-id))
-  (list :error t :message "Use cl-tron-mcp/debugger:toggle-breakpoint instead"))
-
 ;;; ============================================================
 ;;; Thread Management
 ;;; ============================================================
@@ -252,7 +246,7 @@ which implements this via remove/re-add using the saved breakpoint state."
               (progn (log-info "Interrupt sent successfully") result))))
     (error (e)
       (log-error (format nil "Interrupt error: ~a" e))
-      (cl-tron-mcp/core:make-error "INTERRUPT_ERROR"
+      (cl-tron-mcp/resources:make-error "INTERRUPT_ERROR"
                                    :details (list :error (princ-to-string e))))))
 
 ;;; ============================================================
@@ -263,7 +257,7 @@ which implements this via remove/re-add using the saved breakpoint state."
   "Inspect an object via Swank. EXPRESSION is a string."
   (unless (and expression (stringp expression) (plusp (length expression)))
     (return-from swank-inspect-object
-      (cl-tron-mcp/core:make-error-with-hint "INVALID_EXPRESSION_PARAMETER"
+      (cl-tron-mcp/resources:make-error-with-hint "INVALID_EXPRESSION_PARAMETER"
                                              :details (list :function "swank-inspect-object"))))
   (send-request `(,(swank-sym "EVAL-AND-GRAB-OUTPUT")
                   (,(swank-sym "INSPECT-IN-EMACS") ,expression))
@@ -277,7 +271,7 @@ which implements this via remove/re-add using the saved breakpoint state."
   "Describe a symbol via Swank."
   (unless (and symbol (stringp symbol) (plusp (length symbol)))
     (return-from swank-describe
-      (cl-tron-mcp/core:make-error-with-hint "INVALID_SYMBOL_PARAMETER"
+      (cl-tron-mcp/resources:make-error-with-hint "INVALID_SYMBOL_PARAMETER"
                                              :details (list :function "swank-describe"))))
   (send-request `(,(swank-sym "DESCRIBE-SYMBOL") ,symbol) :package "CL-USER" :thread t))
 
@@ -285,7 +279,7 @@ which implements this via remove/re-add using the saved breakpoint state."
   "Get arglist/documentation for SYMBOL string."
   (unless (and symbol (stringp symbol) (plusp (length symbol)))
     (return-from swank-autodoc
-      (cl-tron-mcp/core:make-error-with-hint "INVALID_SYMBOL_PARAMETER"
+      (cl-tron-mcp/resources:make-error-with-hint "INVALID_SYMBOL_PARAMETER"
                                              :details (list :function "swank-autodoc"))))
   (send-request `(,(swank-sym "EVAL-AND-GRAB-OUTPUT")
                   (format nil "(swank/backend:arglist (quote ~a))" ,symbol))
@@ -295,11 +289,11 @@ which implements this via remove/re-add using the saved breakpoint state."
   "Get symbol completions for PREFIX in PACKAGE."
   (unless (and prefix (stringp prefix) (plusp (length prefix)))
     (return-from swank-completions
-      (cl-tron-mcp/core:make-error-with-hint "INVALID_PREFIX_PARAMETER"
+      (cl-tron-mcp/resources:make-error-with-hint "INVALID_PREFIX_PARAMETER"
                                              :details (list :function "swank-completions"))))
   (unless (and package (stringp package) (plusp (length package)))
     (return-from swank-completions
-      (cl-tron-mcp/core:make-error-with-hint "INVALID_PACKAGE_PARAMETER"
+      (cl-tron-mcp/resources:make-error-with-hint "INVALID_PACKAGE_PARAMETER"
                                              :details (list :function "swank-completions"))))
   (send-request `(,(swank-sym "SIMPLE-COMPLETIONS") ,prefix ,package)
                 :package "CL-USER" :thread t))
@@ -315,12 +309,12 @@ Call this after the MCP server has received input from the user.
 Returns: success plist or error plist."
   (unless (stringp input)
     (return-from swank-provide-input
-      (cl-tron-mcp/core:make-error "INVALID_INPUT_PARAMETER")))
+      (cl-tron-mcp/resources:make-error "INVALID_INPUT_PARAMETER")))
   (let ((pending (bordeaux-threads:with-lock-held (*input-request-lock*)
                    (pop *pending-input-requests*))))
     (unless pending
       (return-from swank-provide-input
-        (cl-tron-mcp/core:make-error "NO_PENDING_INPUT_REQUEST")))
+        (cl-tron-mcp/resources:make-error "NO_PENDING_INPUT_REQUEST")))
     (let ((thread-id (car pending))
           (tag       (cdr pending)))
       (handler-case
@@ -330,7 +324,7 @@ Returns: success plist or error plist."
             (list :success t
                   :message (format nil "Input '~a' sent to Swank" input)))
         (error (e)
-          (cl-tron-mcp/core:make-error "SWANK_WRITE_ERROR"
+          (cl-tron-mcp/resources:make-error "SWANK_WRITE_ERROR"
                                        :details (list :error (princ-to-string e))))))))
 
 ;;; ============================================================

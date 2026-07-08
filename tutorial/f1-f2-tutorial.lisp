@@ -18,31 +18,31 @@
 ;;; ===========================================================================
 
 ;; Agent action (MCP tool call):
-;;   swank_launch {:port 4006}
+;;   swank_launch {:port 4005}
 ;;
 ;; What happens:
-;;   - A fresh SBCL subprocess is spawned with Swank listening on port 4006
+;;   - A fresh SBCL subprocess is spawned with Swank listening on port 4005
 ;;   - The MCP polls until Swank is ready (up to 60s)
 ;;   - The process is registered in the MCP's process registry
 ;;
 ;; Expected result:
-;;   {:success true, :port 4006, :pid <n>, :message "SBCL+Swank running on port 4006 ..."}
+;;   {:success true, :port 4005, :pid <n>, :message "SBCL+Swank running on port 4005 ..."}
 ;;
 ;; Note: swank_launch requires user approval (it spawns a subprocess).
 ;; If you already have a Swank server running, skip this step.
 ;;
 ;; Alternatively, from Lisp directly:
-;;   (cl-tron-mcp/swank:launch-sbcl-with-swank :port 4006 :timeout 60)
+;;   (cl-tron-mcp/swank:launch-sbcl-with-swank :port 4005 :timeout 60)
 
 ;;; ===========================================================================
 ;;; STEP 1: Connect the MCP to the live image
 ;;; ===========================================================================
 
 ;; Agent action (MCP tool call):
-;;   repl_connect {:port 4006}
+;;   repl_connect {:port 4005}
 ;;
 ;; Expected result:
-;;   {:connected true, :port 4006, :host "127.0.0.1"}
+;;   {:connected true, :port 4005, :host "127.0.0.1"}
 
 ;;; ===========================================================================
 ;;; STEP 2: Write and compile f1 — a function that calls undefined f2
@@ -148,9 +148,9 @@
 ;;; SUMMARY: The complete workflow in one view
 ;;; ===========================================================================
 
-;;  [Bootstrap]    swank_launch :port 4006           ; spawns fresh SBCL+Swank
+;;  [Bootstrap]    swank_launch :port 4005           ; spawns fresh SBCL+Swank
 ;;       ↓
-;;  [Connect]      repl_connect :port 4006
+;;  [Connect]      repl_connect :port 4005
 ;;       ↓
 ;;  [Compile f1]   repl_compile "(defun f1 (a b) (f2 a b))"
 ;;                   → WARNING: undefined function F2
@@ -170,7 +170,7 @@
 ;;  [Verify]       repl_eval "(f1 1 2)"
 ;;                   → "3" ✓
 ;;       ↓
-;;  [Cleanup]      swank_kill :port 4006             ; optional — kills managed process
+;;  [Cleanup]      swank_kill :port 4005             ; optional — kills managed process
 ;;
 ;;  Total: 7 MCP tool calls, 0 session restarts, 0 manual setup steps, full state preserved.
 

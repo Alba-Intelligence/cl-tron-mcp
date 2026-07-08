@@ -66,5 +66,5 @@ NEW: See comprehensive tutorials:
 (format t "  Swank raw (21):      low-level Swank RPC~%")
 (format t "  Unified REPL (23):   high-level repl_* tools~%")
 (format t "  Process Mgmt (4):    swank_launch, swank_kill, list, status~%")
-(format t "~%Bootstrap Swank from scratch: (cl-tron-mcp/swank:launch-sbcl-with-swank :port 4006)~%")
+(format t "~%Bootstrap Swank from scratch: (cl-tron-mcp/swank:launch-sbcl-with-swank :port 4005)~%")
 (format t "=== TUTORIAL COMPLETE ===~%")

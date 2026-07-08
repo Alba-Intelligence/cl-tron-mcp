@@ -12,8 +12,7 @@
    (list :role "user"
          :content
          (list :type "text"
-               :text
-               "I want to use Tron MCP for Common Lisp development. How do I get started?
+               :text "I want to use Tron MCP for Common Lisp development. How do I get started?
 
 Follow these steps:
 
@@ -22,7 +21,7 @@ Follow these steps:
 First, check if a Swank server is already running:
 
 ```bash
-ss -tlnp | grep 4006
+ss -tlnp | grep 4005
 ```
 
 If you see output, Swank is running. Skip to Step 3.
@@ -33,7 +32,7 @@ If Swank is not running, start it in your SBCL session:
 
 ```lisp
 (ql:quickload :swank)
-(swank:create-server :port 4006 :dont-close t)
+(swank:create-server :port 4005 :dont-close t)
 ```
 
 This creates a persistent Swank server that Tron can connect to.
@@ -43,13 +42,13 @@ This creates a persistent Swank server that Tron can connect to.
 Use the swank_connect tool:
 
 ```
-swank_connect :host \"127.0.0.1\" :port 4006
+swank_connect :host \"127.0.0.1\" :port 4005
 ```
 
 Or use the unified interface (Swank):
 
 ```
-repl_connect :port 4006
+repl_connect :port 4005
 ```
 
 ## Step 4: Verify Connection

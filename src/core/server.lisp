@@ -20,7 +20,7 @@
     (or (try (merge-pathnames "reports/http-startup.log" (or (ignore-errors (truename #p"./")) *default-pathname-defaults*)))
         (try #p"/tmp/cl-tron-mcp-http-startup.log"))))
 
-(defun start-server (&key (transport :combined) (port 4006))
+(defun start-server (&key (transport :combined) (port (cl-tron-mcp/config:get-config :http-port)))
   "Start the MCP server with the specified transport.
    TRANSPORT can be :combined (default), :stdio-only, :http-only, or :websocket.
    :combined runs stdio and HTTP simultaneously, but the HTTP transport keeps

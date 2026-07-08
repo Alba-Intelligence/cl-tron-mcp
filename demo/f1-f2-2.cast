@@ -5,7 +5,7 @@
 [1.500, "o", "\r\n\u001b[1m── Step 1: Initialize MCP\u001b[0m\r\n"]
 [0.000, "o", "\u001b[36m\u001b[36m→\u001b[0m\u001b[0m {\r\n  \"jsonrpc\": \"2.0\",\r\n  \"method\": \"initialize\",\r\n  \"params\": {\r\n    \"protocolVersion\": \"2024-11-05\",\r\n    \"capabilities\": {},\r\n    \"clientInfo\": {\r\n      \"name\": \"tron-demo\",\r\n      \"version\": \"1.0\"\r\n    }\r\n  },\r\n  \"id\": \"(next)\"\r\n}\r\n"]
 [1.524, "o", "\u001b[32m← \u001b[0m\u001b[32mServer: cl-tron-mcp v0.1.0  protocol: 2024-11-05\u001b[0m\r\n"]
-[5.572, "o", "\u001b[2m  (Swank launched, REPL connected on port 14006)\u001b[0m\r\n"]
+[5.572, "o", "\u001b[2m  (Swank launched, REPL connected on port 4006)\u001b[0m\r\n"]
 [1.000, "o", "\r\n\u001b[1m── Step 1: Compile f1 — it calls f2 which does not exist yet\u001b[0m\r\n\u001b[36m\u001b[36m→\u001b[0m\u001b[0m {\r\n  \"method\": \"tools/call\",\r\n  \"params\": {\r\n    \"name\": \"repl_compile\",\r\n    \"arguments\": {\r\n      \"code\": \"(defun f1 (a b) (f2 a b))\"\r\n    }\r\n  }\r\n}\r\n"]
 [0.045, "o", "\u001b[32m← compiled  \u001b[0m\u001b[35m(warning: F2 is undefined at compile time)\u001b[0m\r\n"]
 [2.001, "o", "\r\n\u001b[1m── Step 2: Eval (f1 1 2) — triggers UNDEFINED-FUNCTION, enters debugger\u001b[0m\r\n\u001b[36m\u001b[36m→\u001b[0m\u001b[0m {\r\n  \"method\": \"tools/call\",\r\n  \"params\": {\r\n    \"name\": \"repl_eval\",\r\n    \"arguments\": {\r\n      \"code\": \"(f1 1 2)\"\r\n    }\r\n  }\r\n}\r\n"]

@@ -162,7 +162,7 @@ Returns (values json-body-string status-code)."
         (hunchentoot:create-regex-dispatcher "^/rpc$" #'mcp-rpc)
         (hunchentoot:create-regex-dispatcher "^/$" #'mcp-root)))
 
-(defun start-http-transport (&key (port 4006) (block t))
+(defun start-http-transport (&key (port (cl-tron-mcp/config:get-config :http-port)) (block t))
   "Start HTTP transport using Hunchentoot with proper limits and timeouts. When BLOCK is true (default), block until stop-http-transport.
    When BLOCK is false, start the server and return (for combined stdio+http)."
   (when *http-acceptor*

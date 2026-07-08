@@ -1,4 +1,4 @@
-;;;; src/protocol/handlers-tools.lisp
+;;;; src/tools/handlers-tools.lisp
 ;;;;
 ;;;; Tool-related JSON-RPC handlers.
 ;;;;
@@ -8,7 +8,7 @@
 ;;;;   - approval/respond handler
 ;;;;   - Helper functions for tool execution and approval
 
-(in-package :cl-tron-mcp/protocol)
+(in-package :cl-tron-mcp/tools)
 
 ;;; ============================================================
 ;;; Helper Functions
@@ -16,22 +16,17 @@
 
 (defun arguments-without-approval-params (arguments)
   "Return arguments plist without approval_request_id and approved (for passing to tool handler)."
-  (loop for
-        (k v)
-          on
-        arguments
-        by
+  (loop for (k v) on arguments by
         #'cddr
         when
         (and (not (eq k :|approval_request_id|))
              (not (eq k :|approved|)))
-        append
-        (list k v)))
+        append (list k v)))
 
 (defun check-tool-approval (tool-name arguments id)
   "Check if tool requires approval and handle accordingly.
 Returns approval_required response if approval needed, nil otherwise."
-  (when (and (cl-tron-mcp/tools:tool-requires-user-approval-p
+  (when (and (tool-requires-user-approval-p
               tool-name)
              (not (cl-tron-mcp/security:whitelist-check-tool
                    tool-name arguments)))
@@ -82,7 +77,7 @@ Returns JSON-RPC response with result or error."
         (timeout-seconds *default-tool-timeout*)
         (result nil)
         (error-occurred nil))
-    (cl-tron-mcp/core:trace-log "executing tool ~a" tool-name)
+    (cl-tron-mcp/monitor:trace-log "executing tool ~a" tool-name)
     (unwind-protect
          (handler-case (progn
                          ;; Track this request for cleanup
@@ -96,7 +91,7 @@ Returns JSON-RPC response with result or error."
                                     :message (format nil "Tool execution timeout after ~d seconds"
                                                      timeout-seconds))))
                          ;; Execute tool
-                         (setf result (cl-tron-mcp/tools:call-tool tool-name arguments))
+                         (setf result (call-tool tool-name arguments))
                          ;; Check timeout after execution
                          (let ((elapsed (- (get-universal-time)
                                            start-time)))
@@ -129,9 +124,9 @@ Returns JSON-RPC response with result or error."
       ;; Record metrics
       (let ((latency-ms (round (* 1000 (/ (- (get-internal-real-time) start-tick)
                                           internal-time-units-per-second)))))
-        (cl-tron-mcp/core:metrics-record-call tool-name latency-ms :error-p error-occurred))
+        (cl-tron-mcp/tracer:metrics-record-call tool-name latency-ms :error-p error-occurred))
       ;; Trace completion
-      (cl-tron-mcp/core:trace-log "tool ~a done (error=~a)" tool-name error-occurred)
+      (cl-tron-mcp/monitor:trace-log "tool ~a done (error=~a)" tool-name error-occurred)
       ;; If error occurred, perform additional cleanup
       (when error-occurred
         (cleanup-on-error (format nil "tool call: ~a" tool-name))))))
@@ -143,7 +138,7 @@ Returns JSON-RPC response with result or error."
 (defun handle-tools-list (id)
   "Handle tools/list request.
 Returns list of all available tools with their schemas."
-  (let ((tools (cl-tron-mcp/tools:list-tool-descriptors)))
+  (let ((tools (list-tool-descriptors)))
     (jonathan:to-json (list :|jsonrpc| "2.0"
                             :|id| id
                             :|result| (list :|tools| tools)))))
@@ -241,4 +236,4 @@ DEPRECATED: Use execute-tool-with-timeout instead."
                              -32000
                              (princ-to-string e))))))
 
-(provide :cl-tron-mcp/protocol-handlers-tools)
+(provide :cl-tron-mcp/tools-handlers)

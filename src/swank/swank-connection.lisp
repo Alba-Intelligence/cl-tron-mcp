@@ -162,15 +162,15 @@ Example: (swank-sym \"EVAL-AND-GRAB-OUTPUT\") => SWANK:EVAL-AND-GRAB-OUTPUT"
 ;;; Connection Management
 ;;; ============================================================
 
-(defun swank-connect (&key (host "127.0.0.1") (port 4006) (timeout 10))
+(defun swank-connect (&key (host "127.0.0.1") (port (cl-tron-mcp/config:get-config :swank-port)) (timeout 10))
   "Connect to a running SBCL with Swank loaded.
-On the SBCL side: (ql:quickload :swank) (swank:create-server :port 4006)
+On the SBCL side: (ql:quickload :swank) (swank:create-server :port 4005)
 
 Returns: Connection status plist or error."
   (bordeaux-threads:with-lock-held (*connection-lock*)
     (when (and *swank-connected* *swank-socket*)
       (return-from swank-connect
-        (cl-tron-mcp/core:make-error "SWANK_ALREADY_CONNECTED")))
+        (cl-tron-mcp/resources:make-error "SWANK_ALREADY_CONNECTED")))
     (handler-case
         (let ((socket (usocket:socket-connect host port :timeout timeout
                                                         :element-type '(unsigned-byte 8))))
@@ -202,7 +202,7 @@ Returns: Connection status plist or error."
                 :host host :port port
                 :message (format nil "Connected to Swank at ~a:~a" host port)))
       (error (e)
-        (cl-tron-mcp/core:make-error "SWANK_CONNECTION_FAILED"
+        (cl-tron-mcp/resources:make-error "SWANK_CONNECTION_FAILED"
                                      :details (list :error (princ-to-string e)))))))
 
 (defun swank-disconnect ()

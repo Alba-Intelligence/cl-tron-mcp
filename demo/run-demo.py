@@ -200,25 +200,25 @@ def do_whitelist_all(client: MCPClient) -> None:
 def do_swank_setup(client: MCPClient, verbose: bool = False) -> None:
     """Launch Swank and connect REPL. If verbose, show request/response."""
     if verbose:
-        step(2, "Launch Swank server on port 14006")
-        show_json(col(CYAN, "→"), CYAN, {"method": "tools/call", "params": {"name": "swank_launch", "arguments": {"port": 14006}}})
-        resp = client.call_tool("swank_launch", {"port": 14006}, timeout=60)
+        step(2, "Launch Swank server on port 4006")
+        show_json(col(CYAN, "→"), CYAN, {"method": "tools/call", "params": {"name": "swank_launch", "arguments": {"port": 4006}}})
+        resp = client.call_tool("swank_launch", {"port": 4006}, timeout=60)
         text = client.extract_result_text(resp)
         print(col(GREEN, f"← {text[:120]}"))
         time.sleep(1.5)
 
         step(3, "Connect REPL to Swank")
-        show_json(col(CYAN, "→"), CYAN, {"method": "tools/call", "params": {"name": "repl_connect", "arguments": {"port": 14006}}})
-        resp = client.call_tool("repl_connect", {"port": 14006}, timeout=30)
+        show_json(col(CYAN, "→"), CYAN, {"method": "tools/call", "params": {"name": "repl_connect", "arguments": {"port": 4006}}})
+        resp = client.call_tool("repl_connect", {"port": 4006}, timeout=30)
         text = client.extract_result_text(resp)
         print(col(GREEN, f"← {text[:120]}"))
         time.sleep(1)
     else:
         # Silent quick setup — show just a status line
-        client.call_tool("swank_launch", {"port": 14006}, timeout=60)
+        client.call_tool("swank_launch", {"port": 4006}, timeout=60)
         time.sleep(1)
-        client.call_tool("repl_connect", {"port": 14006}, timeout=30)
-        print(col(DIM, "  (Swank launched, REPL connected on port 14006)"))
+        client.call_tool("repl_connect", {"port": 4006}, timeout=30)
+        print(col(DIM, "  (Swank launched, REPL connected on port 4006)"))
         time.sleep(0.5)
 
 
@@ -334,7 +334,7 @@ def scenario_f1_f2_1(client: MCPClient) -> None:
 
     # Cleanup
     client.call_tool("repl_disconnect")
-    client.call_tool("swank_kill", {"port": 14006})
+    client.call_tool("swank_kill", {"port": 4006})
 
 
 # ─── Scenario: f1-f2-2 (THE core in-debugger hot-reload demo) ─────────────────
@@ -419,7 +419,7 @@ def scenario_f1_f2_2(client: MCPClient) -> None:
 
     # Cleanup
     client.call_tool("repl_disconnect")
-    client.call_tool("swank_kill", {"port": 14006})
+    client.call_tool("swank_kill", {"port": 4006})
 
 
 # ─── Scenario: f1-f2 (full combined, legacy) ─────────────────────────────────
@@ -435,16 +435,16 @@ def scenario_f1_f2(client: MCPClient) -> None:
     do_whitelist_all(client)
     time.sleep(1)
 
-    step(2, "Launch Swank server on port 14006")
-    show_json(col(CYAN, "→"), CYAN, {"method": "tools/call", "params": {"name": "swank_launch", "arguments": {"port": 14006}}})
-    resp = client.call_tool("swank_launch", {"port": 14006}, timeout=60)
+    step(2, "Launch Swank server on port 4006")
+    show_json(col(CYAN, "→"), CYAN, {"method": "tools/call", "params": {"name": "swank_launch", "arguments": {"port": 4006}}})
+    resp = client.call_tool("swank_launch", {"port": 4006}, timeout=60)
     text = client.extract_result_text(resp)
     print(col(GREEN, f"← {text[:120]}"))
     time.sleep(2)
 
     step(3, "Connect REPL to Swank")
-    show_json(col(CYAN, "→"), CYAN, {"method": "tools/call", "params": {"name": "repl_connect", "arguments": {"port": 14006}}})
-    resp = client.call_tool("repl_connect", {"port": 14006}, timeout=30)
+    show_json(col(CYAN, "→"), CYAN, {"method": "tools/call", "params": {"name": "repl_connect", "arguments": {"port": 4006}}})
+    resp = client.call_tool("repl_connect", {"port": 4006}, timeout=30)
     text = client.extract_result_text(resp)
     print(col(GREEN, f"← {text[:120]}"))
     time.sleep(1.5)
@@ -494,7 +494,7 @@ def scenario_f1_f2(client: MCPClient) -> None:
 
     step(10, "Cleanup")
     client.call_tool("repl_disconnect")
-    client.call_tool("swank_kill", {"port": 14006})
+    client.call_tool("swank_kill", {"port": 4006})
     print(col(GREEN, "← cleaned up"))
     time.sleep(1)
 
@@ -528,7 +528,7 @@ def scenario_factorial_1(client: MCPClient) -> None:
 
     # Cleanup
     client.call_tool("repl_disconnect")
-    client.call_tool("swank_kill", {"port": 14006})
+    client.call_tool("swank_kill", {"port": 4006})
 
 
 # ─── Scenario: factorial-2 (debug + fix + verify) ────────────────────────────
@@ -596,7 +596,7 @@ def scenario_factorial_2(client: MCPClient) -> None:
 
     step(5, "Cleanup")
     client.call_tool("repl_disconnect")
-    client.call_tool("swank_kill", {"port": 14006})
+    client.call_tool("swank_kill", {"port": 4006})
     print(col(GREEN, "← cleaned up"))
     time.sleep(1)
 
@@ -616,9 +616,9 @@ def scenario_factorial(client: MCPClient) -> None:
     time.sleep(1)
 
     step(2, "Launch Swank + Connect")
-    client.call_tool("swank_launch", {"port": 14006}, timeout=60)
+    client.call_tool("swank_launch", {"port": 4006}, timeout=60)
     time.sleep(2)
-    resp = client.call_tool("repl_connect", {"port": 14006})
+    resp = client.call_tool("repl_connect", {"port": 4006})
     text = client.extract_result_text(resp)
     try:
         r = json.loads(text)
@@ -679,7 +679,7 @@ def scenario_factorial(client: MCPClient) -> None:
 
     step(9, "Cleanup")
     client.call_tool("repl_disconnect")
-    client.call_tool("swank_kill", {"port": 14006})
+    client.call_tool("swank_kill", {"port": 4006})
     print(col(GREEN, "← cleaned up"))
     time.sleep(1)
 

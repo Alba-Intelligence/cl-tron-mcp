@@ -100,7 +100,7 @@ Returns (values request-line headers body)."
 ;;; Simple HTTP Server
 ;;; ============================================================
 
-(defun start-simple-http-server (&optional (port 4006))
+(defun start-simple-http-server (&optional (port (cl-tron-mcp/config:get-config :http-port)))
   "Start a simple HTTP server on PORT for testing.
 This is a minimal implementation for development only."
   (let ((socket (usocket:socket-listen "127.0.0.1" port :reuse-address t)))

@@ -4,12 +4,12 @@
 
 (deftest version-test
     (testing "Version is defined"
-             (ok (stringp cl-tron-mcp/core:*version*))))
+             (ok (stringp cl-tron-mcp/config:*version*))))
 
 (deftest config-test
     (testing "Config can be set and retrieved"
-             (cl-tron-mcp/core:set-config :test-key "test-value")
-             (ok (string= (cl-tron-mcp/core:get-config :test-key) "test-value"))))
+             (cl-tron-mcp/config:set-config :test-key "test-value")
+             (ok (string= (cl-tron-mcp/config:get-config :test-key) "test-value"))))
 
 (deftest tracer-test
     (testing "Tracer can add and remove trace"
