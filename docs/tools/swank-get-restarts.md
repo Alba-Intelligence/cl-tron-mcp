@@ -14,4 +14,4 @@
 (swank_get_restarts)
 ```
 
-**Notes:** Only works when in an active debugger session. Restart indices are 1-based. Use swank_invoke_restart to invoke a specific restart.
+**Notes:** Only works when in an active debugger session. Restart indices are 0-based (0 = the first/CONTINUE restart). Use swank_invoke_restart to invoke a specific restart.

@@ -178,9 +178,21 @@ MESSAGE can be a string or a plist with :code, :message, :hint, etc."
 
 (defun cleanup-on-error (error-context &optional
                                          (error-condition nil))
-  "Perform cleanup when an error occurs.
+  "Perform cleanup when a tool-level error occurs.
 ERROR-CONTEXT is a string describing what operation failed.
-ERROR-CONDITION is the actual condition object (optional)."
+ERROR-CONDITION is the actual condition object (optional).
+
+FD-009 bug #10 (connection-state robustness): this MUST NOT drop, clear, or
+corrupt the live Swank connection.  A tool-level failure — a validation
+error, a mis-wired keyword, a rejected/invalid rex — is not a connection
+failure.  The previous version called SWANK-DISCONNECT on ANY tool error,
+tearing down the socket and reader threads (and clearing *swank-connected*)
+while the tools layer's own *repl-connected* flag stayed T.  That left the
+connection in an inconsistent state: repl_eval reported \"Not connected to
+Swank server\" while repl_connect reported \"Already connected\", wedging a
+long-lived agent loop after a single bad request.  Cleanup is now localized:
+log the error and drop any stale request-correlation entries; the connection
+stays usable so the very next request succeeds."
   (handler-case (progn
                   (cl-tron-mcp/logging:log-error (format nil
                                                          "Error in ~a: ~a"
@@ -188,15 +200,11 @@ ERROR-CONDITION is the actual condition object (optional)."
                                                          (if error-condition
                                                              (princ-to-string error-condition)
                                                              "unknown")))
-                  ;; Disconnect from Swank if connected
-                  (when (cl-tron-mcp/swank:swank-connected-p)
-                    (cl-tron-mcp/logging:log-info (format nil "Disconnecting from Swank due to error in ~a"
-                                                          error-context))
-                    (cl-tron-mcp/swank:swank-disconnect))
-                  ;; Clear pending requests
+                  ;; Clear stale request-correlation entries only.  Do NOT
+                  ;; disconnect: the connection must survive tool-level errors.
                   (bordeaux-threads:with-lock-held (*request-lock*)
                     (clrhash *pending-requests*))
-                  (cl-tron-mcp/logging:log-info (format nil "Cleanup completed for error in ~a"
+                  (cl-tron-mcp/logging:log-info (format nil "Cleanup completed for error in ~a (connection preserved)"
                                                         error-context)))
     (error (e)
       (cl-tron-mcp/logging:log-error (format nil "Error during cleanup: ~a" e)))))

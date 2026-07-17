@@ -245,7 +245,8 @@ in the debugger, the only thread where frame locals exist (FD-009 bug #9)."
   (swank-get-restarts))
 
 (defun repl-invoke-restart (&key restart_index)
-  "Invoke the Nth restart (1-based index)."
+  "Invoke the Nth restart (0-based index: 0 = the first/CONTINUE restart in
+the debugger's restart list, matching the order shown in the :debug payload)."
   (unless *repl-connected*
     (return-from repl-invoke-restart (make-not-connected-error)))
   (swank-invoke-restart :restart_index restart_index))
@@ -445,8 +446,8 @@ in the debugger, the only thread where frame locals exist (FD-009 bug #9)."
   :body (repl-get-restarts :frame frame))
 
 (define-validated-tool "repl_invoke_restart"
-  "Invoke a restart"
-  :input-schema (list :restartIndex "integer")
+  "Invoke a restart by index (0-based; 0 = the first/CONTINUE restart)"
+  :input-schema (list :restart_index "integer")
   :output-schema (list :type "object")
   :requires-approval nil
   :documentation-uri "file://docs/tools/repl-invoke-restart.md"

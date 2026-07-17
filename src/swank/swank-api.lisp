@@ -107,8 +107,11 @@ resolve-debugger-thread)."
         (symbolp (first result))
         (string= "ABORT" (symbol-name (first result))))))
 
-(defun swank-invoke-restart (&key (restart_index 1))
-  "Invoke the Nth restart (1-based) in the current debugger level."
+(defun swank-invoke-restart (&key (restart_index 0))
+  "Invoke the Nth restart (0-based) in the current debugger level.
+Index 0 is the first restart shown in the :debug payload (typically
+CONTINUE); this matches Swank's INVOKE-NTH-RESTART-FOR-EMACS, whose N
+indexes *sldb-restarts* from 0."
   (let ((thread (or *debugger-thread* t))
         (level *debugger-level*))
     (let ((response (send-request `(,(swank-sym "INVOKE-NTH-RESTART-FOR-EMACS") ,level ,restart_index)
