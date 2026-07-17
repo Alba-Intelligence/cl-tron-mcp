@@ -976,11 +976,18 @@ handle_supervisor_signal() {
 }
 
 run_long_lived_lisp() {
+    # CRITICAL: bash gives an asynchronous (&) command /dev/null as its default
+    # stdin when job control is off (true for any non-interactive script) --
+    # see bash(1), "If a command is followed by a & and job control is not
+    # active, the default standard input for the command is the empty file
+    # /dev/null." That silently starves stdio-transport clients: the Lisp
+    # child never sees the piped JSON-RPC input. Explicit <&0 overrides the
+    # default and passes this script's real stdin through to the child.
     if command -v setsid &>/dev/null; then
-        setsid "$@" &
+        setsid "$@" <&0 &
     else
         log_warn "setsid not available; falling back to direct launch, so Ctrl+C may not stop cleanly"
-        "$@" &
+        "$@" <&0 &
     fi
 
     SERVER_CHILD_PID=$!
@@ -1048,7 +1055,8 @@ write_boot_lisp_header(){
 
         (%boot-log "quickloading :swank")
         (unless (member :swank *features* :test #'eq)
-          (ql:quickload :swank))
+          (let ((*standard-output* *error-output*))
+            (ql:quickload :swank :silent t)))
         (%boot-log "quickloaded :swank")
 
         (%boot-log "quickloading :cl-tron-mcp")
@@ -1064,17 +1072,19 @@ write_boot_lisp_header(){
           (%boot-log "setting the swank port")
           (cl-tron-mcp/config:set-config :swank_port swank-port)
 
-          ;; Auto-launch Swank if LAUNCH_SWANK=true and not already running
+          ;; Auto-launch Swank if LAUNCH_SWANK=true and not already running.
+          ;; This block is self-contained (when/ignore-errors close here) so that
+          ;; --no-swank only skips Swank -- it must NOT also skip start-server below.
           (when (string= "$LAUNCH_SWANK" "true")
             (ignore-errors
               (%boot-log (format nil "Starting Swank server on port=~a" swank-port))
               (swank:create-server :port swank-port :dont-close t)
-              (%boot-log (format nil "Swank server started on port ~a" swank-port))
-              
-              (%boot-log (format nil "starting Tron server on port ~a" http-port))
-              ;;
-              ;; The start server is inserted here within the progn
-              ;;
+              (%boot-log (format nil "Swank server started on port ~a" swank-port))))
+
+          (%boot-log (format nil "starting Tron server on port ~a" http-port))
+          ;;
+          ;; The start server is inserted here within the let
+          ;;
 BOOTEOF
 }
 
@@ -1084,7 +1094,7 @@ write_boot_lisp_footer() {
     log_info "--"
 
     cat >> "$BOOT_FILE" << BOOTEOF
-              )))
+              )
        #+sbcl (sb-ext:exit :code 0)
        #+ecl (ext:quit 0)
        #-(or sbcl ecl) (cl-user::quit 0)
@@ -1136,8 +1146,8 @@ elif [[ "$TRANSPORT" == "http" ]]; then
     # Write boot script (logs steps to /tmp/cl-tron-mcp-boot.log) then load it with one short --eval.
     write_boot_lisp_header
     cat >> "$BOOT_FILE" << BOOTEOF
-                    (cl-tron-mcp/core:start-server :transport :http-only :port port)
-                    (%boot-log (format nil "starting Tron server with http-only on port ~a" port))
+                    (cl-tron-mcp/core:start-server :transport :http-only :port http-port)
+                    (%boot-log (format nil "starting Tron server with http-only on port ~a" http-port))
 BOOTEOF
     write_boot_lisp_footer
 fi
@@ -1147,6 +1157,7 @@ fi
 run_long_lived_lisp \
     "$LISP" \
     $LISP_QUIET \
+    $LISP_EXTRA \
     "${ECL_ARGS[@]}" \
     $LISP_EVAL "(setq *compile-verbose* nil *load-verbose* nil)" \
     ${LOAD_EXPR:+$LISP_EVAL "$LOAD_EXPR"} \
