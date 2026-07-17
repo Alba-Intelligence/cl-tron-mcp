@@ -26,13 +26,13 @@
 (defvar *message-handler* nil)
 (defvar *request-id* nil)
 
-(defvar *default-tool-timeout* 30 "Default timeout for tool execution in seconds.")
-
-(defvar *pending-requests* (make-hash-table :test 'eql)
-  "Hash table tracking pending requests for cleanup.")
-
-(defvar *request-lock* (bordeaux-threads:make-lock "pending-requests")
-  "Lock for synchronizing access to *pending-requests*.")
+;; NOTE (cl-tron-mcp#2, "bug #8"): *default-tool-timeout*, *pending-requests*,
+;; and *request-lock* used to be defined here, but their only callers
+;; (execute-tool-with-timeout's timeout/tracking logic) live in
+;; src/tools/handlers-tools.lisp (cl-tron-mcp/tools package), which cannot
+;; import from cl-tron-mcp/protocol without a dependency cycle (protocol
+;; depends on tools, not vice versa). Relocated to
+;; src/tools/handlers-support.lisp, alongside their only caller.
 
 ;;; ============================================================
 ;;; Message Dispatch

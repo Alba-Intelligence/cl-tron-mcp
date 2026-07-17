@@ -166,6 +166,7 @@
     (:file "src/tools/macros")
     (:file "src/tools/inspector-tools")
     (:file "src/tools/debugger-tools")
+    (:file "src/tools/handlers-support")
     (:file "src/tools/handlers-tools")
     (:file "src/tools/repl-tools")
     (:file "src/tools/hot-reload-tools")

@@ -3,41 +3,26 @@
 ;;;; Utility functions for JSON-RPC handlers.
 ;;;;
 ;;;; This file contains:
-;;;;   - Error recovery and cleanup functions
 ;;;;   - Parameter validation functions
-;;;;   - Timeout handling
+;;;;   - Unix time helper
 ;;;;   - Error response construction
+;;;;
+;;;; NOTE (cl-tron-mcp#2, "bug #8"): this file used to also define
+;;;; cleanup-on-error, validate-list-param, a with-timeout macro, and a
+;;;; timeout-error condition. Every caller of those four turned out to be
+;;;; src/tools/handlers-tools.lisp (cl-tron-mcp/tools package) -- nothing
+;;;; else in cl-tron-mcp/protocol used them -- so they were relocated to
+;;;; src/tools/handlers-support.lisp, in the package that actually calls
+;;;; them (cl-tron-mcp/tools cannot import from cl-tron-mcp/protocol
+;;;; without a dependency cycle: protocol depends on tools, not vice
+;;;; versa). validate-string-param and make-error-response stay here
+;;;; (protocol's own handlers-prompts.lisp / handlers-resources.lisp /
+;;;; this file's own logic still use them); handlers-support.lisp defines
+;;;; independent, identical copies for tools' own use rather than
+;;;; importing across the package boundary -- see that file's header
+;;;; comment for why.
 
 (in-package :cl-tron-mcp/protocol)
-
-;;; ============================================================
-;;; Error Recovery and Cleanup
-;;; ============================================================
-
-(defun cleanup-on-error (error-context &optional
-                                         (error-condition nil))
-  "Perform cleanup when an error occurs.
-ERROR-CONTEXT is a string describing what operation failed.
-ERROR-CONDITION is the actual condition object (optional)."
-  (handler-case (progn
-                  (cl-tron-mcp/logging:log-error (format nil
-                                                         "Error in ~a: ~a"
-                                                         error-context
-                                                         (if error-condition
-                                                             (princ-to-string error-condition)
-                                                             "unknown")))
-                  ;; Disconnect from Swank if connected
-                  (when (cl-tron-mcp/swank:swank-connected-p)
-                    (cl-tron-mcp/logging:log-info (format nil "Disconnecting from Swank due to error in ~a"
-                                                          error-context))
-                    (cl-tron-mcp/swank:swank-disconnect))
-                  ;; Clear pending requests
-                  (bordeaux-threads:with-lock-held (*request-lock*)
-                    (clrhash *pending-requests*))
-                  (cl-tron-mcp/logging:log-info (format nil "Cleanup completed for error in ~a"
-                                                        error-context)))
-    (error (e)
-      (cl-tron-mcp/logging:log-error (format nil "Error during cleanup: ~a" e)))))
 
 ;;; ============================================================
 ;;; Parameter Validation
@@ -76,28 +61,6 @@ Returns T if valid, otherwise returns an error response plist."
                                             param-name min-length)
                            :param param-name
                            :min-length min-length))))
-    (list :valid t)))
-
-(defun validate-list-param (param-name value &key required)
-  "Validate a list parameter.
-Returns T if valid, otherwise returns an error response plist."
-  (progn
-    (when (and required
-               (null value))
-      (return-from validate-list-param
-        (list :valid nil
-              :error (list :code "MISSING_REQUIRED_PARAMETER"
-                           :message (format nil "Missing required parameter: ~a"
-                                            param-name)
-                           :param param-name))))
-    (when (and value
-               (not (listp value)))
-      (return-from validate-list-param
-        (list :valid nil
-              :error (list :code "INVALID_LIST_PARAMETER"
-                           :message (format nil "Parameter ~a must be a list"
-                                            param-name)
-                           :param param-name))))
     (list :valid t)))
 
 (defun validate-integer-param (param-name value
@@ -162,34 +125,8 @@ Returns T if valid, otherwise returns an error response plist."
     (list :valid t)))
 
 ;;; ============================================================
-;;; Timeout Handling
+;;; Unix Time Helper
 ;;; ============================================================
-
-(defmacro with-timeout ((seconds) &body
-                                    body)
-  "Execute BODY with a timeout of SECONDS seconds.
-If timeout occurs, a TIMEOUT-ERROR condition is signaled."
-  (let ((timeout-tag (gensym "TIMEOUT-TAG-")))
-    `(handler-case (let ((start-time (get-universal-time)))
-                     (unwind-protect
-                          (progn ,@body)
-                       (when (> (- (get-universal-time)
-                                   start-time) ,seconds)
-                         (error 'timeout-error :message "Operation timed out"))))
-       (timeout-error (e)
-         (declare (ignore e))
-         (error 'timeout-error
-                :message (format nil "Operation timed out after ~d seconds"
-                                 ,seconds))))))
-
-(define-condition timeout-error
-    (error)
-  ((message :initarg :message
-            :reader timeout-error-message))
-  (:report (lambda (condition stream)
-             (format stream
-                     "Timeout: ~a"
-                     (timeout-error-message condition)))))
 
 (defun get-unix-time ()
   "Get current Unix timestamp (seconds since epoch)."
