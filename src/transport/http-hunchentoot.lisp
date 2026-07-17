@@ -74,23 +74,23 @@ Returns (values json-body-string status-code)."
      (format nil "Request too large: ~d bytes (max: ~d)"
              (length body) *max-request-size*))
     (return-from handle-rpc-body
-      (values (jonathan:to-json
+      (values (cl-tron-mcp/json-compat:to-json
                (list :|jsonrpc| "2.0" :|id| nil :|error|
                      (list :|code| -32602 :|message| "Request too large")))
               413)))
 
-  (let ((message (ignore-errors (jonathan:parse body))))
+  (let ((message (ignore-errors (cl-tron-mcp/json-compat:parse body))))
     (if (not message)
         (values "{}" 400)
         (handler-case
             (let ((response (cl-tron-mcp/protocol:handle-message message)))
               (values (cond ((and response (stringp response)) response)
-                            (response (jonathan:to-json response))
+                            (response (cl-tron-mcp/json-compat:to-json response))
                             (t "{}"))
                       200))
           (error (e)
             (cl-tron-mcp/logging:log-error (format nil "Error handling RPC: ~a" e))
-            (values (jonathan:to-json
+            (values (cl-tron-mcp/json-compat:to-json
                      (list :|jsonrpc| "2.0" :|id| nil :|error|
                            (list :|code| -32603 :|message| (princ-to-string e))))
                     200))))))
@@ -112,7 +112,7 @@ Returns (values json-body-string status-code)."
 
 (hunchentoot:define-easy-handler (mcp-lisply-tools-list :uri "/lisply/tools/list") ()
   (setf (hunchentoot:content-type*) "application/json")
-  (jonathan:to-json (list :tools (cl-tron-mcp/tools:list-tool-descriptors))))
+  (cl-tron-mcp/json-compat:to-json (list :tools (cl-tron-mcp/tools:list-tool-descriptors))))
 
 (hunchentoot:define-easy-handler (mcp-rpc :uri "/rpc" :default-request-type :post) ()
   (setf (hunchentoot:content-type*) "application/json")
@@ -121,7 +121,7 @@ Returns (values json-body-string status-code)."
     (unless (check-rate-limit ip-address)
       (setf (hunchentoot:return-code*) 429)
       (return-from mcp-rpc
-        (jonathan:to-json
+        (cl-tron-mcp/json-compat:to-json
          (list :|error| (list :|message| "Rate limit exceeded"))))))
 
   (let ((body (hunchentoot:raw-post-data :force-text t)))
@@ -142,7 +142,7 @@ Returns (values json-body-string status-code)."
     (unless (check-rate-limit ip-address)
       (setf (hunchentoot:return-code*) 429)
       (return-from mcp-lisply-eval
-        (jonathan:to-json
+        (cl-tron-mcp/json-compat:to-json
          (list :|error| (list :|message| "Rate limit exceeded"))))))
 
   (let ((body (hunchentoot:raw-post-data :force-text t)))

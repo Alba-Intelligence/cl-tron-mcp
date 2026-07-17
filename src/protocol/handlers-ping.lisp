@@ -14,7 +14,7 @@
 (defun handle-ping (id)
   "Handle ping request.
 Returns pong response for keepalive."
-  (jonathan:to-json (list :|jsonrpc| "2.0"
+  (cl-tron-mcp/json-compat:to-json (list :|jsonrpc| "2.0"
                           :|id| id
                           :|result| (list :|pong| t))))
 

@@ -37,10 +37,10 @@ Returns approval_required response if approval needed, nil otherwise."
                     (list :tool tool-name
                           :arguments arguments))))
       (return-from check-tool-approval
-        (jonathan:to-json (list :|jsonrpc| "2.0"
+        (cl-tron-mcp/json-compat:to-json (list :|jsonrpc| "2.0"
                                 :|id| id
                                 :|result| (list :|content| (list (list :|type| "text"
-                                                                       :|text| (jonathan:to-json (list :|approval_required| t
+                                                                       :|text| (cl-tron-mcp/json-compat:to-json (list :|approval_required| t
                                                                                                        :|request_id| (cl-tron-mcp/security:approval-request-id
                                                                                                                       request)
                                                                                                        :|message|
@@ -100,7 +100,7 @@ Returns JSON-RPC response with result or error."
                                     :message (format nil "Tool execution timeout after ~d seconds"
                                                      timeout-seconds))))
                          ;; Return success response
-                         (jonathan:to-json (list :|jsonrpc| "2.0"
+                         (cl-tron-mcp/json-compat:to-json (list :|jsonrpc| "2.0"
                                                  :|id| id
                                                  :|result| (list :|content| (list (list :|type| "text"
                                                                                         :|text| (format nil "~a" result)))))))
@@ -139,7 +139,7 @@ Returns JSON-RPC response with result or error."
   "Handle tools/list request.
 Returns list of all available tools with their schemas."
   (let ((tools (list-tool-descriptors)))
-    (jonathan:to-json (list :|jsonrpc| "2.0"
+    (cl-tron-mcp/json-compat:to-json (list :|jsonrpc| "2.0"
                             :|id| id
                             :|result| (list :|tools| tools)))))
 
@@ -221,7 +221,7 @@ DEPRECATED: Use execute-tool-with-timeout instead."
                                       :approved :denied)))
                     (cl-tron-mcp/security:approval-response (string request-id)
                                                             response)
-                    (jonathan:to-json (list :|jsonrpc| "2.0"
+                    (cl-tron-mcp/json-compat:to-json (list :|jsonrpc| "2.0"
                                             :|id| id
                                             :|result| (nconc (list :|recorded| t
                                                                    :|approved| (eq response :approved))

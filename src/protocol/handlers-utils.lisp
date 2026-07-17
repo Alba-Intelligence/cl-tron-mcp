@@ -235,7 +235,7 @@ MESSAGE can be a string or a plist with :code, :message, :hint, etc."
       (when (getf error-data :min)
         (setf error-object
               (append error-object (list :|min| (getf error-data :min)))))
-      (jonathan:to-json (list :|jsonrpc| "2.0"
+      (cl-tron-mcp/json-compat:to-json (list :|jsonrpc| "2.0"
                               :|id| id
                               :|error| error-object)))))
 

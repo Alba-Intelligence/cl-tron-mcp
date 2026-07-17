@@ -43,7 +43,7 @@
 Dispatches to appropriate handler based on method name.
 Messages without ID are treated as notifications."
   (handler-case (let* ((parsed (if (stringp message)
-                                   (jonathan:parse message)
+                                   (cl-tron-mcp/json-compat:parse message)
                                    message))
                        (id (getf parsed :|id|))
                        (method (getf parsed :|method|))
@@ -52,7 +52,7 @@ Messages without ID are treated as notifications."
                     ((null id)
                      (handle-notification method params))
                     (t (handle-request id method params))))
-    (jonathan.error:<jonathan-error> (e)
+    (com.inuoe.jzon:json-error (e)
       (cl-tron-mcp/logging:log-error (format nil "JSON parse error: ~a" e))
       (make-error-response nil -32700 "Parse error"))
     (error (e)

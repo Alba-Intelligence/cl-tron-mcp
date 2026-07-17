@@ -4,7 +4,7 @@
 ;;;; Run with: (rove:run 'cl-tron-mcp/tests/mcp-e2e)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (ql:quickload '(:jonathan :cl-tron-mcp :rove)
+  (ql:quickload '(:cl-tron-mcp :rove)
                 :silent t))
 
 (defpackage :cl-tron-mcp/tests/mcp-e2e (:use #:cl #:rove))
@@ -13,7 +13,7 @@
 
 (defun parse-json-response (json-string)
   "Parse JSON response string to plist."
-  (jonathan:parse json-string))
+  (cl-tron-mcp/json-compat:parse json-string))
 
 ;;; Direct protocol tests
 
@@ -157,7 +157,7 @@
                       (let ((text (getf (first content)
                                         :|text|)))
                         (ok (stringp text))
-                        (let ((approval-json (ignore-errors (jonathan:parse text))))
+                        (let ((approval-json (ignore-errors (cl-tron-mcp/json-compat:parse text))))
                           (ok approval-json "Content text should be JSON")
                           (when approval-json
                             (ok (getf approval-json :|approval_required|)
@@ -178,7 +178,7 @@
                                         :|content|))
                          (text (getf (first content)
                                      :|text|))
-                         (approval-json (jonathan:parse text))
+                         (approval-json (cl-tron-mcp/json-compat:parse text))
                          (req-id (getf approval-json :|request_id|)))
                     (ok req-id)
                     ;; Record approval
@@ -207,7 +207,7 @@
                                   (let ((text2 (getf (first content2)
                                                      :|text|)))
                                     (when (stringp text2)
-                                      (let ((inner (ignore-errors (jonathan:parse text2))))
+                                      (let ((inner (ignore-errors (cl-tron-mcp/json-compat:parse text2))))
                                         (when inner
                                           (ok (not (getf inner :|approval_required|))
                                               "Should not ask for approval again"))))))))
@@ -223,7 +223,7 @@
                                         :|content|))
                          (text (getf (first content)
                                      :|text|))
-                         (approval-json (jonathan:parse text))
+                         (approval-json (cl-tron-mcp/json-compat:parse text))
                          (req-id (getf approval-json :|request_id|)))
                     (ok req-id)
                     (let* ((respond-params (list :|request_id| req-id
@@ -262,7 +262,7 @@
                             (ok (getf parsed :|result|))
                             ;; Result text should not be approval_required JSON
                             (when (stringp text)
-                              (let ((inner (ignore-errors (jonathan:parse text))))
+                              (let ((inner (ignore-errors (cl-tron-mcp/json-compat:parse text))))
                                 (when inner
                                   (ok (not (getf inner :|approval_required|))
                                       "Whitelisted tool should not return approval_required")))))

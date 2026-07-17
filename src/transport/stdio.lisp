@@ -18,7 +18,7 @@
         do (let ((line (read-line *standard-input* nil)))
              (when (null line) (return))
              (handler-case
-                 (let* ((message (jonathan:parse line))
+                 (let* ((message (cl-tron-mcp/json-compat:parse line))
                         (response (funcall handler message)))
                    (when response
                      (funcall output response)))
@@ -33,5 +33,5 @@
   "Send a single JSON-RPC message to stdout. CRITICAL: This is the only place that must write to stdout for stdio transport.
    Handlers return already-serialized JSON strings; write as-is to avoid double-encoding (Cursor expects object, not string)."
   (format *standard-output* "~a~%"
-          (if (stringp message) message (jonathan:to-json message)))
+          (if (stringp message) message (cl-tron-mcp/json-compat:to-json message)))
   (force-output *standard-output*))

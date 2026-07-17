@@ -1,14 +1,11 @@
 ;;;; src/core/utils.lisp
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (ql:quickload :jonathan :silent t))
-
 (in-package :cl-tron-mcp/core)
 
 (defun safe-json-encode (object)
   "Encode object to JSON string, handling circular references."
   (handler-case
-      (jonathan:to-json object)
+      (cl-tron-mcp/json-compat:to-json object)
     (error (e)
       (format nil "~a" object))))
 
