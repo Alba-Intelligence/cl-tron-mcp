@@ -112,7 +112,7 @@ Returns (values json-body-string status-code)."
 
 (hunchentoot:define-easy-handler (mcp-lisply-tools-list :uri "/lisply/tools/list") ()
   (setf (hunchentoot:content-type*) "application/json")
-  (cl-tron-mcp/json-compat:to-json (list :tools (cl-tron-mcp/tools:list-tool-descriptors))))
+  (cl-tron-mcp/json-compat:to-json (list :|tools| (cl-tron-mcp/tools:list-tool-descriptors))))
 
 (hunchentoot:define-easy-handler (mcp-rpc :uri "/rpc" :default-request-type :post) ()
   (setf (hunchentoot:content-type*) "application/json")

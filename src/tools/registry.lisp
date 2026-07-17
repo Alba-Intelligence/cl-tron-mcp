@@ -36,14 +36,20 @@
   "Register a tool with descriptor and handler.
    requires-approval t means approvalLevel \"user\" (human must approve); nil means \"none\" (auto-run)."
   (let ((descriptor (make-hash-table :test 'equal)))
-    (setf (gethash :name descriptor) name)
-    (setf (gethash :description descriptor) description)
-    (setf (gethash :inputSchema descriptor) (or input-schema (make-hash-table :test 'equal)))
-    (setf (gethash :outputSchema descriptor) (or output-schema (make-hash-table :test 'equal)))
-    (setf (gethash :requiresApproval descriptor) (or requires-approval nil))
-    (setf (gethash :approvalLevel descriptor) (if requires-approval "user" "none"))
-    (setf (gethash :documentationUri descriptor) documentation-uri)
-    (setf (gethash :concurrency descriptor) (or concurrency "sequential"))
+    ;; NOTE: keys are pipe-escaped (:|name|, not :name) so the reader preserves
+    ;; their lowercase/camelCase spelling. An unescaped :name reads as the
+    ;; symbol NAME (all upper), which json-compat's encode-tree serializes via
+    ;; (string key) -- producing "NAME" in the wire JSON instead of "name".
+    ;; This is the same convention handlers.lisp/handlers-initialize.lisp
+    ;; already use for outgoing JSON-RPC keys; see cl-tron-mcp#2.
+    (setf (gethash :|name| descriptor) name)
+    (setf (gethash :|description| descriptor) description)
+    (setf (gethash :|inputSchema| descriptor) (or input-schema (make-hash-table :test 'equal)))
+    (setf (gethash :|outputSchema| descriptor) (or output-schema (make-hash-table :test 'equal)))
+    (setf (gethash :|requiresApproval| descriptor) (or requires-approval nil))
+    (setf (gethash :|approvalLevel| descriptor) (if requires-approval "user" "none"))
+    (setf (gethash :|documentationUri| descriptor) documentation-uri)
+    (setf (gethash :|concurrency| descriptor) (or concurrency "sequential"))
     (setf (gethash name *tool-registry*)
           (make-tool-entry :name name
                            :descriptor descriptor
@@ -79,7 +85,7 @@
 (defun tool-requires-user-approval-p (name)
   "Return t if tool NAME has approval level user (requires human approval)."
   (let ((desc (get-tool-descriptor name)))
-    (and desc (gethash :requiresApproval desc))))
+    (and desc (gethash :|requiresApproval| desc))))
 
 (defun call-tool (name arguments)
   "Call tool by name with arguments plist.
