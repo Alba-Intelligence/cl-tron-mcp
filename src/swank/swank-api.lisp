@@ -52,10 +52,31 @@
      (format nil "(sb-debug:list-backtrace :start ~a :count ~a)" ,start ,(- end start)))
    :package "CL-USER" :thread t))
 
-(defun swank-frame-locals (&key (frame-index 0) (thread :repl-thread))
-  "Get local variables for FRAME-INDEX."
+(defun resolve-debugger-thread (thread)
+  "Pick the Swank thread a debugger-context rex must run in.
+
+Debugger commands (frame locals, eval-in-frame, restarts, stepping) only
+work in the thread suspended in the break loop.  NIL — the default — means
+\"the debugged thread\": *debugger-thread*, falling back to T (spawn a
+worker) when not in a break loop.  A digit string is coerced to the integer
+thread id; anything else (an integer id, :repl-thread, T) is used as given.
+
+FD-009 bug #9: swank-frame-locals defaulted to :repl-thread, so a frame
+locals request during a break loop was routed to a thread that never
+replies — wedging the whole connection.  Routing it to *debugger-thread*
+is the fix; invoke-restart / continue / stepping already do this."
+  (cond
+    ((null thread) (or *debugger-thread* t))
+    ((and (stringp thread) (plusp (length thread)) (every #'digit-char-p thread))
+     (parse-integer thread))
+    (t thread)))
+
+(defun swank-frame-locals (&key (frame-index 0) thread)
+  "Get local variables for FRAME-INDEX in the debugged thread.
+THREAD defaults to the thread suspended in the debugger (see
+resolve-debugger-thread)."
   (send-request `(,(swank-sym "FRAME-LOCALS-AND-CATCH-TAGS") ,frame-index)
-                :package "CL-USER" :thread thread))
+                :package "CL-USER" :thread (resolve-debugger-thread thread)))
 
 (defun swank-eval-in-frame (&key code (frame-index 0) (package "CL-USER"))
   "Evaluate CODE (string) in the context of FRAME-INDEX."
@@ -71,8 +92,9 @@
     (return-from swank-eval-in-frame
       (cl-tron-mcp/resources:make-error-with-hint "INVALID_FRAME_INDEX"
                                              :details (list :function "swank-eval-in-frame"))))
+  ;; Evaluating in a frame only makes sense in the debugged thread's stack.
   (send-request `(,(swank-sym "EVAL-STRING-IN-FRAME") ,code ,frame-index ,package)
-                :package package :thread t))
+                :package package :thread (resolve-debugger-thread nil)))
 
 ;;; ============================================================
 ;;; Debugger Operations
@@ -355,8 +377,9 @@ Returns: success plist or error plist."
   "MCP tool handler: get current backtrace."
   (swank-backtrace :start start :end end))
 
-(defun mcp-swank-frame-locals (&key frame (thread :repl-thread))
-  "MCP tool handler: get local variables for a frame."
+(defun mcp-swank-frame-locals (&key frame thread)
+  "MCP tool handler: get local variables for a frame.
+THREAD defaults to NIL so swank-frame-locals targets the debugged thread."
   (swank-frame-locals :frame-index frame :thread thread))
 
 (defun mcp-swank-inspect (&key expression)

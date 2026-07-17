@@ -43,24 +43,40 @@
         (bordeaux-threads:condition-notify (swank-request-condition req))))))
 
 (defun wait-for-response (id &key (timeout *default-eval-timeout*))
-  "Wait for response to request ID with optional TIMEOUT (seconds)."
+  "Wait up to TIMEOUT seconds for the response to request ID.
+
+Polls the request's condition variable with a BOUNDED wait (at most one
+second per iteration) so the deadline is always honoured.  The previous
+version called CONDITION-WAIT with no timeout: if a rex was never answered
+— e.g. a debugger command routed to a thread that never replies (FD-009
+bug #9) — the wait blocked forever, the elapsed-time check never ran, and
+because the MCP stdio loop handles requests serially that one blocked call
+wedged the entire connection.  With a bounded wait an unanswered rex now
+returns a clean timeout error instead."
   (bordeaux-threads:with-lock-held (*request-lock*)
     (let ((req (gethash id *pending-requests*)))
       (unless req
         (return-from wait-for-response
           (list :error t :message (format nil "Request ~a not found" id))))
-      (let ((start (get-unix-time)))
-        (loop while (not (swank-request-completed-p req))
-              for elapsed = (- (get-unix-time) start)
-              when (> elapsed timeout)
-                do (return-from wait-for-response
-                     (list :error t :message "Request timeout"))
-              do (bordeaux-threads:condition-wait
-                  (swank-request-condition req) *request-lock*)
-              finally (return
-                        (if (swank-request-completed-p req)
-                            (swank-request-response req)
-                            (list :error t :message "Request timeout"))))))))
+      (let ((deadline (+ (get-unix-time) timeout)))
+        (loop
+          (when (swank-request-completed-p req)
+            (return (swank-request-response req)))
+          (let ((remaining (- deadline (get-unix-time))))
+            (when (<= remaining 0)
+              ;; Give up.  Stop tracking the request so a late reply cannot
+              ;; notify a condition nobody waits on, and clear the current-id
+              ;; pointer if it still refers to us — leaves clean state for
+              ;; the next request rather than a permanently stuck connection.
+              (remhash id *pending-requests*)
+              (when (eql *current-request-id* id)
+                (setf *current-request-id* nil))
+              (return (list :error t :timeout t
+                            :message (format nil "Request ~a timed out after ~a seconds"
+                                             id timeout))))
+            (bordeaux-threads:condition-wait
+             (swank-request-condition req) *request-lock*
+             :timeout (min remaining 1))))))))
 
 ;;; ============================================================
 ;;; Reader Thread & Message Dispatch
@@ -202,6 +218,14 @@
          (destructuring-bind (thread-id tag) args
            (declare (ignore thread-id))
            (write-message `(:emacs-pong ,tag))))
+        (:invalid-rpc
+         ;; Swank rejected a rex (e.g. thread-id not found).  Fulfil the
+         ;; pending request with an error instead of leaving it to time out,
+         ;; so the caller unblocks immediately.
+         (destructuring-bind (id message-text) args
+           (log-warn (format nil "Swank rejected request ~a: ~a" id message-text))
+           (fulfill-request id (list :error t
+                                     :message (format nil "Invalid RPC: ~a" message-text)))))
         (t
          (log-warn (format nil "Unhandled Swank message: ~s" message)))))))
 

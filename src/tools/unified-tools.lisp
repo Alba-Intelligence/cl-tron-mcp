@@ -205,8 +205,10 @@ slot on :spawn-style servers)."
 ;;; Unified Debugger Functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun repl-frame-locals (&key frame (thread :repl-thread))
-  "Get local variables for a frame."
+(defun repl-frame-locals (&key frame thread)
+  "Get local variables for a frame.
+THREAD defaults to NIL; the swank layer then targets the thread suspended
+in the debugger, the only thread where frame locals exist (FD-009 bug #9)."
   (unless *repl-connected*
     (return-from repl-frame-locals (make-not-connected-error)))
   (mcp-swank-frame-locals :frame frame :thread thread))
