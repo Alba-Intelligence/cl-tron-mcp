@@ -14,4 +14,4 @@
 (debugger_restarts)
 ```
 
-**Notes:** Only works when in an active debugger session. Restart indices are 1-based.
+**Notes:** Only works when in an active debugger session. Restart indices are 0-based (0 = the first/CONTINUE restart).

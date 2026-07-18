@@ -30,6 +30,23 @@
     :cl-tron-mcp/transport
     :cl-tron-mcp/core))
 
+;; FD-009 jonathan-removal spike: jonathan (jonathan-20200925-git) hard-depends
+;; on :cl-syntax / :cl-syntax-annot / :cl-annot (2015-era reader-macro
+;; machinery) which breaks under SBCL 2.6.4 + current ASDF when loaded
+;; transitively (.superpowers/sdd/task-7-report.md, Failure #2). This
+;; subsystem replaces it with com.inuoe.jzon behind a jonathan-compatible
+;; to-json/parse shim (src/core/json-compat.lisp) so call sites are
+;; unchanged in shape.
+(asdf:defsystem :cl-tron-mcp/json-compat
+  :name "JSON Compat"
+  :description "jonathan-compatible to-json/parse over com.inuoe.jzon"
+  :version "0.1.0"
+  :author "Emmanuel Rialland [alba.intelligence@gmail.com]"
+  :licence "Apache"
+  :depends-on (:com.inuoe.jzon)
+  :components (
+    (:file "src/core/json-compat")))
+
 (asdf:defsystem :cl-tron-mcp/core
   :name "core"
   :description ""
@@ -38,8 +55,9 @@
   :licence "Apache"
   :depends-on (
     ; :jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket :hunchentoot :cl-ppcre :flexi-streams
-    :cl-tron-mcp/logging  
-    :cl-tron-mcp/config 
+    :cl-tron-mcp/logging
+    :cl-tron-mcp/config
+    :cl-tron-mcp/json-compat
     :cl-tron-mcp/transport)
   :components (
     ;; Core
@@ -58,8 +76,9 @@
   :depends-on (
     ; :jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket  :cl-ppcre :flexi-streams
     :hunchentoot
-    :cl-tron-mcp/config 
-    :cl-tron-mcp/protocol 
+    :cl-tron-mcp/config
+    :cl-tron-mcp/json-compat
+    :cl-tron-mcp/protocol
     :cl-tron-mcp/tools)
   :components (
     ;; Transports
@@ -93,13 +112,13 @@
   :serial t
   :depends-on (
     ; :jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket :hunchentoot :cl-ppcre :flexi-streams
-    :jonathan 
+    :cl-tron-mcp/json-compat
     :cl-tron-mcp/logging
     :cl-tron-mcp/resources
-    :cl-tron-mcp/prompts 
-    :cl-tron-mcp/config    
-    :cl-tron-mcp/swank 
-    :cl-tron-mcp/monitor 
+    :cl-tron-mcp/prompts
+    :cl-tron-mcp/config
+    :cl-tron-mcp/swank
+    :cl-tron-mcp/monitor
     :cl-tron-mcp/tools)
   :components (
     ;; Protocols
@@ -121,6 +140,8 @@
   :serial t
   :depends-on (
     ; :jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket :hunchentoot :cl-ppcre :flexi-streams
+    :cl-ppcre
+    :cl-tron-mcp/json-compat
     :cl-tron-mcp/logging
     :cl-tron-mcp/config
     :cl-tron-mcp/repl
@@ -134,7 +155,7 @@
     :cl-tron-mcp/inspector
     :cl-tron-mcp/swank
     :cl-tron-mcp/xref
-    :cl-tron-mcp/debugger)    
+    :cl-tron-mcp/debugger)
   :components (
     (:file "src/tools/package")
     (:file "src/tools/utils")
@@ -145,6 +166,7 @@
     (:file "src/tools/macros")
     (:file "src/tools/inspector-tools")
     (:file "src/tools/debugger-tools")
+    (:file "src/tools/handlers-support")
     (:file "src/tools/handlers-tools")
     (:file "src/tools/repl-tools")
     (:file "src/tools/hot-reload-tools")

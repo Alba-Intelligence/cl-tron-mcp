@@ -36,7 +36,7 @@
 (defun lisp-eval-handler (body-str)
   "Handle HTTP request to evaluate Lisp code.
 Expects JSON with 'code' and optional 'package' fields."
-  (let ((parsed (ignore-errors (jonathan:parse body-str))))
+  (let ((parsed (ignore-errors (cl-tron-mcp/json-compat:parse body-str))))
     (when (null parsed)
       (return-from lisp-eval-handler
         (http-error-response "Invalid JSON in request body")))
@@ -60,7 +60,7 @@ Expects JSON with 'code' and optional 'package' fields."
             (let ((stdout-str (get-output-stream-string output)))
               (if (and (consp eval-result) (eq (car eval-result) :err))
                   (http-error-response (cdr eval-result))
-                  (http-ok (jonathan:to-json (list :|success| t
+                  (http-ok (cl-tron-mcp/json-compat:to-json (list :|success| t
                                                    :|result| (format nil "~a" eval-result)
                                                    :|stdout| stdout-str)))))))))))
 

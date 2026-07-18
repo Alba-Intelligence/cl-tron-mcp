@@ -60,8 +60,9 @@ You have two options:
 
 **Option A: Invoke a Restart**
 ```
-swank_invoke_restart :restart_index 1
+swank_invoke_restart :restart_index 0
 ```
+(restart_index is 0-based: 0 is the first restart listed by swank_get_restarts.)
 
 **Option B: Hot-Fix the Code**
 ```

@@ -16,4 +16,4 @@
 (repl_get_restarts :frame 0)
 ```
 
-**Notes:** Only works when in an active debugger session. Restart indices are 1-based. Use repl_invoke_restart to invoke a specific restart.
+**Notes:** Only works when in an active debugger session. Restart indices are 0-based (0 = the first/CONTINUE restart). Use repl_invoke_restart to invoke a specific restart.

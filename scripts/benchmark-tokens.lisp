@@ -26,7 +26,7 @@
 
 (defun estimate-json-tokens (object)
   "Estimate tokens for a Lisp object when serialized to JSON."
-  (let ((json-string (jonathan:to-json object)))
+  (let ((json-string (cl-tron-mcp/json-compat:to-json object)))
     (estimate-tokens json-string)))
 
 ;;; ============================================================

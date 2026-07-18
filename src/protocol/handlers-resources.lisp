@@ -18,7 +18,7 @@ Returns list of documentation files that can be read.
 These resources help AI agents understand how to use the MCP server."
   (let ((response (cl-tron-mcp/resources:handle-resources-list
                    id)))
-    (jonathan:to-json response)))
+    (cl-tron-mcp/json-compat:to-json response)))
 
 (defun handle-resources-read (id params)
   "Handle resources/read request.
@@ -34,7 +34,7 @@ URI format: file://relative/path/to/file.md"
                                (getf validation :error)))))
     (handler-case (let ((response (cl-tron-mcp/resources:handle-resources-read
                                    id params)))
-                    (jonathan:to-json response))
+                    (cl-tron-mcp/json-compat:to-json response))
       (error (e)
         (cl-tron-mcp/logging:log-error (format nil "Error reading resource: ~a" e))
         (make-error-response id

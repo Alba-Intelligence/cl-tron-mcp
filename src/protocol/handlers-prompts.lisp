@@ -17,7 +17,7 @@
 Returns list of guided workflows available to AI agents.
 These prompts help agents understand the correct usage patterns."
   (let ((response (cl-tron-mcp/prompts:handle-prompts-list id)))
-    (jonathan:to-json response)))
+    (cl-tron-mcp/json-compat:to-json response)))
 
 (defun handle-prompts-get (id params)
   "Handle prompts/get request.
@@ -33,7 +33,7 @@ PROMPT-NAME is passed in params."
                                (getf validation :error)))))
     (handler-case (let ((response (cl-tron-mcp/prompts:handle-prompts-get id
                                                                           params)))
-                    (jonathan:to-json response))
+                    (cl-tron-mcp/json-compat:to-json response))
       (error (e)
         (cl-tron-mcp/logging:log-error (format nil "Error getting prompt: ~a" e))
         (make-error-response id

@@ -205,8 +205,10 @@ slot on :spawn-style servers)."
 ;;; Unified Debugger Functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun repl-frame-locals (&key frame (thread :repl-thread))
-  "Get local variables for a frame."
+(defun repl-frame-locals (&key frame thread)
+  "Get local variables for a frame.
+THREAD defaults to NIL; the swank layer then targets the thread suspended
+in the debugger, the only thread where frame locals exist (FD-009 bug #9)."
   (unless *repl-connected*
     (return-from repl-frame-locals (make-not-connected-error)))
   (mcp-swank-frame-locals :frame frame :thread thread))
@@ -243,7 +245,8 @@ slot on :spawn-style servers)."
   (swank-get-restarts))
 
 (defun repl-invoke-restart (&key restart_index)
-  "Invoke the Nth restart (1-based index)."
+  "Invoke the Nth restart (0-based index: 0 = the first/CONTINUE restart in
+the debugger's restart list, matching the order shown in the :debug payload)."
   (unless *repl-connected*
     (return-from repl-invoke-restart (make-not-connected-error)))
   (swank-invoke-restart :restart_index restart_index))
@@ -443,8 +446,8 @@ slot on :spawn-style servers)."
   :body (repl-get-restarts :frame frame))
 
 (define-validated-tool "repl_invoke_restart"
-  "Invoke a restart"
-  :input-schema (list :restartIndex "integer")
+  "Invoke a restart by index (0-based; 0 = the first/CONTINUE restart)"
+  :input-schema (list :restart_index "integer")
   :output-schema (list :type "object")
   :requires-approval nil
   :documentation-uri "file://docs/tools/repl-invoke-restart.md"

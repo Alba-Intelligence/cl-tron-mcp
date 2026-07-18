@@ -60,7 +60,7 @@
 
 (define-validated-tool "swank_abort"
   "Abort a thread"
-  :input-schema (list :threadId "string")
+  :input-schema (list :thread_id "string")
   :output-schema (list :type "object")
   :requires-approval t
   :documentation-uri "file://docs/tools/swank-abort.md"
@@ -129,13 +129,13 @@
   :function cl-tron-mcp/swank:swank-get-restarts)
 
 (define-validated-tool "swank_invoke_restart"
-  "Invoke a restart"
+  "Invoke a restart by index (0-based; 0 = the first/CONTINUE restart)"
   :input-schema (list :restart_index "integer")
   :output-schema (list :type "object")
   :requires-approval nil
   :documentation-uri "file://docs/tools/swank-invoke-restart.md"
-  :validation ((validate-integer "restart_index" restart_index :required t :min 1))
-  :body (cl-tron-mcp/swank:swank-invoke-restart :restart-index restart_index))
+  :validation ((validate-integer "restart_index" restart_index :required t :min 0))
+  :body (cl-tron-mcp/swank:swank-invoke-restart :restart_index restart_index))
 
 (define-simple-tool "swank_continue"
   "Continue from debugger"

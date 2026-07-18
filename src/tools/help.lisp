@@ -45,8 +45,8 @@
                                 (string= (subseq tool-name 0 (min 5 (length tool-name))) "repl_"))
                       collect (let ((descriptor (tool-entry-descriptor tool-entry)))
                                 (list :name tool-name
-                                      :description (gethash :description descriptor)
-                                      :documentation-uri (gethash :documentationUri descriptor)))))))
+                                      :description (gethash :|description| descriptor)
+                                      :documentation-uri (gethash :|documentationUri| descriptor)))))))
     (list :type *repl-type*
           :connected *repl-connected*
           :tools (sort repl-tools #'string< :key (lambda (x) (getf x :name)))
