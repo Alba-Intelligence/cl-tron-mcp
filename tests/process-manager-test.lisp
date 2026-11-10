@@ -74,26 +74,26 @@
 
 (deftest process-tools-registered-test
     (testing "swank_launch tool is registered"
-             (ok (gethash "swank_launch" cl-tron-mcp/tools:*tool-registry*)))
+             (ok (gethash "swank_launch" cl-tron-mcp/tools::*tool-registry*)))
   (testing "swank_kill tool is registered"
-           (ok (gethash "swank_kill" cl-tron-mcp/tools:*tool-registry*)))
+           (ok (gethash "swank_kill" cl-tron-mcp/tools::*tool-registry*)))
   (testing "swank_process_list tool is registered"
-           (ok (gethash "swank_process_list" cl-tron-mcp/tools:*tool-registry*)))
+           (ok (gethash "swank_process_list" cl-tron-mcp/tools::*tool-registry*)))
   (testing "swank_process_status tool is registered"
-           (ok (gethash "swank_process_status" cl-tron-mcp/tools:*tool-registry*)))
+           (ok (gethash "swank_process_status" cl-tron-mcp/tools::*tool-registry*)))
   (testing "swank_launch requires approval"
-           (let ((entry (gethash "swank_launch" cl-tron-mcp/tools:*tool-registry*)))
+           (let ((entry (gethash "swank_launch" cl-tron-mcp/tools::*tool-registry*)))
              (when entry
-               (ok (gethash :|requiresApproval| (cl-tron-mcp/tools:tool-entry-descriptor entry))))))
+               (ok (gethash :|requiresApproval| (cl-tron-mcp/tools::tool-entry-descriptor entry))))))
   (testing "swank_kill requires approval"
-           (let ((entry (gethash "swank_kill" cl-tron-mcp/tools:*tool-registry*)))
+           (let ((entry (gethash "swank_kill" cl-tron-mcp/tools::*tool-registry*)))
              (when entry
-               (ok (gethash :|requiresApproval| (cl-tron-mcp/tools:tool-entry-descriptor entry))))))
+               (ok (gethash :|requiresApproval| (cl-tron-mcp/tools::tool-entry-descriptor entry))))))
   (testing "swank_process_list does not require approval"
-           (let ((entry (gethash "swank_process_list" cl-tron-mcp/tools:*tool-registry*)))
+           (let ((entry (gethash "swank_process_list" cl-tron-mcp/tools::*tool-registry*)))
              (when entry
                (ok (not (gethash :|requiresApproval|
-                                 (cl-tron-mcp/tools:tool-entry-descriptor entry))))))))
+                                 (cl-tron-mcp/tools::tool-entry-descriptor entry))))))))
 
 ;;; ============================================================
 ;;; Security: :launch-process in approval operations

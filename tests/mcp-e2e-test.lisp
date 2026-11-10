@@ -37,7 +37,7 @@
 
 (deftest mcp-tools-list-test
          (testing "List tools"
-                  (let* ((response (cl-tron-mcp/protocol:handle-tools-list 1))
+                  (let* ((response (cl-tron-mcp/protocol::handle-tools-list 1))
                          (parsed (parse-json-response response)))
                     (ok (getf parsed :|result|))
                     (let ((result (getf parsed :|result|)))
@@ -51,7 +51,7 @@
          (testing "Call health_check tool"
                   (let* ((params (list :|name| "health_check"
                                        :|arguments| nil))
-                         (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
+                         (response (cl-tron-mcp/protocol::handle-tool-call 1 params))
                          (parsed (parse-json-response response)))
                     (ok (getf parsed :|result|)))))
 
@@ -59,7 +59,7 @@
          (testing "Call runtime_stats tool"
                   (let* ((params (list :|name| "runtime_stats"
                                        :|arguments| nil))
-                         (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
+                         (response (cl-tron-mcp/protocol::handle-tool-call 1 params))
                          (parsed (parse-json-response response)))
                     (ok (getf parsed :|result|)))))
 
@@ -67,7 +67,7 @@
          (testing "Call system_info tool"
                   (let* ((params (list :|name| "system_info"
                                        :|arguments| nil))
-                         (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
+                         (response (cl-tron-mcp/protocol::handle-tool-call 1 params))
                          (parsed (parse-json-response response)))
                     (ok (getf parsed :|result|)))))
 
@@ -76,7 +76,7 @@
                   (let* ((args (list :|symbol_name| "CL:CAR"))
                          (params (list :|name| "inspect_function"
                                        :|arguments| args))
-                         (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
+                         (response (cl-tron-mcp/protocol::handle-tool-call 1 params))
                          (parsed (parse-json-response response)))
                     (ok (getf parsed :|result|)))))
 
@@ -84,7 +84,7 @@
          (testing "Call thread_list tool"
                   (let* ((params (list :|name| "thread_list"
                                        :|arguments| nil))
-                         (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
+                         (response (cl-tron-mcp/protocol::handle-tool-call 1 params))
                          (parsed (parse-json-response response)))
                     (ok (getf parsed :|result|)))))
 
@@ -107,7 +107,7 @@
                     (let* ((args (list :|port| (cl-tron-mcp/config:get-config :swank-port)))
                            (params (list :|name| "swank_connect"
                                          :|arguments| args))
-                           (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
+                           (response (cl-tron-mcp/protocol::handle-tool-call 1 params))
                            (parsed (parse-json-response response)))
                       (ok (getf parsed :|result|))
                       (unwind-protect
@@ -130,7 +130,7 @@
                           (let* ((args (list :|code| "(+ 1 2 3)"))
                                  (params (list :|name| "swank_eval"
                                                :|arguments| args))
-                                 (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
+                                 (response (cl-tron-mcp/protocol::handle-tool-call 1 params))
                                  (parsed (parse-json-response response)))
                             (ok (getf parsed :|result|))
                             (let ((result (getf parsed :|result|)))
@@ -147,7 +147,7 @@
          (testing "Protected tool returns approval_required with request_id"
                   (let* ((params (list :|name| "swank_eval"
                                        :|arguments| (list :|code| "(+ 1 2)")))
-                         (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
+                         (response (cl-tron-mcp/protocol::handle-tool-call 1 params))
                          (parsed (parse-json-response response)))
                     (ok (getf parsed :|result|)
                         "Should have result")
@@ -172,7 +172,7 @@
                   ;; First call returns approval_required - no Swank needed for this step
                   (let* ((params1 (list :|name| "swank_eval"
                                         :|arguments| (list :|code| "(+ 1 2)")))
-                         (resp1 (cl-tron-mcp/protocol:handle-tool-call 1 params1))
+                         (resp1 (cl-tron-mcp/protocol::handle-tool-call 1 params1))
                          (parsed1 (parse-json-response resp1))
                          (content (getf (getf parsed1 :|result|)
                                         :|content|))
@@ -196,7 +196,7 @@
                                                   :|arguments| (list :|code| "(+ 1 2)"
                                                                      :|approval_request_id| req-id
                                                                      :|approved| "true")))
-                                   (resp2 (cl-tron-mcp/protocol:handle-tool-call 2 params2))
+                                   (resp2 (cl-tron-mcp/protocol::handle-tool-call 2 params2))
                                    (parsed2 (parse-json-response resp2)))
                               (ok (getf parsed2 :|result|)
                                   "Re-invoke with approval should return result (or tool error)")
@@ -217,7 +217,7 @@
          (testing "approval/respond(approved: false) returns message for retry"
                   (let* ((params1 (list :|name| "swank_eval"
                                         :|arguments| (list :|code| "1")))
-                         (resp1 (cl-tron-mcp/protocol:handle-tool-call 1 params1))
+                         (resp1 (cl-tron-mcp/protocol::handle-tool-call 1 params1))
                          (parsed1 (parse-json-response resp1))
                          (content (getf (getf parsed1 :|result|)
                                         :|content|))
@@ -252,7 +252,7 @@
                       (unwind-protect
                           (let* ((params (list :|name| "swank_eval"
                                                :|arguments| (list :|code| "(+ 1 2)")))
-                                 (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
+                                 (response (cl-tron-mcp/protocol::handle-tool-call 1 params))
                                  (parsed (parse-json-response response))
                                  (content (getf (getf parsed :|result|)
                                                 :|content|))
@@ -276,7 +276,7 @@
          (testing "Call non-existent tool"
                   (let* ((params (list :|name| "nonexistent_tool_xyz"
                                        :|arguments| nil))
-                         (response (cl-tron-mcp/protocol:handle-tool-call 1 params))
+                         (response (cl-tron-mcp/protocol::handle-tool-call 1 params))
                          (parsed (parse-json-response response)))
                     (ok (or (getf parsed :|error|)
                             (and (getf parsed :|result|)

@@ -11,6 +11,26 @@ Scope note: `src/tools/validation.lisp` has uncommitted WIP in the main checkout
 
 ---
 
+## 0. Status update (same day, after rebasing onto `origin/main` 39d00b4)
+
+The review above was written against local `main` (baf9f89). `origin/main` is 8 commits ahead
+(including a jonathan→jzon migration). Re-checked against that base:
+
+| Finding | Status |
+|---|---|
+| S1 unauthenticated HTTP eval; Origin/Host guard | **Fixed** (feac90f) |
+| S2 approval not bound to call; S3 expiry not enforced | **Fixed** (feac90f), tests pass |
+| B6 any tool error disconnects Swank | **Fixed upstream** (cdf0f60; log now says "connection preserved") |
+| S4, S5, S6, B1, B2, B3, B4, B5, B7, B8, P*, D* | Still open (B1, B2, B5, B7 re-confirmed in source) |
+
+Test suite (SBCL 2.6.8, `scripts/run-tests.lisp`): all non-environmental tests pass, including the
+new ones. Five tests fail only in this environment: four launch `start-mcp.sh`/ECL subprocesses
+(one is killed with exit 137) and one needs `devenv`/`run-mcp.sh`. The suite also did not compile
+before this change: tests referenced the removed `cl-tron-mcp/unified` package and unexported
+symbols (fixed). Note `docs/agents/conventions.md` still says Jonathan; the code now uses jzon.
+
+---
+
 ## 1. What the project is (one paragraph)
 
 Tron is an MCP server (stdio / HTTP, JSON-RPC 2.0) that acts as a *Swank client* to a

@@ -22,7 +22,7 @@
     (testing "swank_debugger_state returns structured debugger state"
              (let ((cl-tron-mcp/swank::*debugger-thread* 123)
                   (cl-tron-mcp/swank::*debugger-level* 2))
-              (let ((result (cl-tron-mcp/tools:call-tool "swank_debugger_state" nil)))
+              (let ((result (cl-tron-mcp/tools::call-tool "swank_debugger_state" nil)))
                 (ok (listp result))
                 (ok (= 123 (getf result :thread)))
                 (ok (= 2 (getf result :level)))
@@ -30,7 +30,7 @@
 
 (deftest repl-get-restarts-tool-test
     (testing "repl_get_restarts accepts frame argument without signaling an error"
-             (let ((cl-tron-mcp/unified::*repl-connected* t)
+             (let ((cl-tron-mcp/tools::*repl-connected* t)
                   (cl-tron-mcp/swank::*debugger-thread* 456)
                   (cl-tron-mcp/swank::*debugger-level* 1))
               (bordeaux-threads:with-lock-held (cl-tron-mcp/swank::*event-mutex*)
@@ -40,7 +40,7 @@
                '(("RETRY" "Retry request") ("ABORT" "Abort request"))
                '((0 "(CAR 42)")))
               (let ((result (handler-case
-                                (cl-tron-mcp/tools:call-tool "repl_get_restarts" (list :|frame| 0))
+                                (cl-tron-mcp/tools::call-tool "repl_get_restarts" (list :|frame| 0))
                               (error (e) e))))
                 (ok (listp result))
                 (ok (equal '(("RETRY" "Retry request") ("ABORT" "Abort request"))
@@ -50,18 +50,18 @@
 
 (deftest tool-camelcase-argument-normalization-test
     (testing "camelCase MCP argument names are normalized to the snake_case keywords handlers validate"
-             (let ((original (symbol-function 'cl-tron-mcp/unified:repl-invoke-restart)))
+             (let ((original (symbol-function 'cl-tron-mcp/tools::repl-invoke-restart)))
                (unwind-protect
                    (progn
-                     (setf (symbol-function 'cl-tron-mcp/unified:repl-invoke-restart)
+                     (setf (symbol-function 'cl-tron-mcp/tools::repl-invoke-restart)
                            (lambda (&key restart_index)
                              (list :restart_index restart_index)))
                      (let ((result (handler-case
-                                       (cl-tron-mcp/tools:call-tool "repl_invoke_restart" (list :|restartIndex| 2))
+                                       (cl-tron-mcp/tools::call-tool "repl_invoke_restart" (list :|restartIndex| 2))
                                      (error (e) e))))
                        (ok (listp result))
                        (ok (= 2 (getf result :restart_index)))))
-                (setf (symbol-function 'cl-tron-mcp/unified:repl-invoke-restart) original)))))
+                (setf (symbol-function 'cl-tron-mcp/tools::repl-invoke-restart) original)))))
 
 (deftest swank-invoke-restart-clears-debugger-state-test
     (testing "swank-invoke-restart clears cached debugger state when Swank reports abort"
