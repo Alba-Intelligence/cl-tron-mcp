@@ -21,7 +21,9 @@ The review above was written against local `main` (baf9f89). `origin/main` is 8 
 | S1 unauthenticated HTTP eval; Origin/Host guard | **Fixed** (feac90f) |
 | S2 approval not bound to call; S3 expiry not enforced | **Fixed** (feac90f), tests pass |
 | B6 any tool error disconnects Swank | **Fixed upstream** (cdf0f60; log now says "connection preserved") |
-| S4, S5, S6, B1, B2, B3, B4, B5, B7, B8, P*, D* | Still open (B1, B2, B5, B7 re-confirmed in source) |
+| B5 `wait-for-response` could hang | **Fixed upstream** (bounded `condition-wait :timeout`). An earlier version of this table wrongly said it was still open; that was a mis-read of a grep. |
+| B1 `replace-function` undid itself; B2 `reload-package` fake success | **Fixed** (tests added; `*read-eval*` now nil in `replace-function` and `compile-and-load`, partly addressing S6). `get-source-location` is still a stub. |
+| S4, S5, S6 (rest), B3, B4, B7, B8, P*, D* | Still open (B7 re-confirmed in source) |
 
 Test suite (SBCL 2.6.8, `scripts/run-tests.lisp`): all non-environmental tests pass, including the
 new ones. Five tests fail only in this environment: four launch `start-mcp.sh`/ECL subprocesses
