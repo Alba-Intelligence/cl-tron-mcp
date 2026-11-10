@@ -85,6 +85,19 @@ Implemented with Hunchentoot.
 - **GET** `/lisply/ping-lisp` - Lisp connectivity test
 - **GET** `/lisply/tools/list` - List available tools
 
+### Browser-origin protection
+
+`/rpc` and `/mcp` return 403 unless the `Host` header (and `Origin`, when present) is a loopback
+name (`127.0.0.1`, `localhost`, `[::1]`). This blocks CSRF from web pages and DNS rebinding.
+Non-browser MCP clients send no `Origin` and are unaffected. The former `/lisply/lisp-eval`
+endpoint (unauthenticated `eval`) was removed; evaluate code through `repl_eval`, which is
+approval-gated.
+
+### Approval binding
+
+An approved `request_id` is valid only for the exact tool and arguments it was requested for,
+is single-use, and expires after the approval timeout (300 s).
+
 ### Default Port
 
 - **4006** (to avoid conflict with Swank on 4005)

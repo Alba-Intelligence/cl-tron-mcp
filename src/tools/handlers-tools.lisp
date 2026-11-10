@@ -23,6 +23,14 @@
              (not (eq k :|approved|)))
         append (list k v)))
 
+(defun approval-binding (tool-name arguments)
+  "Return a stable string fingerprint of TOOL-NAME plus ARGUMENTS (approval params excluded).
+An approval is valid only for the exact call it was requested for."
+  (with-standard-io-syntax
+    (let ((*package* (find-package :keyword)))
+      (prin1-to-string (list (string tool-name)
+                             (arguments-without-approval-params arguments))))))
+
 (defun check-tool-approval (tool-name arguments id)
   "Check if tool requires approval and handle accordingly.
 Returns approval_required response if approval needed, nil otherwise."
@@ -35,7 +43,8 @@ Returns approval_required response if approval needed, nil otherwise."
                          tool-name)
                         :eval)
                     (list :tool tool-name
-                          :arguments arguments))))
+                          :arguments arguments)
+                    :binding (approval-binding tool-name arguments))))
       (return-from check-tool-approval
         (cl-tron-mcp/json-compat:to-json (list :|jsonrpc| "2.0"
                                 :|id| id
@@ -60,7 +69,9 @@ Returns nil if no approval params present."
                    (string= (string approved)
                             "true")))
       (cond
-        ((cl-tron-mcp/security:consume-approved-request-id (string approval-request-id))
+        ((cl-tron-mcp/security:consume-approved-request-id
+          (string approval-request-id)
+          (approval-binding tool-name arguments))
          (return-from handle-approval-reinvocation
            (handle-tool-call-run tool-name
                                  (arguments-without-approval-params arguments)

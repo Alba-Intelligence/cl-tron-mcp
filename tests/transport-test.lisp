@@ -39,3 +39,16 @@
              (ok (= cl-tron-mcp/transport:*rate-limit-requests-per-minute* 60))
              (ok (= cl-tron-mcp/transport:*max-request-size* (* 10 1024 1024)))
              (ok (= cl-tron-mcp/transport:*http-connection-timeout* 10))))
+
+(deftest http-header-host-part-test
+  (testing "Host/Origin parsing extracts the bare hostname"
+    (ok (string= (cl-tron-mcp/transport::header-host-part "http://localhost:4006") "localhost"))
+    (ok (string= (cl-tron-mcp/transport::header-host-part "127.0.0.1:4006") "127.0.0.1"))
+    (ok (string= (cl-tron-mcp/transport::header-host-part "http://[::1]:4006/x") "[::1]"))
+    (ok (string= (cl-tron-mcp/transport::header-host-part "https://evil.example") "evil.example"))
+    (ok (not (member (cl-tron-mcp/transport::header-host-part "http://localhost.evil.example")
+                     cl-tron-mcp/transport::*allowed-http-hosts* :test #'string=)))))
+
+(deftest lisp-eval-endpoint-removed-test
+  (testing "The unauthenticated eval handler no longer exists"
+    (ok (not (fboundp (find-symbol "LISP-EVAL-HANDLER" :cl-tron-mcp/transport))))))

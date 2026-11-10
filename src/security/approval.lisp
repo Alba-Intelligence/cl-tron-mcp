@@ -23,7 +23,9 @@
 (defvar *approval-counter-lock* (bt:make-lock "approval-counter")
   "Lock for synchronizing access to *approval-request-counter*.")
 
-(defstruct approval-request id operation details timestamp expires response actor approved-at)
+;; BINDING is an opaque EQUAL-comparable value (e.g. a tool+arguments fingerprint) fixed at
+;; request time. An approval can only be consumed by a call presenting the same binding.
+(defstruct approval-request id operation details timestamp expires response actor approved-at binding)
 
 (defun operation-requires-approval (operation)
   (member operation *approval-required-operations*))
@@ -125,8 +127,10 @@ Uses atomic counter to ensure uniqueness even when called concurrently."
             *approval-request-counter*
             (random 10000))))
 
-(defun request-approval (operation details &key (timeout *approval-timeout*) (actor "unknown"))
-  "Create an approval request. ACTOR identifies who/what is requesting approval."
+(defun request-approval (operation details &key (timeout *approval-timeout*) (actor "unknown") binding)
+  "Create an approval request. ACTOR identifies who/what is requesting approval.
+BINDING pins the approval to one specific call (see CONSUME-APPROVED-REQUEST-ID)."
+  (cleanup-all-approvals)
   (let* ((req-id (generate-approval-request-id))
          (now (get-unix-time))
          (request (make-approval-request
@@ -135,33 +139,47 @@ Uses atomic counter to ensure uniqueness even when called concurrently."
                    :details details
                    :timestamp now
                    :expires (+ now timeout)
-                   :actor actor)))
+                   :actor actor
+                   :binding binding)))
     (bt:with-lock-held (*approval-lock*)
       (setf (gethash req-id *pending-approvals*) request))
     request))
 
 (defun approval-response (request-id &optional response &key (actor "user"))
   "Record user response for request-id. ACTOR identifies who approved/denied.
-When response is :approved, add to *approved-request-ids* with timestamp for cleanup."
+Signals an error if the request is unknown or has expired (the timeout is enforced here).
+When response is :approved, the approval (with its expiry and binding) is stored in
+*approved-request-ids* for one-time consumption."
   (bt:with-lock-held (*approval-lock*)
     (let ((request (gethash request-id *pending-approvals*)))
       (unless request
         (error "Approval request ~a not found" request-id))
+      (when (> (get-unix-time) (approval-request-expires request))
+        (remhash request-id *pending-approvals*)
+        (error "Approval request ~a has expired; invoke the tool again" request-id))
       (when response
         (setf (approval-request-response request) response)
         (setf (approval-request-approved-at request) (get-unix-time))
         (setf (approval-request-actor request) actor)
         (remhash request-id *pending-approvals*)
         (when (eq response :approved)
-          (setf (gethash request-id *approved-request-ids*) (get-unix-time))))
+          (setf (gethash request-id *approved-request-ids*)
+                (list :time (get-unix-time)
+                      :expires (approval-request-expires request)
+                      :binding (approval-request-binding request)))))
       (approval-request-response request))))
 
-(defun consume-approved-request-id (request-id)
-  "If request-id was approved (one-time), remove it and return t. Otherwise return nil."
+(defun consume-approved-request-id (request-id &optional (binding nil binding-p))
+  "One-time consume of an approved REQUEST-ID. Returns T only if the approval exists, has not
+expired, and (when BINDING is supplied) its stored binding is EQUAL to BINDING. The ID is
+removed on any lookup hit, so a mismatched or expired attempt also burns the approval."
   (bt:with-lock-held (*approval-lock*)
-    (when (gethash request-id *approved-request-ids*)
-      (remhash request-id *approved-request-ids*)
-      t)))
+    (let ((entry (gethash request-id *approved-request-ids*)))
+      (when entry
+        (remhash request-id *approved-request-ids*)
+        (and (<= (get-unix-time) (getf entry :expires))
+             (or (not binding-p)
+                 (equal binding (getf entry :binding))))))))
 
 (defun cleanup-expired-approvals ()
   "Remove expired approval requests from *pending-approvals*."
@@ -183,8 +201,9 @@ When response is :approved, add to *approved-request-ids* with timestamp for cle
   (bt:with-lock-held (*approval-lock*)
     (let ((now (get-unix-time))
           (expired-count 0))
-      (maphash (lambda (req-id timestamp)
-                 (when (> (- now timestamp) max-age)
+      (maphash (lambda (req-id entry)
+                 (when (or (> (- now (getf entry :time)) max-age)
+                           (> now (getf entry :expires)))
                    (remhash req-id *approved-request-ids*)
                    (incf expired-count)))
                *approved-request-ids*)
