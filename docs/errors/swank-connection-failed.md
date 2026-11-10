@@ -18,7 +18,7 @@ To start Swank in SBCL:
 
 ```lisp
 (ql:quickload :swank)
-(swank:create-server :port 4006 :dont-close t)
+(swank:create-server :port 4005 :dont-close t)
 ```
 
 ## Common Causes
@@ -31,28 +31,28 @@ To start Swank in SBCL:
 ## Resolution Steps
 
 1. Verify Swank is running in your SBCL session
-2. Check the port number matches (default: 4006)
+2. Check the port number matches (default: 4005)
 3. Ensure no firewall is blocking the connection
-4. Try connecting with `swank_connect :port 4006`
+4. Try connecting with `swank_connect :port 4005`
 
 ## Example
 
 ```lisp
 ;; Start Swank in SBCL
 (ql:quickload :swank)
-(swank:create-server :port 4006 :dont-close t)
+(swank:create-server :port 4005 :dont-close t)
 
 ;; Connect from MCP
-(swank_connect :port 4006)
+(swank_connect :port 4005)
 ```
 
 ## Related Tools
 
 - `swank_connect` - Connect to Swank
 - `swank_disconnect` - Disconnect from Swank
-- `swank_connected_p` - Check connection status
+- `swank_status` - Check connection status
 
 ## See Also
 
 - [Swank Integration Guide](../swank-integration.md)
-- [Getting Started](../agents/getting-started.md)
+- [Getting Started](../using/quickstart.md)

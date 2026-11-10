@@ -58,7 +58,7 @@ Use these tools for hot-reload:
 
 ## Documentation
 
-For detailed hot-reload patterns: resources/read :uri \"docs/agents/workflows.md\" (hot-reload section)
+For detailed hot-reload patterns: resources/read :uri \"docs/using/quickstart.md\", then prompts/get \"hot-reload-workflow\"
 
 ## Token Optimization
 

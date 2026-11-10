@@ -1,5 +1,7 @@
 # CL-TRON-MCP Token Usage Benchmark Report
 
+> **Status: archived.** Historical benchmark of the February 2026 token-optimization work. Its tool counts and doc layout are outdated; the layout changed on 2026-11-10 (see `docs/plans/docs-refactor.md`).
+
 **Generated:** 2026-02-27 13:07:06
 
 **Purpose:** Measure token savings from refactoring work

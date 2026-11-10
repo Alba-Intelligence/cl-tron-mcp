@@ -21,7 +21,7 @@ This error occurs when attempting to use Swank functionality without an active c
 
    ```lisp
    (ql:quickload :swank)
-   (swank:create-server :port 4006)
+   (swank:create-server :port 4005)
    ```
 
 3. Check connection status: `swank_status`
@@ -31,10 +31,10 @@ This error occurs when attempting to use Swank functionality without an active c
 ```lisp
 ;; Start Swank server in SBCL
 (ql:quickload :swank)
-(swank:create-server :port 4006 :dont-close t)
+(swank:create-server :port 4005 :dont-close t)
 
 ;; Connect from Tron
-(swank_connect :host "localhost" :port 4006)
+(swank_connect :host "localhost" :port 4005)
 
 ;; Now use Swank tools
 (swank_eval :code "(+ 1 2)")

@@ -21,11 +21,11 @@ Call these MCP methods in order. After that you have everything needed to connec
 
 **resources/list** — Returns URIs of all documentation files.
 
-## Step 2: Read the agent guide
+## Step 2: Read the quickstart
 
-**resources/read** with param `uri` = `AGENTS.md` (or `file://AGENTS.md`).
+**resources/read** with param `uri` = `docs/using/quickstart.md`.
 
-That document explains: what Tron is, the one long-running Lisp session pattern, connection, tool categories, workflows, troubleshooting, and JSON/key conventions.
+It explains the one long-running Lisp session pattern, how to connect, which tool to use for each job, the approval exchange, and a typical debugging loop. Also see `docs/using/tools.md` (all tools), `docs/using/approval.md` and `docs/using/errors.md`.
 
 ## Step 3: List guided workflows
 
@@ -46,7 +46,7 @@ Returns step-by-step instructions to check/start Swank, connect, and verify.
 | Order | Method         | Purpose                          |
 |-------|----------------|----------------------------------|
 | 1     | resources/list | Documentation URIs               |
-| 2     | resources/read | Read AGENTS.md (full guide)      |
+| 2     | resources/read | Read docs/using/quickstart.md    |
 | 3     | prompts/list   | Workflow names                   |
 | 4     | prompts/get    | getting-started (connection)     |
 | 5     | tools/list     | All tools and parameters         |

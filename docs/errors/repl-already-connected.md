@@ -25,13 +25,13 @@ This error occurs when attempting to connect to a REPL when a connection is alre
 ```lisp
 ;; Check current status
 (repl_status)
-;; => {:connected true, :type :swank, :host "localhost", :port 4006}
+;; => {:connected true, :type :swank, :host "localhost", :port 4005}
 
 ;; Disconnect first
 (repl_disconnect)
 
 ;; Now reconnect
-(repl_connect :host "localhost" :port 4006)
+(repl_connect :host "localhost" :port 4005)
 ```
 
 ## Related Tools

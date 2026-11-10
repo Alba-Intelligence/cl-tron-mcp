@@ -38,25 +38,22 @@ Follow the Google Common Lisp Style Guide with project-specific additions:
 
 ### JSON-RPC Response Format
 
-All JSON-RPC encoding and decoding uses **Jonathan** (Common Lisp JSON library: `jonathan:parse`, `jonathan:to-json`). Use lowercase keys for MCP compatibility.
+All JSON-RPC encoding and decoding goes through `cl-tron-mcp/json-compat` (`to-json`, `parse`), a
+shim over `com.inuoe.jzon` that keeps jonathan-style semantics: keyword plists are JSON objects.
+Do not call jzon or jonathan directly in new code. Use lowercase keys for MCP compatibility.
 
-**Critical**: MCP responses MUST use lowercase JSON keys:
+**Critical**: the Lisp reader upcases unescaped keywords, so MCP keys must be pipe-escaped:
 
 ```lisp
 ;; Correct - lowercase keys
-(jonathan:to-json (list :|jsonrpc| "2.0" :|id| id :|result| result))
+(cl-tron-mcp/json-compat:to-json (list :|jsonrpc| "2.0" :|id| id :|result| result))
 
-;; Incorrect - uppercase keys will break MCP clients
-(jonathan:to-json (list :jsonrpc "2.0" :id id :result result))
+;; Incorrect - serialises as "JSONRPC", "ID", ... and breaks MCP clients
+(cl-tron-mcp/json-compat:to-json (list :jsonrpc "2.0" :id id :result result))
 ```
 
-For hash tables, use `"|key|"` syntax for lowercase output:
-
-```lisp
-(let ((h (make-hash-table)))
-  (setf (gethash "|name|" h) "value")
-  (jonathan:to-json h))
-```
+The same applies to hash-table keys used as descriptors (see `register-tool`: `:|name|`,
+`:|inputSchema|`). Parsed requests come back as plists with pipe-escaped keys (`(getf params :|name|)`).
 
 ### Documentation Requirements
 

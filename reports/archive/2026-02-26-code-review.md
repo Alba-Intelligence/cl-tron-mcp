@@ -1,5 +1,7 @@
 # Code Review Report: cl-tron-mcp
 
+> **Status: archived.** Superseded by [2026-11-10-code-quality-review.md](../2026-11-10-code-quality-review.md). The per-item status of this report was never tracked and has NOT been re-verified item by item. Known: the Swank read/eval timeout problem (items 1.3, 2.1) is fixed (bounded `condition-wait`).
+
 **Date:** 2026-02-26  
 **Scope:** Full codebase review focusing on potential bugs and logic bugs affecting long-running, non-blocking Lisp sessions for AI agents  
 **Files Analyzed:** 13 core source files (transport, protocol, swank client, unified client, security, tools)

@@ -56,3 +56,7 @@ result
 # pre-commit
 .pre-commit-config.yaml
 quicklisp.lisp
+
+# Diagnostic logs
+reports/*.log
+.oh-my-opencode-pi-stats.json

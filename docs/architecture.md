@@ -16,7 +16,7 @@ Typical startup:
 
 ```lisp
 (ql:quickload :swank)
-(swank:create-server :port 4006 :dont-close t)
+(swank:create-server :port 4005 :dont-close t)
 ```
 
 ### 2. Tron MCP server
@@ -48,9 +48,9 @@ That flow is what enables the "debug -> inspect -> patch -> continue" workflow w
 | Server lifecycle | `src/core/server.lisp` |
 | MCP protocol dispatch | `src/protocol/handlers*.lisp` |
 | stdio / HTTP transport | `src/transport/stdio.lisp`, `src/transport/http-hunchentoot.lisp` |
-| Tool registry | `src/tools/registry.lisp`, `src/tools/register-tools.lisp`, `src/tools/*.lisp` |
+| Tool registry | `src/tools/registry.lisp`, `src/tools/registry.lisp`, `src/tools/*.lisp` |
 | Swank client | `src/swank/swank-connection.lisp`, `src/swank/swank-rpc.lisp`, `src/swank/swank-events.lisp`, `src/swank/swank-api.lisp` |
-| Unified high-level REPL API | `src/unified/client.lisp` |
+| Unified high-level REPL API | `src/tools/unified-tools.lisp` |
 | Debugger wrappers | `src/debugger/` |
 | Inspection | `src/inspector/` |
 | Local hot-reload fallback | `src/hot-reload/core.lisp` |
@@ -80,5 +80,5 @@ Other tool families (inspector, monitor, xref, logging, security, managed proces
 
 - [starting-the-mcp.md](starting-the-mcp.md)
 - [code-reference.md](code-reference.md)
-- [tools/index.md](tools/index.md)
+- [using/tools.md](using/tools.md)
 - [../AGENTS.md](../AGENTS.md)

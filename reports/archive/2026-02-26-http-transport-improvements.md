@@ -1,5 +1,7 @@
 # HTTP Transport Improvements - Implementation Summary
 
+> **Status: archived.** Historical implementation summary. Note: HTTP security was reviewed again on 2026-11-10 (see the code-quality review, S1/P1/P2).
+
 ## Overview
 
 Implemented 6 HTTP transport security and reliability improvements in `src/transport/http-hunchentoot.lisp` based on code review recommendations in `reports/code-review.md`.

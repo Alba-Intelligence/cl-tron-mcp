@@ -42,11 +42,8 @@ jobs:
           sbcl-version: ${{ matrix.sbcl-version }}
 
       - name: Run tests
-        run: |
-          sbcl --non-interactive \
-            --eval "(ql:quickload :rove :silent t)" \
-            --eval "(ql:quickload :cl-tron-mcp/tests :silent t)" \
-            --eval "(rove:run :cl-tron-mcp/tests)"
+        # scripts/run-tests.lisp exits non-zero when any test fails.
+        run: sbcl --noinform --non-interactive --load scripts/run-tests.lisp
 
       - name: Run tutorial
         run: |
@@ -122,12 +119,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check README links
+      - name: Set up Common Lisp
+        uses: 40ants/setup-lisp@v2
+        with:
+          asdf-system: cl-tron-mcp
+
+      - name: Check generated docs are fresh and links/tool names are valid
+        # tests/docs-test.lisp runs as part of the suite; this job regenerates and fails on drift.
         run: |
-          if grep -q "\[.*\](.*\.md)" README.md; then
-            echo "Checking markdown links..."
-            echo "Basic check passed"
-          fi
+          sbcl --noinform --non-interactive --load scripts/gen-docs.lisp
+          git diff --exit-code -- docs/using
 
       - name: Verify tutorial runs
         run: |

@@ -25,13 +25,13 @@ This error occurs when attempting to connect to a Swank server when a connection
 ```lisp
 ;; Check current status
 (swank_status)
-;; => {:connected true, :host "localhost", :port 4006}
+;; => {:connected true, :host "localhost", :port 4005}
 
 ;; Disconnect first
 (swank_disconnect)
 
 ;; Now reconnect
-(swank_connect :host "localhost" :port 4006)
+(swank_connect :host "localhost" :port 4005)
 ```
 
 ## Related Tools

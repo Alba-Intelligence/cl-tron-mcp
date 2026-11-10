@@ -42,5 +42,5 @@ This error occurs when a package parameter is not a valid Common Lisp package na
 ## Related Tools
 
 - `inspect_package` - Inspect a package
-- `list_packages` - List all packages
+- `inspect_package` - Inspect a package
 - `who_calls` - Find callers (accepts package parameter)

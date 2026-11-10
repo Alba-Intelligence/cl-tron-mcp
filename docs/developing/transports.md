@@ -207,6 +207,5 @@ curl -X POST http://127.0.0.1:4006/rpc \
 
 ## See Also
 
-- [Getting Started](getting-started.md) - Connection setup
-- [Troubleshooting](troubleshooting.md) - Common issues
-- [Workflows](workflows.md) - Usage patterns
+- [Quickstart](../using/quickstart.md) - Connection setup
+- [Troubleshooting](../using/troubleshooting.md) - Common issues

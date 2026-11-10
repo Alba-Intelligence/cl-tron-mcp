@@ -63,7 +63,7 @@ Use these tools for profiling:
 
 ## Documentation
 
-For detailed profiling patterns: resources/read :uri \"docs/agents/workflows.md\" (profiling section)
+For detailed profiling patterns: resources/read :uri \"docs/using/quickstart.md\", then prompts/get \"profiling-workflow\"
 
 ## Token Optimization
 

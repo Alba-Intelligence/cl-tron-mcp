@@ -1,5 +1,7 @@
 # MCP Stdio Diagnostic Results
 
+> **Status: archived.** Historical diagnostic run. Not maintained; re-run `scripts/debug-mcp-stdio.sh` for current results.
+
 Run date: 2026-02-13. These tests diagnose why the MCP server works from CLI but fails when launched by AI assistants (Kilocode, Opencode, Cursor).
 
 ## Test 1: Capture what client receives (stdio + start-mcp.sh)

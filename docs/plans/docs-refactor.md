@@ -1,6 +1,22 @@
 # Plan: one coherent documentation system
 
-Status: **PLAN ONLY** (nothing below is executed yet). Written 2026-11-10.
+Status: **EXECUTED 2026-11-10** (all phases D0-D6). Maintainer decisions: delete what is redundant;
+remove phantom tools from user docs after recording missing capabilities in `roadmap.md`; commit generated docs.
+
+Deviations from the plan as written:
+
+- D0/D6 were merged: the doc checks were written as failing tests (`tests/docs-test.lisp`) and the docs were
+  fixed until they passed, instead of a report-only phase.
+- `docs/architecture.md`, `starting-the-mcp.md`, `swank-integration.md`, `DEVELOPERS.md`, `code-reference.md`
+  stayed at `docs/` (moving them would only have churned links). `docs/developing/` holds the new files plus
+  `conventions.md` and `transports.md`.
+- Per-tool pages `docs/tools/<tool>.md` and `docs/errors/*.md` were kept (error codes and tools reference
+  them), fixed, and are now checked; the 8 category pages and `docs/tools/index.md` were deleted.
+- `tools.md` lists name, approval level and one-line description only; parameters come from `tools/list`
+  (schema property names are lowercased, so a generated parameter list would be misleading).
+- Found while writing: the docs gave 4006 as the Swank port, but Swank defaults to 4005 (4006 is the MCP HTTP
+  port). Corrected everywhere.
+- Not verified: the CI workflow changes (cannot run GitHub Actions locally).
 Scope: `AGENTS.md`, `CLAUDE.md`, `agents/`, `prompts/*.md`, `docs/`, `reports/`, `tutorial/`, and the
 development workflow they describe.
 

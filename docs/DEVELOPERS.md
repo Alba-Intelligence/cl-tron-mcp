@@ -22,7 +22,7 @@ The most important design constraint is that **the live Lisp state remains in th
 | Change Swank connection or debugger behavior | `src/swank/`, `src/unified/`, `src/debugger/` |
 | Change inspection behavior | `src/inspector/`, `src/tools/inspector-tools.lisp` |
 | Change hot reload behavior | `src/hot-reload/core.lisp`, `src/tools/hot-reload-tools.lisp` |
-| Change approval flow | `src/security/`, `src/protocol/handlers-tools.lisp` |
+| Change approval flow | `src/security/`, `src/tools/handlers-tools.lisp` |
 | Change docs/resources/prompt discoverability | `src/resources/`, `src/prompts/`, `AGENTS.md`, `docs/` |
 
 ## Core Files
@@ -37,7 +37,7 @@ The most important design constraint is that **the live Lisp state remains in th
 ### Protocol Handlers
 
 - [`src/protocol/handlers.lisp`](../src/protocol/handlers.lisp) - top-level dispatch
-- [`src/protocol/handlers-tools.lisp`](../src/protocol/handlers-tools.lisp) - tool execution and approval flow
+- [`src/tools/handlers-tools.lisp`](../src/tools/handlers-tools.lisp) - tool execution and approval flow
 - [`src/protocol/handlers-resources.lisp`](../src/protocol/handlers-resources.lisp) - resources API
 - [`src/protocol/handlers-prompts.lisp`](../src/protocol/handlers-prompts.lisp) - prompts API
 
@@ -47,13 +47,13 @@ The most important design constraint is that **the live Lisp state remains in th
 - [`src/swank/swank-rpc.lisp`](../src/swank/swank-rpc.lisp)
 - [`src/swank/swank-events.lisp`](../src/swank/swank-events.lisp)
 - [`src/swank/swank-api.lisp`](../src/swank/swank-api.lisp)
-- [`src/unified/client.lisp`](../src/unified/client.lisp)
+- [`src/tools/unified-tools.lisp`](../src/tools/unified-tools.lisp)
 
 ### Tool Registration
 
 - [`src/tools/macros.lisp`](../src/tools/macros.lisp) - tool-definition helpers
 - [`src/tools/registry.lisp`](../src/tools/registry.lisp) - descriptors and registry access
-- [`src/tools/register-tools.lisp`](../src/tools/register-tools.lisp) - bulk registration
+- [`src/tools/registry.lisp`](../src/tools/registry.lisp) - bulk registration
 
 ## Tool Categories
 
@@ -118,4 +118,4 @@ When you change behavior, update the docs closest to that behavior:
 - new or changed tool -> `docs/tools/`
 - new subsystem or source map changes -> `docs/code-reference.md`
 - contributor workflow changes -> `CONTRIBUTING.md`
-- agent discoverability changes -> `AGENTS.md`, `docs/agents/`
+- agent discoverability changes -> `docs/using/`, `src/prompts/individual/`

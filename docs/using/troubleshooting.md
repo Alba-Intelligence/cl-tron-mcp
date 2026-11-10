@@ -140,10 +140,10 @@ Or kill the process in the terminal where the server is running.
 
 ```lisp
 ;; Start Swank in your Lisp session
-(swank:create-server :port 4006 :dont-close t)
+(swank:create-server :port 4005 :dont-close t)
 
 ;; Then connect from MCP
-(cl-tron-mcp/unified:repl-connect :host "127.0.0.1" :port 4006)
+(repl_connect :host "127.0.0.1" :port 4005)
 ```
 
 ### Swank Evaluation Hangs
@@ -232,10 +232,10 @@ Or kill the process in the terminal where the server is running.
 
 ### Check Documentation
 
-1. [Getting Started](getting-started.md) - Connection setup
-2. [Workflows](workflows.md) - Usage patterns
-3. [Tool Reference](tool-reference.md) - Tool details
-4. [Conventions](conventions.md) - Coding standards
+1. [Quickstart](quickstart.md) - Connection and the basic loop
+2. [Tool catalogue](tools.md) - Every tool, generated from the registry
+3. [Approval](approval.md) - The approval exchange
+4. [Error codes](errors.md) - Code, meaning, fix
 
 ### Debug Mode
 
@@ -325,6 +325,6 @@ Export dependencies declaratively using `env.LD_LIBRARY_PATH` in `devenv.nix` ra
 
 ## See Also
 
-- [Transport & Logging](transport-logging.md) - Transport configuration
-- [Getting Started](getting-started.md) - Setup guide
-- [Workflows](workflows.md) - Common workflows
+- [Transports](../developing/transports.md) - Transport configuration and logging
+- [Quickstart](quickstart.md) - Setup and the basic loop
+- [Starting the MCP](../starting-the-mcp.md) - Installation and startup

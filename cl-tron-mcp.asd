@@ -432,7 +432,7 @@
   :description "Test suite for cl-tron-mcp"
   :author "Emmanuel"
   :licence "Apache"
-  :depends-on (:cl-tron-mcp :rove)
+  :depends-on (:cl-tron-mcp :rove :cl-ppcre)
   :serial t
  :components (
     (:file "tests/package")
@@ -451,7 +451,8 @@
     (:file "tests/profiler-test")
     (:file "tests/xref-test")
     (:file "tests/logging-test")
-    (:file "tests/process-manager-test")))
+    (:file "tests/process-manager-test")
+    (:file "tests/docs-test")))
 
 (asdf:defsystem :cl-tron-mcp/tests/integration
   :name "cl-tron-mcp Integration Tests"

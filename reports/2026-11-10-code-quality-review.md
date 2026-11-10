@@ -1,5 +1,7 @@
 # Code Quality Review — 2026-11-10
 
+**Status: partly fixed.** See section 0 for the per-finding table.
+
 **Method:** static read of `AGENTS.md`, `agents/`, `docs/`, `reports/`, `prompts/`, and the
 security / protocol / transport / swank / hot-reload / sbcl / tools / resources sources.
 **Not done:** nothing was executed (`sbcl` is blocked in the review sandbox), so the test
@@ -23,13 +25,15 @@ The review above was written against local `main` (baf9f89). `origin/main` is 8 
 | B6 any tool error disconnects Swank | **Fixed upstream** (cdf0f60; log now says "connection preserved") |
 | B5 `wait-for-response` could hang | **Fixed upstream** (bounded `condition-wait :timeout`). An earlier version of this table wrongly said it was still open; that was a mis-read of a grep. |
 | B1 `replace-function` undid itself; B2 `reload-package` fake success | **Fixed** (tests added; `*read-eval*` now nil in `replace-function` and `compile-and-load`, partly addressing S6). `get-source-location` is still a stub. |
-| S4, S5, S6 (rest), B3, B4, B7, B8, P*, D* | Still open (B7 re-confirmed in source) |
+| K1 docs drift, K2 always-on doc context, T2 CI exit status | **Fixed** by the documentation refactor (`docs/plans/docs-refactor.md`): `AGENTS.md` is a short developer entry point, agent docs live in `docs/using/`, tool lists are generated, `tests/docs-test.lisp` checks docs against code, CI runs `scripts/run-tests.lisp` (non-zero exit on failure). |
+| E1 (new) ECL cannot compile `src/installation/installation.lisp` | **Open.** Found by running `ecl` on the tree; the file is identical to `origin/main`, so this predates the work above. `ecl-can-quickload-cl-tron-mcp` fails for this reason, not because of the environment. Cause not yet investigated. |
+| D3-D5 dead tool-definition code, S4, S5, S6 (rest), B3, B4, B7, B8, P*, D1-D2, D6-D8 | Still open (B7 re-confirmed in source) |
 
 Test suite (SBCL 2.6.8, `scripts/run-tests.lisp`): all non-environmental tests pass, including the
-new ones. Five tests fail only in this environment: four launch `start-mcp.sh`/ECL subprocesses
-(one is killed with exit 137) and one needs `devenv`/`run-mcp.sh`. The suite also did not compile
+new ones. Five tests fail: three launch `start-mcp.sh`/ECL subprocesses and one needs `devenv`/`run-mcp.sh`
+(environmental, not investigated), and `ecl-can-quickload-cl-tron-mcp` fails on a real ECL compile error (E1). The suite also did not compile
 before this change: tests referenced the removed `cl-tron-mcp/unified` package and unexported
-symbols (fixed). Note `docs/agents/conventions.md` still says Jonathan; the code now uses jzon.
+symbols (fixed). The Jonathan references in the conventions doc were corrected in the documentation refactor (the code uses jzon via `json-compat`).
 
 ---
 

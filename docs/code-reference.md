@@ -52,7 +52,7 @@ The canonical ASDF definitions live in [`cl-tron-mcp.asd`](../cl-tron-mcp.asd).
 
 - [`src/protocol/handlers.lisp`](../src/protocol/handlers.lisp) - top-level request routing
 - [`src/protocol/handlers-initialize.lisp`](../src/protocol/handlers-initialize.lisp) - `initialize`
-- [`src/protocol/handlers-tools.lisp`](../src/protocol/handlers-tools.lisp) - `tools/list`, `tools/call`, `approval/respond`
+- [`src/tools/handlers-tools.lisp`](../src/tools/handlers-tools.lisp) - `tools/list`, `tools/call`, `approval/respond`
 - [`src/protocol/handlers-resources.lisp`](../src/protocol/handlers-resources.lisp) - `resources/list`, `resources/read`
 - [`src/protocol/handlers-prompts.lisp`](../src/protocol/handlers-prompts.lisp) - `prompts/list`, `prompts/get`
 - [`src/protocol/handlers-ping.lisp`](../src/protocol/handlers-ping.lisp) - ping/health-style method
@@ -61,11 +61,11 @@ The canonical ASDF definitions live in [`cl-tron-mcp.asd`](../cl-tron-mcp.asd).
 
 - [`src/tools/registry.lisp`](../src/tools/registry.lisp) - in-memory registry and descriptor lookup
 - [`src/tools/macros.lisp`](../src/tools/macros.lisp) - `define-validated-tool`, `define-simple-tool`
-- [`src/tools/register-tools.lisp`](../src/tools/register-tools.lisp) - bulk registration
+- [`src/tools/registry.lisp`](../src/tools/registry.lisp) - bulk registration
 
 ## Tool Surface
 
-The current registry contains **91 tools**.
+The tool list is generated from the registry: see [using/tools.md](using/tools.md).
 
 | Category | File | Count | Notes |
 | --- | --- | ---: | --- |
@@ -84,7 +84,7 @@ The current registry contains **91 tools**.
 | Managed processes | `src/tools/process-tools.lisp` | 4 | Launch/list/status/kill SBCL+Swank children |
 | Unified REPL | `src/tools/unified-tools.lisp` | 24 | Preferred `repl_*` workflow for agents |
 
-Use [docs/tools/index.md](tools/index.md) for the human-readable catalog of every tool page.
+Use [using/tools.md](using/tools.md) for the human-readable catalog of every tool page.
 
 ## Subsystem Guide
 
@@ -96,7 +96,7 @@ Read these first if the change touches connection state, debugger behavior, eval
 - [`src/swank/swank-rpc.lisp`](../src/swank/swank-rpc.lisp)
 - [`src/swank/swank-events.lisp`](../src/swank/swank-events.lisp)
 - [`src/swank/swank-api.lisp`](../src/swank/swank-api.lisp)
-- [`src/unified/client.lisp`](../src/unified/client.lisp)
+- [`src/tools/unified-tools.lisp`](../src/tools/unified-tools.lisp)
 
 ### Debugger Flow
 

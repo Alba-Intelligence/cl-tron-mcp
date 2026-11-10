@@ -63,11 +63,11 @@ sbcl --non-interactive \
 
 ### Swank integration tests
 
-Some tests expect a live Swank server on `127.0.0.1:4006`:
+Some tests expect a live Swank server on `127.0.0.1:4005`:
 
 ```lisp
 (ql:quickload :swank)
-(swank:create-server :port 4006 :dont-close t)
+(swank:create-server :port 4005 :dont-close t)
 ```
 
 ## Local Startup Checks
@@ -97,4 +97,4 @@ curl http://127.0.0.1:4006/health
 
 - [docs/DEVELOPERS.md](docs/DEVELOPERS.md) - subsystem map and extension points
 - [docs/code-reference.md](docs/code-reference.md) - source-level index
-- [docs/tools/index.md](docs/tools/index.md) - tool reference
+- [docs/using/tools.md](docs/using/tools.md) - tool reference

@@ -1,5 +1,7 @@
 # Swank Client Fixes Summary
 
+> **Status: archived.** Historical implementation summary.
+
 **Date:** 2026-02-26
 **File:** `src/swank/client.lisp`
 **Status:** All fixes implemented and tested

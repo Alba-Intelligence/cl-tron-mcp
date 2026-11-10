@@ -54,7 +54,7 @@ Use these tools for debugging:
 
 ## Documentation
 
-For detailed debugging patterns: resources/read :uri \"docs/agents/workflows.md\" (debugging section)
+For detailed debugging patterns: resources/read :uri \"docs/using/quickstart.md\", then prompts/get \"debugging-workflow\"
 
 ## Token Optimization
 

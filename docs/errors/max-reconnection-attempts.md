@@ -31,10 +31,10 @@ This error occurs when the system has attempted to reconnect the maximum number 
 
 ;; Verify network connectivity
 ;; In shell:
-telnet localhost 4006
+telnet localhost 4005
 
 ;; Manually reconnect
-(swank_connect :host "localhost" :port 4006)
+(swank_connect :host "localhost" :port 4005)
 ```
 
 ## Related Tools

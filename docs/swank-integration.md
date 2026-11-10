@@ -116,7 +116,7 @@ In your Lisp process:
 
 ```lisp
 (ql:quickload :swank)
-(swank:create-server :port 4006)
+(swank:create-server :port 4005)
 ```
 
 ### Connecting from MCP
@@ -126,7 +126,7 @@ Via MCP tool call:
 ```json
 {
   "name": "swank_connect",
-  "arguments": { "host": "127.0.0.1", "port": 4006 }
+  "arguments": { "host": "127.0.0.1", "port": 4005 }
 }
 ```
 
@@ -135,7 +135,7 @@ Or using the unified interface:
 ```json
 {
   "name": "repl_connect",
-  "arguments": { "type": "swank", "port": 4006 }
+  "arguments": { "type": "swank", "port": 4005 }
 }
 ```
 
@@ -267,5 +267,5 @@ All shared state uses mutexes and condition variables from bordeaux-threads.
 ## See Also
 
 - [architecture.md](architecture.md) - Overall architecture
-- [tools/debugger.md](tools/debugger.md) - Debugger tool documentation
+- [using/tools.md](using/tools.md) - Tool catalogue
 - [AGENTS.md](../AGENTS.md) - Agent guidelines

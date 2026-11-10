@@ -73,7 +73,7 @@ In the Lisp image, you want the agent to work with:
 
 ```lisp
 (ql:quickload :swank)
-(swank:create-server :port 4006 :dont-close t)
+(swank:create-server :port 4005 :dont-close t)
 ```
 
 ### 5. Verify the MCP Starts
@@ -99,13 +99,13 @@ Example tool call:
 ```json
 {
   "name": "repl_connect",
-  "arguments": { "port": 4006 }
+  "arguments": { "port": 4005 }
 }
 ```
 
 ## Tool Surface
 
-The current registry exposes **91 tools** across **14 categories**, including:
+The tools fall into these groups (the full generated list is in [docs/using/tools.md](docs/using/tools.md)):
 
 - debugger tools (`debugger_*`, `breakpoint_*`, `step_frame`)
 - unified REPL tools (`repl_*`)
@@ -113,7 +113,7 @@ The current registry exposes **91 tools** across **14 categories**, including:
 - hot-reload tools (`code_compile_string`, `reload_system`)
 - inspection, profiling, tracing, monitoring, logging, xref, security, and managed Swank-process tools
 
-See [docs/tools/index.md](docs/tools/index.md) for the full per-tool reference and [docs/code-reference.md](docs/code-reference.md) for the source-level map.
+See [docs/using/tools.md](docs/using/tools.md) for the full per-tool reference and [docs/code-reference.md](docs/code-reference.md) for the source-level map.
 
 ## Recommended Workflow
 
@@ -138,11 +138,12 @@ If you need to launch a disposable SBCL session from Tron itself, use the manage
 | ----------------------------- | ---------------------------------------------------- |
 | Start/install/run Tron        | [docs/starting-the-mcp.md](docs/starting-the-mcp.md) |
 | Understand the architecture   | [docs/architecture.md](docs/architecture.md)         |
-| Browse the full tool catalog  | [docs/tools/index.md](docs/tools/index.md)           |
+| Browse the full tool catalog  | [docs/using/tools.md](docs/using/tools.md)           |
 | Learn the source layout       | [docs/code-reference.md](docs/code-reference.md)     |
 | Contribute changes            | [CONTRIBUTING.md](CONTRIBUTING.md)                   |
 | Work inside the codebase      | [docs/DEVELOPERS.md](docs/DEVELOPERS.md)             |
-| Consume the MCP from an agent | [AGENTS.md](AGENTS.md)                               |
+| Use the MCP as an agent       | [docs/using/quickstart.md](docs/using/quickstart.md) |
+| Change Tron (people/agents)   | [AGENTS.md](AGENTS.md), [docs/developing/workflow.md](docs/developing/workflow.md) |
 
 ## Optional Nix / devenv Support
 
@@ -156,18 +157,9 @@ The project still ships a `devenv.nix` for contributors who want a reproducible 
 
 ## Testing
 
-Run the existing suite with:
-
-```lisp
-(asdf:test-system :cl-tron-mcp)
-```
-
-Or from the shell:
-
 ```bash
-cd ~/quicklisp/local-projects/cl-tron-mcp
-sbcl --non-interactive \
-  --eval '(load (merge-pathnames "quicklisp/setup.lisp" (user-homedir-pathname)))' \
-  --eval '(pushnew (truename ".") ql:*local-project-directories* :test (function equal))' \
-  --eval '(asdf:test-system :cl-tron-mcp)'
+sbcl --noinform --non-interactive --load scripts/run-tests.lisp   # exit code 0 = all passed
 ```
+
+Outside `devenv shell` an OpenSSL 3 library directory must be on `LD_LIBRARY_PATH`. Tests that launch
+ECL or `start-mcp.sh` subprocesses need ECL/devenv. See [docs/developing/workflow.md](docs/developing/workflow.md).

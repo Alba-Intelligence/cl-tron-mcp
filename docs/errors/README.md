@@ -160,13 +160,13 @@ Example:
 
 When adding new error codes:
 
-1. Add the error code definition to `src/core/error-codes.lisp`
+1. Add the error code definition to `src/resources/error-codes.lisp`
 2. Create a documentation file in this directory
 3. Update this index with the new error code
 4. Test the error response format
 
 ## See Also
 
-- [Error Codes Implementation](../../src/core/error-codes.lisp)
-- [MCP Protocol Documentation](../../docs/agents/tool-reference.md)
-- [Troubleshooting Guide](../../docs/agents/troubleshooting.md)
+- [Error Codes Implementation](../../src/resources/error-codes.lisp)
+- [MCP Protocol Documentation](../using/tools.md)
+- [Troubleshooting Guide](../using/troubleshooting.md)

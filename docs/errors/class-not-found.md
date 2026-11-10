@@ -40,5 +40,4 @@ This error occurs when attempting to inspect or access a class that does not exi
 ## Related Tools
 
 - `inspect_class` - Inspect a class
-- `list_classes` - List classes
-- `who_specializes` - Find specializing classes
+- `inspect_class` - Inspect a CLOS class
