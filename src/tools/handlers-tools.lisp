@@ -53,8 +53,11 @@ Returns approval_required response if approval needed, nil otherwise."
                                                                                                        :|request_id| (cl-tron-mcp/security:approval-request-id
                                                                                                                       request)
                                                                                                        :|message|
-                                                                                                       (format nil "User approval required for tool: ~a"
-                                                                                                               tool-name)))))))))))
+                                                                                                       (if cl-tron-mcp/security:*require-confirmation-code*
+                                                                                                           (format nil "User approval required for tool: ~a. Ask the user to read the confirmation code shown on the Tron server terminal, then call approval/respond with request_id, approved and confirmation_code. The code is never included in tool results."
+                                                                                                                   tool-name)
+                                                                                                           (format nil "User approval required for tool: ~a"
+                                                                                                                   tool-name))))))))))))
   nil)
 
 (defun handle-approval-reinvocation (tool-name arguments id)
@@ -203,7 +206,8 @@ DEPRECATED: Use execute-tool-with-timeout instead."
   (execute-tool-with-timeout tool-name arguments id))
 
 (defun handle-approval-respond (id params)
-  "Handle approval/respond request. Params: request_id (string), approved (boolean), optional message.
+  "Handle approval/respond request. Params: request_id (string), approved (boolean), confirmation_code (string, required to
+   approve unless TRON_APPROVAL_TRUST_CLIENT is set), optional message.
    Records the user decision; client then re-invokes the tool with approval_request_id and approved: true."
   (let ((request-id (getf params :|request_id|))
         (approved (getf params :|approved|))
@@ -230,8 +234,10 @@ DEPRECATED: Use execute-tool-with-timeout instead."
                                                (string= (string approved)
                                                         "true")))
                                       :approved :denied)))
-                    (cl-tron-mcp/security:approval-response (string request-id)
-                                                            response)
+                    (cl-tron-mcp/security:approval-response
+                     (string request-id) response
+                     :code (let ((code (getf params :|confirmation_code|)))
+                             (and code (string code))))
                     (cl-tron-mcp/json-compat:to-json (list :|jsonrpc| "2.0"
                                             :|id| id
                                             :|result| (nconc (list :|recorded| t

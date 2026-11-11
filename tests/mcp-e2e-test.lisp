@@ -181,9 +181,14 @@
                          (approval-json (cl-tron-mcp/json-compat:parse text))
                          (req-id (getf approval-json :|request_id|)))
                     (ok req-id)
+                    (ok (not (search (cl-tron-mcp/security::approval-request-code
+                                      (gethash req-id cl-tron-mcp/security::*pending-approvals*))
+                                     resp1))
+                        "result must not leak the confirmation code")
                     ;; Record approval
                     (let ((respond-params (list :|request_id| req-id
-                                                :|approved| "true")))
+                                                :|approved| "true"
+ :|confirmation_code| (cl-tron-mcp/security::approval-request-code (gethash req-id cl-tron-mcp/security::*pending-approvals*)))))
                       (cl-tron-mcp/protocol:handle-request 2 "approval/respond"
                                                            respond-params))
                     ;; Re-invoke with approval — needs Swank for actual eval

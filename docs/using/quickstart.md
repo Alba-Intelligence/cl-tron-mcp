@@ -48,7 +48,7 @@ Full list with approval levels: [tools.md](tools.md). Parameters: call `tools/li
 
 Tools that change the running image (eval, compile, reload, breakpoints, tracing, profiling, launch,
 kill...) return `approval_required` instead of running. A human must approve; read
-[approval.md](approval.md) for the exact exchange. Do not approve your own requests.
+[approval.md](approval.md) for the exact exchange. Approving needs a confirmation code the user reads from the Tron server terminal; ask the user for it, never look for it yourself.
 
 ## 4. Debugging an error (typical)
 

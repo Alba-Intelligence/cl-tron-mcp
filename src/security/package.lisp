@@ -5,6 +5,9 @@
   (:export
    #:*approval-required-operations*
    #:request-approval
+   #:*require-confirmation-code*
+   #:approval-request-code
+   #:announce-approval-request
    #:check-approval
    #:operation-requires-approval
    #:approval-response
