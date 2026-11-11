@@ -1,6 +1,6 @@
 # Code Quality Review — 2026-11-10
 
-**Status: all findings fixed or closed (2026-11-11); see section 0.** One test (ECL startup health check) is still unexplained.
+**Status: all findings fixed or closed (2026-11-11); see section 0.** The full test suite passes.
 
 **Method:** static read of `AGENTS.md`, `agents/`, `docs/`, `reports/`, `prompts/`, and the
 security / protocol / transport / swank / hot-reload / sbcl / tools / resources sources.
@@ -39,8 +39,14 @@ The review above was written against local `main` (baf9f89). `origin/main` is 8 
 | D3-D5 dead tool-definition code; D6 `*pending-requests*`; D7 load-time quickload; D8 hygiene | **Fixed.** `define-tool` and `tools/utils.lisp` deleted; the tools-package pending table (wiped on every error, now harmful with concurrent requests) removed; no `ql:quickload` in `src/` (a test enforces it); ignores and tree already clean. |
 | T1 missing regression tests | **Fixed.** A test exists for every finding above (S1-S6, B1-B8, P1-P7, D1-D2, D6-D7). |
 
-Test suite (SBCL 2.6.8, `scripts/run-tests.lisp`): all non-environmental tests pass, including the
-new ones. One test still fails, `ecl-combined-startup-stays-running-test`: ECL starts Swank and HTTP, but `/health` does not answer inside the test's 20 s window (cold ECL compile); not investigated further. Three more subprocess tests (`create-configs...`, `ecl-combined-sigint...`, `ecl-combined-stop...`) fail intermittently with exit code 126: in this environment lean-ctx's shell allowlist blocks the commands they spawn ("not in the shell allowlist"). That is environmental, not a Tron defect; run them in a normal shell. The suite also did not compile
+Test suite (SBCL 2.6.8, `scripts/run-tests.lisp`): **all tests pass** in a normal shell (exit 0, empty
+`reports/test-problems.log`). The last failing test, `ecl-combined-startup-stays-running-test`, was a
+test bug, not a Tron bug (found with `scripts/diagnose-ecl-startup.sh`): the test's wrapper used
+`bash -lc` with `set -u`, and on NixOS `/etc/bash_logout` then fails at exit ("__ETC_BASHLOGOUT_SOURCED:
+unbound variable"), turning a successful ALIVE run into exit status 1. `-u` was dropped from the wrappers.
+Inside the lean-ctx-sandboxed review session some subprocess tests (`create-configs...`, `ecl-combined-*`)
+fail intermittently with exit code 126 because lean-ctx's shell allowlist blocks the commands they spawn;
+that is environmental and does not occur in a normal shell. The suite also did not compile
 before this change: tests referenced the removed `cl-tron-mcp/unified` package and unexported
 symbols (fixed). The Jonathan references in the conventions doc were corrected in the documentation refactor (the code uses jzon via `json-compat`).
 
