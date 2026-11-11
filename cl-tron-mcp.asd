@@ -298,6 +298,7 @@
   :author "Emmanuel Rialland [alba.intelligence@gmail.com]"
   :licence "Apache"
   :depends-on (
+    (:feature :sbcl (:require :sb-introspect))
     ; :jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket :hunchentoot :cl-ppcre :flexi-streams
     )
   :components (

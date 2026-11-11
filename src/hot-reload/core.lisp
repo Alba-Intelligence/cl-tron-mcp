@@ -90,14 +90,33 @@ This is the local fallback; when Swank is connected, use repl-compile instead."
             :message (princ-to-string e)))))
 
 (defun get-source-location (symbol-name &key (type :function))
-  "Get source location for symbol."
-  (let ((symbol (find-symbol (string-upcase symbol-name))))
-    (unless symbol
-      (return-from get-source-location
-        (list :error t
-              :message (format nil "Symbol ~a not found" symbol-name))))
-    (list :symbol symbol-name
-          :type type)))
+  "Return the source locations of SYMBOL-NAME's definition(s) of TYPE (:function, :variable,
+:class, :macro ...) as (:symbol name :type type :locations ((:file path :form-path path) ...)).
+SYMBOL-NAME may be package-qualified. Returns an error plist when the symbol, or any source
+information for it, is not found, or when this implementation cannot supply source locations
+(only SBCL does, via sb-introspect)."
+  #+sbcl
+  (let ((symbol (handler-case (let ((*read-eval* nil)) (read-from-string symbol-name))
+                  (error () nil))))
+    (cond
+      ((not (symbolp symbol))
+       (list :error t :message (format nil "~a is not a symbol name" symbol-name)))
+      ((not (or (fboundp symbol) (boundp symbol) (find-class symbol nil)))
+       (list :error t :message (format nil "Symbol ~a not found or has no definitions" symbol-name)))
+      (t
+       (let ((sources (ignore-errors (sb-introspect:find-definition-sources-by-name symbol type))))
+         (if (null sources)
+             (list :error t
+                   :message (format nil "No ~(~a~) definition source found for ~a" type symbol-name))
+             (list :symbol symbol-name
+                   :type type
+                   :locations (loop for src in sources
+                                    for file = (sb-introspect:definition-source-pathname src)
+                                    collect (list :file (and file (namestring file))
+                                                  :form-path (sb-introspect:definition-source-form-path src)))))))))
+  #-sbcl
+  (progn symbol-name type
+         (list :error t :message "Source locations are only available on SBCL")))
 
 (defun get-package-source-files (package)
   "Get list of source files for package. Placeholder implementation."

@@ -99,3 +99,16 @@
   (testing "reload-package must not report success when it reloaded nothing"
     (let ((result (cl-tron-mcp/hot-reload:reload-package "CL-USER")))
       (ok (getf result :error)))))
+
+(deftest get-source-location-finds-real-definition-test
+  (testing "get-source-location returns the file that defines a function"
+    (let ((result (cl-tron-mcp/hot-reload:get-source-location
+                   "cl-tron-mcp/hot-reload:get-source-location")))
+      (ok (not (getf result :error)))
+      (ok (search "hot-reload/core.lisp"
+                  (getf (first (getf result :locations)) :file)))))
+  (testing "an unknown symbol is an error, not a made-up location"
+    (ok (getf (cl-tron-mcp/hot-reload:get-source-location "no-such-symbol-zzz") :error)))
+  (testing "a symbol with no definition of the requested type is an error"
+    (ok (getf (cl-tron-mcp/hot-reload:get-source-location "cl-user::*tron-no-var*" :type :variable)
+              :error))))
