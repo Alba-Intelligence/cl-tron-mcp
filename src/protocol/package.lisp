@@ -2,6 +2,7 @@
 
 (defpackage :cl-tron-mcp/protocol
   (:use :cl)
+  (:import-from :cl-tron-mcp/util #:get-unix-time)
   (:import-from :cl-tron-mcp/tools
                 #:handle-tools-list
                 #:handle-tool-call

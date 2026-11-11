@@ -128,17 +128,6 @@ Returns T if valid, otherwise returns an error response plist."
 ;;; Unix Time Helper
 ;;; ============================================================
 
-(defun get-unix-time ()
-  "Get current Unix timestamp (seconds since epoch)."
-  #+sbcl
-  (sb-ext:get-time-of-day)
-  #+ccl
-  (ccl:get-time-of-day)
-  #+ecl
-  (- (get-universal-time) 2208988800)
-  #-(or sbcl ccl ecl)
-  (- (get-universal-time) 2208988800))
-
 ;;; ============================================================
 ;;; Error Response Construction
 ;;; ============================================================

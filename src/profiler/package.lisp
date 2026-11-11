@@ -2,6 +2,7 @@
 
 (defpackage :cl-tron-mcp/profiler
   (:use :cl)
+  (:import-from :cl-tron-mcp/util #:get-unix-time)
   (:export
    #:profile-start
    #:profile-stop

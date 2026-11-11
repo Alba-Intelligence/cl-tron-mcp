@@ -301,5 +301,3 @@ removed on any lookup hit, so a mismatched or expired attempt also burns the app
    approval_required response and approval/respond instead of blocking here."
   (whitelist-check operation details))
 
-(defun get-unix-time ()
-  (local-time:timestamp-to-unix (local-time:now)))

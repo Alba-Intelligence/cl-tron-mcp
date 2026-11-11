@@ -2,6 +2,7 @@
 
 (defpackage :cl-tron-mcp/swank
   (:use :cl)
+  (:import-from :cl-tron-mcp/util #:get-unix-time)
   (:nicknames :cl-tron-mcp/swank/client)
   (:shadowing-import-from :cl-tron-mcp/logging
                           #:log-info

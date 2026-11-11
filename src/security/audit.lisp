@@ -81,6 +81,3 @@ Automatically trims log when it exceeds *audit-log-max-size* by dropping oldest 
   (bt:with-lock-held (*audit-lock*)
     (setf *audit-log* (make-array 256 :fill-pointer 0 :adjustable t))))
 
-(defun get-unix-time ()
-  "Get current Unix timestamp."
-  (local-time:timestamp-to-unix (local-time:now)))
