@@ -25,7 +25,7 @@
 (defun repl-compile-and-load (code &key (filename "repl"))
   "Compile and load Lisp code."
   (handler-case
-      (let ((form (read-from-string code)))
+      (let ((form (let ((*read-eval* nil)) (read-from-string code))))
         (let ((fasl (compile nil form)))
           (when fasl
             (load fasl))

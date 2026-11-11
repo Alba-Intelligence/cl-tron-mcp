@@ -19,7 +19,7 @@
   "Delegate xref query to Swank RPC. Works on any implementation with Swank connected."
   (handler-case
       (let* ((swank-eval-fn (find-symbol "SWANK-EVAL" :cl-tron-mcp/swank))
-             (sym (read-from-string symbol-name)))
+             (sym (let ((*read-eval* nil)) (read-from-string symbol-name))))
         (unless swank-eval-fn
           (return-from swank-xref
             (xref-unavailable symbol-name "Swank not loaded — cannot perform xref on this implementation.")))
@@ -35,7 +35,7 @@
       (xref-unavailable symbol-name (princ-to-string e)))))
 
 (defun who-calls (symbol-name)
-  (let ((symbol (read-from-string symbol-name)))
+  (let ((symbol (let ((*read-eval* nil)) (read-from-string symbol-name))))
     #+sbcl
     (handler-case
         (let ((callers (ignore-errors (sb-introspect:who-calls symbol))))
@@ -48,7 +48,7 @@
     (swank-xref :calls symbol-name)))
 
 (defun who-references (symbol-name)
-  (let ((symbol (read-from-string symbol-name)))
+  (let ((symbol (let ((*read-eval* nil)) (read-from-string symbol-name))))
     #+sbcl
     (handler-case
         (let ((refs (ignore-errors (sb-introspect:who-references symbol))))
@@ -61,7 +61,7 @@
     (swank-xref :references symbol-name)))
 
 (defun who-binds (symbol-name)
-  (let ((symbol (read-from-string symbol-name)))
+  (let ((symbol (let ((*read-eval* nil)) (read-from-string symbol-name))))
     #+sbcl
     (handler-case
         (let ((binds (ignore-errors (sb-introspect:who-binds symbol))))
@@ -74,7 +74,7 @@
     (swank-xref :binds symbol-name)))
 
 (defun who-sets (symbol-name)
-  (let ((symbol (read-from-string symbol-name)))
+  (let ((symbol (let ((*read-eval* nil)) (read-from-string symbol-name))))
     #+sbcl
     (handler-case
         (let ((sets (ignore-errors (sb-introspect:who-sets symbol))))
@@ -87,7 +87,7 @@
     (swank-xref :sets symbol-name)))
 
 (defun list-callees (symbol-name)
-  (let ((symbol (read-from-string symbol-name)))
+  (let ((symbol (let ((*read-eval* nil)) (read-from-string symbol-name))))
     #+sbcl
     (handler-case
         (let ((callees (ignore-errors (sb-introspect:find-function-callees symbol))))

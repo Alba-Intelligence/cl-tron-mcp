@@ -392,7 +392,6 @@
     )
   :components (
     (:file "src/sbcl/package")
-    (:file "src/sbcl/eval")
     (:file "src/sbcl/compile")
     (:file "src/sbcl/threads")
     (:file "src/sbcl/debug-internals")))
@@ -444,6 +443,7 @@
     (:file "tests/swank-test")
     (:file "tests/installation-test")
     (:file "tests/tool-result-test")
+    (:file "tests/read-eval-test")
     (:file "tests/swank-integration-test")
     (:file "tests/mcp-e2e-test")
     (:file "tests/token-tracker-test")

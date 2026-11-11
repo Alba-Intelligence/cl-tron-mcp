@@ -4,9 +4,7 @@
   (:use :cl)
   (:export
    ;; Safe evaluation
-   #:safe-eval
    #:safe-compile
-   #:eval-with-output
    ;; Thread management
    #:find-thread
    #:list-threads
