@@ -6,7 +6,7 @@
 
 **Parameters:**
 
-- `port`: Swank port to open (optional, defaults to `4006`)
+- `port`: Swank port to open (optional, defaults to the configured Swank port, `4005`)
 - `timeout`: Seconds to wait for the port to accept connections (optional, defaults to `30`)
 - `communication_style`: Swank communication style: `spawn`, `fd-handler`, or `sigio` (optional, defaults to `spawn`)
 - `sbcl_binary`: SBCL executable to launch (optional, defaults to `sbcl`)

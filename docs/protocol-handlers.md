@@ -31,7 +31,7 @@ The main `handle-message` function in `handlers.lisp` dispatches requests based 
 (defun handle-message (message)
   "Handle incoming JSON-RPC message.
 Dispatches to appropriate handler based on method name."
-  (handler-case (let* ((parsed (jonathan:parse message))
+  (handler-case (let* ((parsed (cl-tron-mcp/json-compat:parse message))
                        (id (getf parsed :|id|))
                        (method (getf parsed :|method|))
                        (params (getf parsed :|params|)))

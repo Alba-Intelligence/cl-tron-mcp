@@ -30,17 +30,17 @@ This error occurs when a frame index is out of range or not a valid integer. Fra
 ;; => {:frames [{:index 0 :function "foo"} {:index 1 :function "bar"}]}
 
 ;; Use valid frame index
-(debugger_frame_locals :frame-index 0)
+(repl_frame_locals :frame 0)
 
 ;; Incorrect - out of range
-(debugger_frame_locals :frame-index 5)
+(repl_frame_locals :frame 5)
 
 ;; Incorrect - negative
-(debugger_frame_locals :frame-index -1)
+(repl_frame_locals :frame -1)
 ```
 
 ## Related Tools
 
 - `debugger_frames` - Get debugger frames
-- `debugger_frame_locals` - Get frame local variables
+- `repl_frame_locals` - Get frame local variables
 - `repl_frame_locals` - Get frame local variables

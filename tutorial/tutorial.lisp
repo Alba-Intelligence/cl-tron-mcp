@@ -7,7 +7,7 @@ Usage: (load "tutorial/tutorial.lisp")
 CL-TRON-MCP provides 86+ tools for debugging Common Lisp applications.
 
 NEW: See comprehensive tutorials:
-- tutorial/CURSOR-MCP-TUTORIAL.md - Full guide for Cursor IDE setup
+- docs/using/clients.md - Client (Cursor, Kilocode, OpenCode) setup
 - tutorial/factorial-demo.lisp - Interactive factorial debugging demo
 - tutorial/debugging-tutorial.lisp - Original debugging examples
 |#

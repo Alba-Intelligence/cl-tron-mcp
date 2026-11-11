@@ -24,7 +24,7 @@ This error occurs when attempting to use reconnection functionality when it has 
 
 ```lisp
 ;; Manually reconnect
-(swank_connect :host "localhost" :port 4006)
+(swank_connect :host "localhost" :port 4005)
 
 ;; Or enable reconnection in config and restart
 ```

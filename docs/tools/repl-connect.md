@@ -8,7 +8,7 @@
 
 - `type`: Connection type (currently only "swank" supported)
 - `host`: Host address (optional, default: localhost)
-- `port`: Port number (optional, default: 4006)
+- `port`: Port number (optional, default: 4005)
 
 **Returns:** Connection status object with `:connected`, `:type`, `:host`, and `:port` fields
 

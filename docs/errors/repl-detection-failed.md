@@ -21,19 +21,19 @@ This error occurs when the system cannot automatically determine the type of REP
 1. Verify the server is running:
 
    ```bash
-   netstat -an | grep 4006
+   netstat -an | grep 4005
    ```
 
 2. Check network connectivity:
 
    ```bash
-   telnet localhost 4006
+   telnet localhost 4005
    ```
 
 3. Try connecting with explicit type:
 
    ```lisp
-   (repl_connect :host "localhost" :port 4006 :type :swank)
+   (repl_connect :host "localhost" :port 4005 :type :swank)
    ```
 
 4. Check server logs for errors
@@ -42,12 +42,12 @@ This error occurs when the system cannot automatically determine the type of REP
 
 ```lisp
 ;; Try explicit connection
-(repl_connect :host "localhost" :port 4006 :type :swank)
+(repl_connect :host "localhost" :port 4005 :type :swank)
 
 ;; If that fails, verify Swank is running in SBCL
 ;; In SBCL:
 (ql:quickload :swank)
-(swank:create-server :port 4006 :dont-close t)
+(swank:create-server :port 4005 :dont-close t)
 ```
 
 ## Related Tools

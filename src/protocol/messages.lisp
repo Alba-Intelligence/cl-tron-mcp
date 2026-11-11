@@ -10,14 +10,6 @@
   "Create JSON-RPC 2.0 response."
   (cl-tron-mcp/json-compat:to-json (list :|jsonrpc| "2.0" :|id| id :|result| result)))
 
-(defun make-error-response (id code message &optional data)
-  "Create JSON-RPC 2.0 error response."
-  (cl-tron-mcp/json-compat:to-json (list :|jsonrpc| "2.0"
-                          :|id| id
-                          :|error| (list :|code| code
-                                         :|message| message
-                                         :|data| data))))
-
 (defun make-notification (method params)
   "Create JSON-RPC 2.0 notification."
   (cl-tron-mcp/json-compat:to-json (list :|jsonrpc| "2.0" :|method| method :|params| params)))

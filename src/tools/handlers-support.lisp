@@ -55,12 +55,6 @@
 (defvar *default-tool-timeout* 30
   "Default timeout for tool execution in seconds.")
 
-(defvar *pending-requests* (make-hash-table :test 'eql)
-  "Hash table tracking pending tool-call requests for cleanup.")
-
-(defvar *request-lock* (bordeaux-threads:make-lock "pending-tool-requests")
-  "Lock for synchronizing access to *pending-requests*.")
-
 ;;; ============================================================
 ;;; Timeout condition
 ;;; ============================================================
@@ -111,6 +105,67 @@ Returns T if valid, otherwise returns an error response plist."
                                             param-name min-length)
                            :param param-name
                            :min-length min-length))))
+    (list :valid t)))
+
+(defun validate-integer-param (param-name value
+                               &key
+                                 required
+                                 (min 0))
+  "Validate an integer parameter.
+Returns T if valid, otherwise returns an error response plist."
+  (progn
+    (when (and required
+               (null value))
+      (return-from validate-integer-param
+        (list :valid nil
+              :error (list :code "MISSING_REQUIRED_PARAMETER"
+                           :message (format nil "Missing required parameter: ~a"
+                                            param-name)
+                           :param param-name))))
+    (when (and value
+               (not (integerp value)))
+      (return-from validate-integer-param
+        (list :valid nil
+              :error (list :code "INVALID_INTEGER_PARAMETER"
+                           :message (format nil "Parameter ~a must be an integer"
+                                            param-name)
+                           :param param-name))))
+    (when (and value
+               (integerp value)
+               (< value min))
+      (return-from validate-integer-param
+        (list :valid nil
+              :error (list :code "PARAMETER_TOO_SMALL"
+                           :message (format nil "Parameter ~a must be >= ~d" param-name
+                                            min)
+                           :param param-name
+                           :min min))))
+    (list :valid t)))
+
+(defun validate-boolean-param (param-name value &key required)
+  "Validate a boolean parameter.
+Returns T if valid, otherwise returns an error response plist."
+  (progn
+    (when (and required
+               (null value))
+      (return-from validate-boolean-param
+        (list :valid nil
+              :error (list :code "MISSING_REQUIRED_PARAMETER"
+                           :message (format nil "Missing required parameter: ~a"
+                                            param-name)
+                           :param param-name))))
+    (when (and value
+               (not (or (eq value t)
+                        (eq value nil)
+                        (and (stringp value)
+                             (or (string= value "true")
+                                 (string= value "false"))))))
+      (return-from validate-boolean-param
+        (list :valid nil
+              :error (list :code "INVALID_BOOLEAN_PARAMETER"
+                           :message (format nil "Parameter ~a must be a boolean or 'true'/'false' string"
+                                            param-name)
+                           :param param-name))))
     (list :valid t)))
 
 (defun validate-list-param (param-name value &key required)
@@ -200,10 +255,8 @@ stays usable so the very next request succeeds."
                                                          (if error-condition
                                                              (princ-to-string error-condition)
                                                              "unknown")))
-                  ;; Clear stale request-correlation entries only.  Do NOT
-                  ;; disconnect: the connection must survive tool-level errors.
-                  (bordeaux-threads:with-lock-held (*request-lock*)
-                    (clrhash *pending-requests*))
+                  ;; Log only.  Do NOT disconnect (the connection must survive tool-level errors)
+                  ;; and do not touch other requests' state: requests now run concurrently.
                   (cl-tron-mcp/logging:log-info (format nil "Cleanup completed for error in ~a (connection preserved)"
                                                         error-context)))
     (error (e)

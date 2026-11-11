@@ -85,6 +85,3 @@
   (list :error t
         :message "Flamegraph generation not yet implemented"))
 
-(defun get-unix-time ()
-  "Get current Unix timestamp."
-  (local-time:timestamp-to-unix (local-time:now)))

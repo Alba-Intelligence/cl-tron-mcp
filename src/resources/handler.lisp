@@ -60,29 +60,16 @@
 This is called when the module is loaded."
   (setf *resource-whitelist*
         (list
-         ;; Core documentation
-         "AGENTS.md"
+         ;; Start here: docs for agents USING the MCP (docs/using/)
+         "docs/using/quickstart.md"
+         "docs/using/tools.md"
+         "docs/using/approval.md"
+         "docs/using/errors.md"
+         "docs/using/troubleshooting.md"
+         "docs/using/clients.md"
+
+         ;; Background
          "README.md"
-
-         ;; Modular agent documentation
-         "docs/agents/index.md"
-         "docs/agents/getting-started.md"
-         "docs/agents/workflows.md"
-         "docs/agents/tool-reference.md"
-         "docs/agents/conventions.md"
-         "docs/agents/transport-logging.md"
-         "docs/agents/troubleshooting.md"
-         "docs/agents/token-optimization.md"
-
-         ;; Tool documentation
-         "docs/tools/debugger.md"
-         "docs/tools/inspector.md"
-         "docs/tools/hot-reload.md"
-         "docs/tools/profiler.md"
-         "docs/tools/threads.md"
-         "docs/tools/monitor.md"
-
-         ;; Architecture and integration
          "docs/architecture.md"
          "docs/starting-the-mcp.md"
          "docs/swank-integration.md"
@@ -196,15 +183,16 @@ Format: file://relative/path/to/file.md"
 (defun list-resources ()
   "Return a list of resource descriptors for all whitelisted files.
  This implements the MCP resources/list operation.
-Lazy loading: files are not read or probed until resources/read is called."
+Contents are not read, but each file is stat'ed for its real size and mime type."
   (loop for relative-path in *resource-whitelist*
+        for resolved = (resolve-resource-path (make-resource-uri relative-path))
         collect (make-resource-descriptor
                  :uri (make-resource-uri relative-path)
                  :name (get-resource-name relative-path)
                  :title (format nil "Documentation: ~a" (get-resource-name relative-path))
                  :description (format nil "MCP documentation file: ~a" relative-path)
-                 :mime-type "text/markdown"  ; Default, will be updated on read
-                 :size 0)))  ; Placeholder, will be updated on read
+                 :mime-type (if resolved (guess-mime-type resolved) "text/markdown")
+                 :size (if resolved (file-size resolved) 0))))
 
 
 (defun handle-resources-list (id)
@@ -227,6 +215,17 @@ Returns plist suitable for JSON serialization."
 ;;; Resource Reading (resources/read)
 ;;; ============================================================
 
+(defun tool-page-path-p (relative-path)
+  "True for docs/tools/<name>.md (per-tool pages named by each tool's documentationUri).
+Only a single path segment is accepted, so this cannot be used for traversal."
+  (let ((prefix "docs/tools/")
+        (suffix ".md"))
+    (and (> (length relative-path) (+ (length prefix) (length suffix)))
+         (string-prefix-p prefix relative-path)
+         (string= suffix relative-path :start2 (- (length relative-path) (length suffix)))
+         (not (find #\/ relative-path :start (length prefix)))
+         (not (search ".." relative-path)))))
+
 (defun read-resource (uri)
   "Read the contents of a resource by URI.
 Returns the file contents as a string.
@@ -235,7 +234,8 @@ Signals RESOURCE-ACCESS-DENIED-ERROR if the resource is not whitelisted."
   (let* ((relative-path (if (string-prefix-p "file://" uri)
                             (subseq uri 7)
                             uri))
-         (whitelisted-p (member relative-path *resource-whitelist* :test #'string=)))
+         (whitelisted-p (or (member relative-path *resource-whitelist* :test #'string=)
+                            (tool-page-path-p relative-path))))
     (unless whitelisted-p
       (error 'resource-access-denied-error
              :uri uri
@@ -247,12 +247,10 @@ Signals RESOURCE-ACCESS-DENIED-ERROR if the resource is not whitelisted."
                :uri uri
                :message "File not found or outside project directory"))
 
-      (with-open-file (stream resolved-path :direction :input :external-format :utf-8)
-        (let ((contents (make-string (file-length stream))))
-          (read-sequence contents stream)
-          (values contents
-                  (guess-mime-type resolved-path)
-                  (file-size resolved-path)))))))
+      ;; READ-FILE-STRING sizes the string by characters read, so multibyte UTF-8 is not NUL-padded.
+      (values (uiop:read-file-string resolved-path :external-format :utf-8)
+              (guess-mime-type resolved-path)
+              (file-size resolved-path)))))
 
 (defun handle-resources-read (id params)
   "Handle MCP resources/read request.

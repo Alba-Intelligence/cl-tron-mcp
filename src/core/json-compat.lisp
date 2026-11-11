@@ -16,9 +16,6 @@
 ;;;; "cl-tron-mcp/json-compat:to-json" / "...:parse" with zero change
 ;;;; to the surrounding code's data shapes.
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (ql:quickload :com.inuoe.jzon :silent t))
-
 (defpackage :cl-tron-mcp/json-compat
   (:use :cl)
   (:export :to-json :parse))

@@ -14,8 +14,9 @@
 (defvar *rate-limit-enabled* t
   "Enable rate limiting for HTTP requests.")
 
-(defvar *rate-limit-requests-per-minute* 60
-  "Maximum requests per minute per IP address.")
+(defvar *rate-limit-requests-per-minute* 600
+  "Maximum requests per minute per client address. The server only listens on loopback, so every
+client shares one address; the limit is a backstop against runaway loops, not per-client fairness.")
 
 (defvar *max-request-size* (* 10 1024 1024)
   "Maximum size of HTTP request body in bytes.")
@@ -50,6 +51,14 @@ Returns T if allowed, NIL if rate limited."
 
   (bt:with-lock-held (*request-count-lock*)
     (let* ((now (get-universal-time))
+           (entry (progn
+                    ;; Drop entries whose window has passed so the table cannot grow without bound.
+                    (let ((stale '()))
+                      (maphash (lambda (k v)
+                                 (when (> (- now (getf v :last-reset)) 60) (push k stale)))
+                               *request-counts*)
+                      (dolist (k stale) (remhash k *request-counts*)))
+                    nil))
            (entry (gethash ip-address *request-counts*))
            (count (if entry (getf entry :count) 0))
            (last-reset (if entry (getf entry :last-reset) 0)))
@@ -66,6 +75,32 @@ Returns T if allowed, NIL if rate limited."
                   (list :count (1+ count) :last-reset last-reset))
             t)))))
 
+;;; Browser-origin protection. The server binds to loopback, but any web page can still POST
+;;; to 127.0.0.1 (CSRF) or reach it via DNS rebinding. Reject requests whose Origin or Host is
+;;; not a loopback name. Non-browser MCP clients send no Origin header and are unaffected.
+(defvar *allowed-http-hosts* '("127.0.0.1" "localhost" "[::1]" "::1")
+  "Hostnames accepted in the Host and Origin headers.")
+
+(defun header-host-part (value)
+  "Return the hostname of an Origin URL or Host header VALUE (port and scheme stripped)."
+  (let* ((v (string-downcase (string-trim " " value)))
+         (sep (search "://" v))
+         (v (if sep (subseq v (+ sep 3)) v))
+         (v (subseq v 0 (position #\/ v)))
+         (colon (if (and (plusp (length v)) (char= (char v 0) #\[))
+                    (let ((close (position #\] v)))
+                      (and close (position #\: v :start close)))
+                    (position #\: v))))
+    (if colon (subseq v 0 colon) v)))
+
+(defun request-origin-allowed-p ()
+  "True when the current request's Host (and Origin, if present) are loopback names."
+  (flet ((ok (h)
+           (or (null h)
+               (member (header-host-part h) *allowed-http-hosts* :test #'string=))))
+    (and (ok (hunchentoot:header-in* :host))
+         (ok (hunchentoot:header-in* :origin)))))
+
 (defun handle-rpc-body (body)
   "Parse body as JSON-RPC, call protocol handler with timeout and size limits.
 Returns (values json-body-string status-code)."
@@ -79,21 +114,25 @@ Returns (values json-body-string status-code)."
                      (list :|code| -32602 :|message| "Request too large")))
               413)))
 
-  (let ((message (ignore-errors (cl-tron-mcp/json-compat:parse body))))
-    (if (not message)
-        (values "{}" 400)
-        (handler-case
-            (let ((response (cl-tron-mcp/protocol:handle-message message)))
-              (values (cond ((and response (stringp response)) response)
-                            (response (cl-tron-mcp/json-compat:to-json response))
-                            (t "{}"))
-                      200))
-          (error (e)
-            (cl-tron-mcp/logging:log-error (format nil "Error handling RPC: ~a" e))
-            (values (cl-tron-mcp/json-compat:to-json
-                     (list :|jsonrpc| "2.0" :|id| nil :|error|
-                           (list :|code| -32603 :|message| (princ-to-string e))))
-                    200))))))
+  (let ((message (handler-case (cl-tron-mcp/json-compat:parse body)
+                   (error () :unparseable))))
+    (cond
+      ((eq message :unparseable)
+       (values (json-rpc-error-string nil -32700 "Parse error") 400))
+      ((not (and (consp message) (keywordp (first message))))
+       (values (json-rpc-error-string nil -32600 "Invalid Request") 400))
+      (t
+       (let ((id (ignore-errors (getf message :|id|))))
+         (handler-case
+             (let ((response (cl-tron-mcp/protocol:handle-message message)))
+               (cond ((and (stringp response) (plusp (length response))) (values response 200))
+                     ((and response (not (stringp response)))
+                      (values (cl-tron-mcp/json-compat:to-json response) 200))
+                     ;; Notifications have no response: 202 Accepted with an empty body.
+                     (t (values "" 202))))
+           (error (e)
+             (cl-tron-mcp/logging:log-error (format nil "Error handling RPC: ~a" e))
+             (values (json-rpc-error-string id -32603 (princ-to-string e)) 200))))))))
 
 ;;; Hunchentoot handlers return the response body; we set headers and status.
 ;;; For full control we use hunchentoot:reply and hunchentoot:content-type*.
@@ -117,6 +156,10 @@ Returns (values json-body-string status-code)."
 (hunchentoot:define-easy-handler (mcp-rpc :uri "/rpc" :default-request-type :post) ()
   (setf (hunchentoot:content-type*) "application/json")
 
+  (unless (request-origin-allowed-p)
+    (setf (hunchentoot:return-code*) hunchentoot:+http-forbidden+)
+    (return-from mcp-rpc "{\"error\":{\"message\":\"Forbidden origin\"}}"))
+
   (let ((ip-address (hunchentoot:remote-addr*)))
     (unless (check-rate-limit ip-address)
       (setf (hunchentoot:return-code*) 429)
@@ -126,38 +169,22 @@ Returns (values json-body-string status-code)."
 
   (let ((body (hunchentoot:raw-post-data :force-text t)))
     (if (or (null body) (zerop (length body)))
-        (progn (setf (hunchentoot:return-code*) hunchentoot:+http-bad-request+) "")
+        (progn (setf (hunchentoot:return-code*) hunchentoot:+http-bad-request+)
+               (json-rpc-error-string nil -32600 "Invalid Request: empty body"))
         (multiple-value-bind (body-json status)
             (handle-rpc-body body)
           (setf (hunchentoot:return-code*) (case status
                                              (200 hunchentoot:+http-ok+)
+                                             (202 hunchentoot:+http-accepted+)
                                              (413 hunchentoot:+http-request-entity-too-large+)
                                              (t hunchentoot:+http-bad-request+)))
-          (or body-json "{}")))))
-
-(hunchentoot:define-easy-handler (mcp-lisply-eval :uri "/lisply/lisp-eval" :default-request-type :post) ()
-  (setf (hunchentoot:content-type*) "application/json")
-
-  (let ((ip-address (hunchentoot:remote-addr*)))
-    (unless (check-rate-limit ip-address)
-      (setf (hunchentoot:return-code*) 429)
-      (return-from mcp-lisply-eval
-        (cl-tron-mcp/json-compat:to-json
-         (list :|error| (list :|message| "Rate limit exceeded"))))))
-
-  (let ((body (hunchentoot:raw-post-data :force-text t)))
-    (if (or (null body) (zerop (length body)))
-        (progn (setf (hunchentoot:return-code*) hunchentoot:+http-bad-request+) "")
-        (let ((out (lisp-eval-handler body)))
-          (let ((start (search (format nil "~C~C~C~C" #\Return #\Newline #\Return #\Newline) out)))
-            (if start (subseq out (+ start 4)) out))))))
+          (or body-json "")))))
 
 (defun mcp-dispatch-table ()
   "Dispatch table for MCP HTTP routes (Hunchentoot). /mcp and /rpc both accept POST JSON-RPC (Kilocode streamable-http uses url .../mcp)."
   (list (hunchentoot:create-regex-dispatcher "^/health$" #'mcp-health)
         (hunchentoot:create-regex-dispatcher "^/lisply/ping-lisp$" #'mcp-lisply-ping)
         (hunchentoot:create-regex-dispatcher "^/lisply/tools/list$" #'mcp-lisply-tools-list)
-        (hunchentoot:create-regex-dispatcher "^/lisply/lisp-eval$" #'mcp-lisply-eval)
         (hunchentoot:create-regex-dispatcher "^/mcp$" #'mcp-rpc)
         (hunchentoot:create-regex-dispatcher "^/rpc$" #'mcp-rpc)
         (hunchentoot:create-regex-dispatcher "^/$" #'mcp-root)))
@@ -178,7 +205,9 @@ Returns (values json-body-string status-code)."
                        :message-log-destination nil
                        :request-class 'hunchentoot:request
                        :reply-class 'hunchentoot:reply
-                       :taskmaster (make-instance 'hunchentoot:single-threaded-taskmaster)
+                       :taskmaster (make-instance 'hunchentoot:one-thread-per-connection-taskmaster
+                                                    :max-thread-count *max-concurrent-connections*
+                                                    :max-accept-count (* 2 *max-concurrent-connections*))
                        :input-chunking-p t
                        :read-timeout *http-request-timeout*
                        :write-timeout *http-request-timeout*

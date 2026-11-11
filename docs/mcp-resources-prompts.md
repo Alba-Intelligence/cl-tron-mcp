@@ -46,10 +46,10 @@ Response:
   "result": {
     "resources": [
       {
-        "uri": "file://AGENTS.md",
-        "name": "AGENTS.md",
-        "title": "Documentation: AGENTS.md",
-        "description": "MCP documentation file: AGENTS.md",
+        "uri": "file://docs/using/quickstart.md",
+        "name": "quickstart.md",
+        "title": "Documentation: quickstart.md",
+        "description": "MCP documentation file: docs/using/quickstart.md",
         "mimeType": "text/markdown",
         "size": 12345
       }
@@ -68,7 +68,7 @@ Read contents of a specific documentation file.
   "id": 2,
   "method": "resources/read",
   "params": {
-    "uri": "file://AGENTS.md"
+    "uri": "file://docs/using/quickstart.md"
   }
 }
 ```
@@ -82,9 +82,9 @@ Response:
   "result": {
     "contents": [
       {
-        "uri": "file://AGENTS.md",
+        "uri": "file://docs/using/quickstart.md",
         "mimeType": "text/markdown",
-        "text": "# SBCL Debugging MCP Repository Guidelines..."
+        "text": "# Quickstart for agents using Tron..."
       }
     ]
   }
@@ -95,14 +95,14 @@ Response:
 
 The following files are exposed as MCP resources:
 
-- `AGENTS.md` - Quick start guide for AI agents
+- `docs/using/quickstart.md` - Start here: connect, the tool loop, approval, debugging
+- `docs/using/tools.md` - Generated catalogue of every tool and its approval level
+- `docs/using/approval.md` - The approval exchange and its trust boundary
+- `docs/using/errors.md` - Generated error-code table
+- `docs/using/troubleshooting.md` - Connection and startup problems
+- `docs/using/clients.md` - Client configuration pointers
+- `docs/tools/<tool-name>.md` - Per-tool pages, readable by `resources/read` but not listed
 - `README.md` - Project overview
-- `docs/tools/debugger.md` - Debugger tool documentation
-- `docs/tools/inspector.md` - Inspector tool documentation
-- `docs/tools/hot-reload.md` - Hot reload documentation
-- `docs/tools/profiler.md` - Profiler documentation
-- `docs/tools/threads.md` - Thread management documentation
-- `docs/tools/monitor.md` - Monitor documentation
 - `docs/architecture.md` - System architecture
 - `docs/starting-the-mcp.md` - Starting the MCP and troubleshooting
 - `docs/swank-integration.md` - Swank protocol details
@@ -176,7 +176,7 @@ Response format (MCP spec): `result.messages` is an array of messages; each mess
 
 #### discover-mcp
 
-**Call this first if you do not know how the MCP works.** Returns the exact ordered steps for an AI agent to fully learn and use the MCP without any user explanation: resources/list → resources/read AGENTS.md → prompts/list → prompts/get getting-started → tools/list. The MCP is fully discoverable via these standard methods.
+**Call this first if you do not know how the MCP works.** Returns the exact ordered steps for an AI agent to fully learn and use the MCP without any user explanation: resources/list → resources/read docs/using/quickstart.md → prompts/list → prompts/get getting-started → tools/list. The MCP is fully discoverable via these standard methods.
 
 #### getting-started
 
@@ -240,7 +240,7 @@ After the user decides, the client sends:
 - **Params:** `request_id` (string), `approved` (boolean), optional `message` (string, e.g. denial reason)
 - **Response:** `result.recorded` (boolean), `result.approved` (boolean); on denial, `result.message` (string)
 
-If the user approved, the client **re-invokes** the same `tools/call` with the same tool name and arguments, plus `approval_request_id` (the same `request_id`) and `approved: true`. The server then runs the tool and returns the normal result. Retry after a denial means calling the same tool again (a new approval request is created). For full flow (300s timeout, two classes user/none, whitelist), see [AGENTS.md](../AGENTS.md#approval-workflow-server-enforced).
+If the user approved, the client **re-invokes** the same `tools/call` with the same tool name and arguments, plus `approval_request_id` (the same `request_id`) and `approved: true`. The server then runs the tool and returns the normal result. Retry after a denial means calling the same tool again (a new approval request is created). For full flow (300s timeout, two classes user/none, whitelist), see [using/approval.md](using/approval.md).
 
 ## Capability Declaration
 
@@ -275,8 +275,8 @@ Error messages now include actionable hints:
 {
   "error": true,
   "message": "Not connected to any REPL",
-  "hint": "Run repl_connect first. Example: repl_connect :port 4006",
-  "setup": "To start Swank in SBCL: (ql:quickload :swank) (swank:create-server :port 4006 :dont-close t)",
+  "hint": "Run repl_connect first. Example: repl_connect :port 4005",
+  "setup": "To start Swank in SBCL: (ql:quickload :swank) (swank:create-server :port 4005 :dont-close t)",
   "docs": "See prompts/get 'getting-started' for step-by-step instructions"
 }
 ```
@@ -290,8 +290,8 @@ Error messages now include actionable hints:
 | `src/prompts/package.lisp`      | Prompts package definition              |
 | `src/prompts/handler.lisp`      | Prompt listing and retrieval            |
 | `src/protocol/handlers.lisp`    | Protocol handlers for resources/prompts |
-| `src/tools/register-tools.lisp` | Updated tool descriptions               |
-| `src/unified/client.lisp`       | Error messages with hints               |
+| `src/tools/registry.lisp` | Updated tool descriptions               |
+| `src/tools/unified-tools.lisp`       | Error messages with hints               |
 
 ## Testing
 
@@ -299,7 +299,7 @@ Test resources:
 
 ```bash
 echo '{"jsonrpc":"2.0","method":"resources/list","id":1}' | ./start-mcp.sh
-echo '{"jsonrpc":"2.0","method":"resources/read","params":{"uri":"file://AGENTS.md"},"id":2}' | ./start-mcp.sh
+echo '{"jsonrpc":"2.0","method":"resources/read","params":{"uri":"file://docs/using/quickstart.md"},"id":2}' | ./start-mcp.sh
 ```
 
 Test prompts:

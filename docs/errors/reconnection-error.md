@@ -35,7 +35,7 @@ This error occurs when an error happens during the reconnection process. The spe
 (swank:server-port)
 
 ;; Manually reconnect with correct parameters
-(swank_connect :host "localhost" :port 4006)
+(swank_connect :host "localhost" :port 4005)
 ```
 
 ## Related Tools

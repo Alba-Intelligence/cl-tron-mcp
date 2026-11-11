@@ -42,4 +42,4 @@ This error occurs when a prefix parameter is not a valid string, is empty, or co
 ## Related Tools
 
 - `apropos` - Find symbols by prefix
-- `list_symbols` - List symbols (accepts prefix filter)
+- `repl_completions` - Complete symbols by prefix

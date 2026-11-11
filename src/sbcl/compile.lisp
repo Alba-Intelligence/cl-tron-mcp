@@ -5,7 +5,7 @@
 (defun safe-compile (code &key (filename "repl"))
   "Compile Lisp code string to FASL."
   (handler-case
-      (let ((form (read-from-string code)))
+      (let ((form (let ((*read-eval* nil)) (read-from-string code))))
         (let ((fasl (compile nil form)))
           (list :success t
                 :fasl fasl)))

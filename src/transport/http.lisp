@@ -30,41 +30,6 @@
   (format nil "HTTP/1.1 400 Bad Request~C~CContent-Length: 0~C~C" #\Return #\Newline #\Return #\Newline))
 
 ;;; ============================================================
-;;; Lisp Eval Handler
-;;; ============================================================
-
-(defun lisp-eval-handler (body-str)
-  "Handle HTTP request to evaluate Lisp code.
-Expects JSON with 'code' and optional 'package' fields."
-  (let ((parsed (ignore-errors (cl-tron-mcp/json-compat:parse body-str))))
-    (when (null parsed)
-      (return-from lisp-eval-handler
-        (http-error-response "Invalid JSON in request body")))
-    (let ((code-val (getf parsed :|code|))
-          (pkg-val (getf parsed :|package| "CL-USER")))
-      (when (null code-val)
-        (return-from lisp-eval-handler
-          (http-error-response "Missing 'code' field")))
-      (let ((pkg-obj (find-package (string-upcase pkg-val))))
-        (when (null pkg-obj)
-          (return-from lisp-eval-handler
-            (http-error-response (format nil "Package ~a not found" pkg-val))))
-        (let ((*package* pkg-obj)
-              (*print-pretty* nil)
-              (output (make-string-output-stream)))
-          (let ((eval-result
-                  (handler-case
-                      (eval (read-from-string code-val))
-                    (reader-error (e) (cons :err (princ-to-string e)))
-                    (error (e) (cons :err (princ-to-string e))))))
-            (let ((stdout-str (get-output-stream-string output)))
-              (if (and (consp eval-result) (eq (car eval-result) :err))
-                  (http-error-response (cdr eval-result))
-                  (http-ok (cl-tron-mcp/json-compat:to-json (list :|success| t
-                                                   :|result| (format nil "~a" eval-result)
-                                                   :|stdout| stdout-str)))))))))))
-
-;;; ============================================================
 ;;; HTTP Request Parsing
 ;;; ============================================================
 
@@ -113,15 +78,12 @@ This is a minimal implementation for development only."
                       (let ((stream (usocket:socket-stream client-socket)))
                         (multiple-value-bind (request-line headers body)
                             (read-http-request stream)
-                          (declare (ignore headers))
+                          (declare (ignore headers body))
                           (when request-line
                             (let ((method (subseq request-line 0 (position #\Space request-line)))
                                   (path (subseq request-line (1+ (position #\Space request-line))
                                                 (position #\Space request-line :from-end t))))
                               (cond
-                                ((and (string= method "POST")
-                                      (string= path "/eval"))
-                                 (write-string (lisp-eval-handler body) stream))
                                 (t (write-string (http-not-found) stream)))
                               (finish-output stream)))))
                    (usocket:socket-close client-socket)))

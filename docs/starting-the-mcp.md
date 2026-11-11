@@ -49,12 +49,12 @@ In the Lisp image you want Tron to control:
 
 ```lisp
 (ql:quickload :swank)
-(swank:create-server :port 4006 :dont-close t)
+(swank:create-server :port 4005 :dont-close t)
 ```
 
 ### Port Guidance
 
-- Use **4006** for the Swank session shown in these examples.
+- Use **4005** for the Swank session shown in these examples.
 - If your editor already owns another Swank port, keep that separate and point Tron at the dedicated port you want it to use.
 
 ## Start Tron
@@ -118,7 +118,7 @@ After the MCP server is running, connect it to the live Lisp session:
 ```json
 {
   "name": "repl_connect",
-  "arguments": { "port": 4006 }
+  "arguments": { "port": 4005 }
 }
 ```
 
@@ -127,7 +127,7 @@ If you need the lower-level API:
 ```json
 {
   "name": "swank_connect",
-  "arguments": { "port": 4006 }
+  "arguments": { "port": 4005 }
 }
 ```
 
@@ -176,4 +176,4 @@ If you intentionally use `run-mcp.sh` and hit missing-library or shell-environme
 - [../README.md](../README.md) - project overview and shortest path
 - [architecture.md](architecture.md) - one-session runtime model
 - [code-reference.md](code-reference.md) - source-level map
-- [tools/index.md](tools/index.md) - full tool catalog
+- [using/tools.md](using/tools.md) - full tool catalog

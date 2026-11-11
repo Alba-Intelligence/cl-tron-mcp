@@ -7,11 +7,11 @@ This directory contains tutorials for CL-TRON-MCP, an MCP server for SBCL Common
 As of v0.1.0, CL-TRON-MCP can bootstrap its own SBCL+Swank subprocess via the `swank_launch` tool. You no longer need to start a Swank server manually.
 
 ```
-AI Agent: swank_launch {"port": 4006}
-→ {:success true, :port 4006, :pid ..., :message "SBCL+Swank running on port 4006"}
+AI Agent: swank_launch {"port": 4005}
+→ {:success true, :port 4005, :pid ..., :message "SBCL+Swank running on port 4005"}
 
-AI Agent: repl_connect {"port": 4006}
-→ {:connected true, :port 4006}
+AI Agent: repl_connect {"port": 4005}
+→ {:connected true, :port 4005}
 
 AI Agent: repl_eval {"code": "(+ 1 2)"}
 → {:result "3"}
@@ -77,9 +77,9 @@ Step-by-step runnable Lisp file showing inspector, tracer, debugger, and hot-rel
 
 Deep dive into the Swank connection layer and low-level `swank_*` tools.
 
-### 8. Full IDE Setup: `CURSOR-MCP-TUTORIAL.md`
+### 8. Client setup: `docs/using/clients.md`
 
-Comprehensive guide for setting up CL-TRON-MCP with Cursor IDE.
+Where the Cursor, Kilocode and OpenCode configurations live and how to connect a client.
 
 ## Quick Start (MCP Server)
 
@@ -99,8 +99,8 @@ sbcl --noinform --disable-debugger \
 User: "Define a function f1 that calls f2, then debug what happens when f2 is missing"
 
 AI Agent:
-1. swank_launch    {"port": 4006}               ; bootstrap SBCL
-2. repl_connect    {"port": 4006}               ; connect
+1. swank_launch    {"port": 4005}               ; bootstrap SBCL
+2. repl_connect    {"port": 4005}               ; connect
 3. repl_compile    {"code": "(defun f1 (a b) (f2 a b))"}   ; → warning: F2 undefined
 4. repl_eval       {"code": "(f1 1 2)"}         ; → UNDEFINED-FUNCTION F2 debugger
 5. repl_backtrace  {}                           ; inspect frames
@@ -108,7 +108,7 @@ AI Agent:
 7. repl_compile    {"code": "(defun f2 (x y) (+ x y))"}    ; hot-compile f2
 8. repl_invoke_restart {"restart_index": 0}     ; resume → returns 3
 9. repl_eval       {"code": "(f1 1 2)"}         ; verify → "3"
-10. swank_kill     {"port": 4006}               ; optional cleanup
+10. swank_kill     {"port": 4005}               ; optional cleanup
 ```
 
 ## Tool Categories
@@ -130,7 +130,7 @@ AI Agent:
 | Unified REPL | 23 | High-level repl_* tools (recommended) |
 | Process Mgmt | 4 | swank_launch, swank_kill, process list/status |
 
-**Total: 91 tools across 14 categories**
+See [../docs/using/tools.md](../docs/using/tools.md) for the full, generated tool list.
 
 ## Files
 
@@ -143,6 +143,5 @@ AI Agent:
 | `unified-tutorial.lisp` | docs | Unified repl_* interface guide |
 | `debugging-tutorial.lisp` | runnable | Inspector/tracer/debugger/hot-reload demo |
 | `swank-tutorial.lisp` | docs | Swank layer deep dive |
-| `CURSOR-MCP-TUTORIAL.md` | docs | Full Cursor IDE setup guide |
 | `tutorial.json` | data | MCP tool definitions for testing |
 | `tutorial-run.lsp` | runnable | Automated tool smoke test |

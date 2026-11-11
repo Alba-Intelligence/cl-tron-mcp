@@ -2,9 +2,13 @@
 
 (defpackage :cl-tron-mcp/security
   (:use :cl)
+  (:import-from :cl-tron-mcp/util #:get-unix-time)
   (:export
    #:*approval-required-operations*
    #:request-approval
+   #:*require-confirmation-code*
+   #:approval-request-code
+   #:announce-approval-request
    #:check-approval
    #:operation-requires-approval
    #:approval-response

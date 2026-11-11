@@ -100,10 +100,15 @@ Ends with (loop (sleep 3600)) to keep the process alive — it is killed explici
          ;; Use --disable-debugger and --noinform only. Do NOT use --non-interactive
          ;; because it adds an implicit --quit that kills the process after eval forms run.
          (cmd (list* sbcl-binary "--noinform" "--disable-debugger" eval-args))
+         ;; Child output goes to a file: nothing reads a pipe here, so a chatty child would fill
+         ;; the 64 KB pipe buffer and block. The file also helps diagnose startup failures.
+         (log-file (merge-pathnames (format nil "tron-swank-~d.log" port)
+                                    (uiop:temporary-directory)))
          (process (handler-case
                       (uiop:launch-program cmd
-                                           :output :stream
-                                           :error-output :stream)
+                                           :output log-file
+                                           :if-output-exists :supersede
+                                           :error-output :output)
                     (error (e)
                       (return-from launch-sbcl-with-swank
                         (list :error t :code "LAUNCH_FAILED"
@@ -117,6 +122,7 @@ Ends with (loop (sleep 3600)) to keep the process alive — it is killed explici
                   :port port
                   :host host
                   :started-at (get-universal-time)
+                  :log-file (namestring log-file)
                   :status :starting
                   :communication-style communication-style)))
 
@@ -132,6 +138,7 @@ Ends with (loop (sleep 3600)) to keep the process alive — it is killed explici
             (list :success t
                   :port port
                   :pid pid
+                  :log-file (namestring log-file)
                   :message (format nil "SBCL+Swank running on port ~d (pid ~d, style :~(~a~))"
                                    port pid communication-style))))
         (progn
@@ -140,8 +147,9 @@ Ends with (loop (sleep 3600)) to keep the process alive — it is killed explici
           (bordeaux-threads:with-lock-held (*process-registry-lock*)
             (remhash port *managed-processes*))
           (list :error t :code "SWANK_START_TIMEOUT"
-                :message (format nil "SBCL started but Swank did not accept connections on port ~d within ~d seconds"
-                                 port timeout))))))
+                :log-file (namestring log-file)
+                :message (format nil "SBCL started but Swank did not accept connections on port ~d within ~d seconds (child output: ~a)"
+                                 port timeout (namestring log-file)))))))
 
 (defun kill-managed-process (&key port)
   "Terminate the managed SBCL process listening on PORT.

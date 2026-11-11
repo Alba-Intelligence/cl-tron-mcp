@@ -26,20 +26,20 @@ This error occurs when a filename parameter is not a valid string, is empty, or 
 
 ```lisp
 ;; Correct - valid filename
-(code_compile_file :filename "/path/to/file.lisp")
+(repl_compile :code "(+ 1 2)" :filename "/path/to/file.lisp")
 
 ;; Incorrect - empty string
-(code_compile_file :filename "")
+(repl_compile :code "(+ 1 2)" :filename "")
 
 ;; Incorrect - not a string
-(code_compile_file :filename 123)
+(repl_compile :code "(+ 1 2)" :filename 123)
 
 ;; Validate before calling
 (when (and (stringp filename) (> (length filename) 0))
-  (code_compile_file :filename filename))
+  (repl_compile :code code :filename filename))
 ```
 
 ## Related Tools
 
-- `code_compile_file` - Compile a file
+- `repl_compile` - Compile code (optional `filename`)
 - `reload_system` - Reload a system (accepts system name, not filename)

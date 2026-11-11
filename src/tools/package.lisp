@@ -43,14 +43,14 @@
    ;; cl-tron-mcp#2 "bug #8" -- relocated here, not shared/imported
    ;; from cl-tron-mcp/protocol; see that file's header comment)
    #:validate-string-param
+   #:validate-integer-param
+   #:validate-boolean-param
    #:validate-list-param
    #:make-error-response
    #:cleanup-on-error
    #:timeout-error
    #:timeout-error-message
    #:*default-tool-timeout*
-   #:*pending-requests*
-   #:*request-lock*
 
    ;; Connection
    #:repl-connect

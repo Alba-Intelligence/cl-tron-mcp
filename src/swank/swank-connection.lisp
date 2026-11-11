@@ -15,10 +15,6 @@
 ;;;;   swank-events      (event queue, reconnect)
 ;;;;   swank-api         (high-level RPC operations, MCP wrappers)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (ql:quickload :usocket :silent t)
-  (ql:quickload :bordeaux-threads :silent t))
-
 (in-package #:cl-tron-mcp/swank)
 
 ;;; ============================================================
@@ -50,13 +46,6 @@ Example: (swank-sym \"EVAL-AND-GRAB-OUTPUT\") => SWANK:EVAL-AND-GRAB-OUTPUT"
 ;;; ============================================================
 ;;; Utility
 ;;; ============================================================
-
-(defun get-unix-time ()
-  "Return current Unix timestamp as an integer."
-  #+sbcl  (sb-ext:get-time-of-day)
-  #+ccl   (ccl:get-time-of-day)
-  #+ecl   (- (get-universal-time) 2208988800)
-  #-(or sbcl ccl ecl) (- (get-universal-time) 2208988800))
 
 ;;; ============================================================
 ;;; Connection State
@@ -102,7 +91,11 @@ Example: (swank-sym \"EVAL-AND-GRAB-OUTPUT\") => SWANK:EVAL-AND-GRAB-OUTPUT"
 (defvar *event-processor-thread* nil
   "Thread that processes async events.")
 (defvar *max-event-queue-size* 1000
-  "Maximum number of events to keep in the queue before dropping oldest.")
+  "Maximum number of events to keep in the queue. When full, the oldest non-debugger event is
+dropped first; debugger events are only dropped if the queue holds nothing else.")
+(defvar *dropped-event-count* 0
+  "Number of events dropped to overflow since the connection was made (reported by
+swank_debugger_state so the agent knows when output was lost).")
 
 ;;; Pending input requests (for :read-string Swank messages)
 (defvar *pending-input-requests* nil

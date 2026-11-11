@@ -920,7 +920,7 @@ else
     log_info "  Mode: Short-lived (exits when client disconnects)"
 fi
 log_info ""
-log_info "Available tools: 91"
+log_info "Available tools: call tools/list (generated list: docs/using/tools.md)"
 log_info "  - Unified REPL (Swank)"
 log_info "  - Inspector, Debugger, Profiler, Tracer"
 log_info "  - Thread management, Monitoring"

@@ -24,7 +24,7 @@
     (testing "Config generation uses run-mcp.sh when devenv is available but no host Lisp is on PATH"
              (let* ((repo-root (asdf:system-source-directory :cl-tron-mcp))
                     (command (format nil
-                                     "set -euo pipefail~%tmp=$(mktemp -d)~%
+                                     "set -eo pipefail~%tmp=$(mktemp -d)~%
 trap 'rm -rf \"$tmp\"' EXIT~%
 home_dir=\"$tmp/home\"~%
 bin_dir=\"$tmp/bin\"~%
@@ -51,7 +51,11 @@ cat \"$home_dir/.copilot/mcp-config.json\""
                    (let* ((repo-root (namestring (asdf:system-source-directory :cl-tron-mcp)))
                           (port 4017)
                           (command (format nil
-                                           "set -euo pipefail~%
+                                           ;; No `-u`: with a login shell (`bash -l`), /etc/bash_logout
+                                           ;; runs at exit under `set -u` and fails on NixOS
+                                           ;; ("__ETC_BASHLOGOUT_SOURCED: unbound variable"), turning a
+                                           ;; successful run into exit status 1.
+                                           "set -eo pipefail~%
 cd ~a~%
 ./start-mcp.sh --use-ecl --port ~d >/tmp/tron-ecl-combined.out 2>/tmp/tron-ecl-combined.err &~%
 pid=$!~%

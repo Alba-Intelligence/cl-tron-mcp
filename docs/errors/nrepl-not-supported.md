@@ -21,7 +21,7 @@ This error occurs when attempting to use NREPL (Clojure's network REPL) function
 
    ```lisp
    (ql:quickload :swank)
-   (swank:create-server :port 4006)
+   (swank:create-server :port 4005)
    ```
 
 3. Connect using `repl_connect` with default or `:type :swank`
@@ -31,10 +31,10 @@ This error occurs when attempting to use NREPL (Clojure's network REPL) function
 ```lisp
 ;; Start Swank server in SBCL
 (ql:quickload :swank)
-(swank:create-server :port 4006)
+(swank:create-server :port 4005)
 
 ;; Connect from Tron
-(repl_connect :host "localhost" :port 4006)
+(repl_connect :host "localhost" :port 4005)
 ```
 
 ## Related Tools

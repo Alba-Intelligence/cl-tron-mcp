@@ -37,6 +37,13 @@
 ;; subsystem replaces it with com.inuoe.jzon behind a jonathan-compatible
 ;; to-json/parse shim (src/core/json-compat.lisp) so call sites are
 ;; unchanged in shape.
+(asdf:defsystem :cl-tron-mcp/util
+  :name "Util"
+  :description "Small shared helpers (get-unix-time)"
+  :version "0.1.0"
+  :licence "Apache"
+  :components ((:file "src/util/time")))
+
 (asdf:defsystem :cl-tron-mcp/json-compat
   :name "JSON Compat"
   :description "jonathan-compatible to-json/parse over com.inuoe.jzon"
@@ -111,6 +118,7 @@
   :licence "Apache"
   :serial t
   :depends-on (
+    :cl-tron-mcp/util
     ; :jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket :hunchentoot :cl-ppcre :flexi-streams
     :cl-tron-mcp/json-compat
     :cl-tron-mcp/logging
@@ -158,10 +166,8 @@
     :cl-tron-mcp/debugger)
   :components (
     (:file "src/tools/package")
-    (:file "src/tools/utils")
     (:file "src/tools/registry")
     (:file "src/tools/help")
-    (:file "src/tools/define-tool")
     (:file "src/tools/validation")
     (:file "src/tools/macros")
     (:file "src/tools/inspector-tools")
@@ -222,6 +228,9 @@
   :licence "Apache"
   :serial t
   :depends-on (
+    :usocket
+    :bordeaux-threads
+    :cl-tron-mcp/util
     ; :jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket :hunchentoot :cl-ppcre :flexi-streams
     :cl-tron-mcp/logging
     :cl-tron-mcp/resources
@@ -258,6 +267,7 @@
   :author "Emmanuel Rialland [alba.intelligence@gmail.com]"
   :licence "Apache"
   :depends-on (
+    :cl-tron-mcp/util
     ; :jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket :hunchentoot :cl-ppcre :flexi-streams
     :cl-tron-mcp/logging )
   :components (
@@ -288,6 +298,7 @@
   :author "Emmanuel Rialland [alba.intelligence@gmail.com]"
   :licence "Apache"
   :depends-on (
+    (:feature :sbcl (:require :sb-introspect))
     ; :jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket :hunchentoot :cl-ppcre :flexi-streams
     )
   :components (
@@ -301,6 +312,7 @@
   :author "Emmanuel Rialland [alba.intelligence@gmail.com]"
   :licence "Apache"
   :depends-on (
+    :cl-tron-mcp/util
     ; :jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket :hunchentoot :cl-ppcre :flexi-streams
     :local-time
     )
@@ -371,6 +383,7 @@
   :licence "Apache"
   :serial t
   :depends-on (
+    :cl-tron-mcp/util
     ; :jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket :hunchentoot :cl-ppcre :flexi-streams
     :local-time)
   :components (
@@ -392,7 +405,6 @@
     )
   :components (
     (:file "src/sbcl/package")
-    (:file "src/sbcl/eval")
     (:file "src/sbcl/compile")
     (:file "src/sbcl/threads")
     (:file "src/sbcl/debug-internals")))
@@ -432,16 +444,20 @@
   :description "Test suite for cl-tron-mcp"
   :author "Emmanuel"
   :licence "Apache"
-  :depends-on (:cl-tron-mcp :rove)
+  :depends-on (:cl-tron-mcp :rove :cl-ppcre)
   :serial t
  :components (
     (:file "tests/package")
     (:file "tests/core-test")
     (:file "tests/protocol-test")
     (:file "tests/security-test")
+    (:file "tests/util-test")
     (:file "tests/transport-test")
     (:file "tests/validation-test")
     (:file "tests/swank-test")
+    (:file "tests/installation-test")
+    (:file "tests/tool-result-test")
+    (:file "tests/read-eval-test")
     (:file "tests/swank-integration-test")
     (:file "tests/mcp-e2e-test")
     (:file "tests/token-tracker-test")
@@ -451,7 +467,8 @@
     (:file "tests/profiler-test")
     (:file "tests/xref-test")
     (:file "tests/logging-test")
-    (:file "tests/process-manager-test")))
+    (:file "tests/process-manager-test")
+    (:file "tests/docs-test")))
 
 (asdf:defsystem :cl-tron-mcp/tests/integration
   :name "cl-tron-mcp Integration Tests"

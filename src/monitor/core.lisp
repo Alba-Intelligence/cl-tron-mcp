@@ -73,12 +73,6 @@
     (error (e)
       (list :error t :message (princ-to-string e)))))
 
-(defun get-unix-time ()
-  "Get current Unix timestamp."
-  (handler-case
-      (local-time:timestamp-to-unix (local-time:now))
-    (error () (get-universal-time))))
-
 (defun system-info ()
   "Get comprehensive system information."
   (list :lisp-implementation (lisp-implementation-type)

@@ -17,7 +17,7 @@ This error occurs when attempting to access debugger functionality when no debug
 ## Resolution
 
 1. Trigger a debugger event (breakpoint, error, or interrupt)
-2. Use `debugger_status` to check if debugger is active
+2. Use `repl_status` to check if debugger is active
 3. Set a breakpoint and wait for it to be hit
 4. Interrupt execution to enter debugger
 
@@ -39,7 +39,7 @@ This error occurs when attempting to access debugger functionality when no debug
 
 ## Related Tools
 
-- `debugger_status` - Check debugger status
+- `repl_status` - Check connection and debugger status
 - `debugger_frames` - Get debugger frames
 - `breakpoint_set` - Set a breakpoint
 - `swank_interrupt` - Interrupt execution

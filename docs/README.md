@@ -1,46 +1,48 @@
-# Documentation Index
+# Documentation map
 
-Use this page as the map of the written documentation.
+Two audiences, two entry points.
 
-## Start Here
+## Using Tron (agents and the people who run them)
 
-| Audience                | Read This First                          | Then                                                                                                         |
-| ----------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| New user                | [../README.md](../README.md)             | [starting-the-mcp.md](starting-the-mcp.md), [architecture.md](architecture.md)                               |
-| New developer           | [../CONTRIBUTING.md](../CONTRIBUTING.md) | [DEVELOPERS.md](DEVELOPERS.md), [code-reference.md](code-reference.md)                                       |
-| AI agent / MCP consumer | [../AGENTS.md](../AGENTS.md)             | [agents/getting-started.md](agents/getting-started.md), [mcp-resources-prompts.md](mcp-resources-prompts.md) |
-| Tool/reference reader   | [tools/index.md](tools/index.md)         | [code-reference.md](code-reference.md), [errors/README.md](errors/README.md)                                 |
+Served to MCP clients via `resources/read`. Start with the quickstart.
 
-## Core Guides
+| Document | Purpose |
+|---|---|
+| [using/quickstart.md](using/quickstart.md) | Connect, the tool loop, approval, debugging. **Read first.** |
+| [using/tools.md](using/tools.md) | Every tool and its approval level (generated) |
+| [using/approval.md](using/approval.md) | The approval exchange and its trust boundary |
+| [using/errors.md](using/errors.md) | Error-code table (generated); details in [errors/](errors/README.md) |
+| [using/troubleshooting.md](using/troubleshooting.md) | Connection, startup and Swank problems |
+| [using/clients.md](using/clients.md) | Client configuration pointers |
+| [tools/](tools/) | One page per tool: parameters, returns, examples |
+| [starting-the-mcp.md](starting-the-mcp.md) | Install, start, transports, verification |
+| [swank-integration.md](swank-integration.md) | Swank specifics |
 
-| Document                                             | Purpose                                                                        |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------ |
-| [starting-the-mcp.md](starting-the-mcp.md)           | Canonical install, startup, transport, verification, and troubleshooting guide |
-| [architecture.md](architecture.md)                   | One long-running Lisp session model and major runtime boundaries               |
-| [code-reference.md](code-reference.md)               | Source-level map of packages, scripts, tool categories, and tests              |
-| [mcp-resources-prompts.md](mcp-resources-prompts.md) | MCP resources and prompt discoverability story                                 |
-| [swank-integration.md](swank-integration.md)         | Swank-specific implementation details                                          |
-| [protocol-handlers.md](protocol-handlers.md)         | JSON-RPC/MCP handler structure                                                 |
+## Changing Tron (contributors and their agents)
 
-## Developer Guides
+Start with [../AGENTS.md](../AGENTS.md).
 
-| Document                             | Purpose                                              |
-| ------------------------------------ | ---------------------------------------------------- |
-| [DEVELOPERS.md](DEVELOPERS.md)       | Where to change code and how subsystems fit together |
-| [demo-creation.md](demo-creation.md) | Regenerating GIF demos                               |
+| Document | Purpose |
+|---|---|
+| [developing/workflow.md](developing/workflow.md) | Environment, branches, tests, docs, reports, commits |
+| [developing/conventions.md](developing/conventions.md) | Coding style and naming |
+| [developing/adding-a-tool.md](developing/adding-a-tool.md) | Register a tool, test it, document it |
+| [developing/transports.md](developing/transports.md) | stdio/HTTP/websocket, HTTP security, logging |
+| [architecture.md](architecture.md) | Process model and source boundaries |
+| [code-reference.md](code-reference.md) | Source-level map: packages, scripts, tests |
+| [DEVELOPERS.md](DEVELOPERS.md) | Where to change what |
+| [protocol-handlers.md](protocol-handlers.md) | JSON-RPC/MCP handler structure |
+| [mcp-resources-prompts.md](mcp-resources-prompts.md) | MCP resources and prompts implementation |
+| [demo-creation.md](demo-creation.md) | Regenerating the GIF demos |
 
-## Reference Material
+## Plans and reports
 
-| Document                             | Purpose                          |
-| ------------------------------------ | -------------------------------- |
-| [tools/index.md](tools/index.md)     | Full per-tool reference index    |
-| [errors/README.md](errors/README.md) | Error code and hint reference    |
-| [agents/index.md](agents/index.md)   | Agent-oriented documentation hub |
+| Path | Purpose |
+|---|---|
+| [plans/](plans/) | Roadmap and design plans (planned tools live here, not in user docs) |
+| [../reports/README.md](../reports/README.md) | Dated reviews and diagnostics, with status |
 
-## Operational Artifacts
+## Rules for documentation
 
-| Path                           | Purpose                                                  |
-| ------------------------------ | -------------------------------------------------------- |
-| [`../examples/`](../examples/) | MCP client config examples and sample clients            |
-| [`../scripts/`](../scripts/)   | Startup/debugging helpers                                |
-| [`plans/`](plans/)             | Project planning artifacts already checked into the repo |
+One source of truth per fact; generated where enumerable; checked by `tests/docs-test.lisp`. Details in
+[developing/workflow.md](developing/workflow.md#4-documentation-rules).

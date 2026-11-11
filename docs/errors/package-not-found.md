@@ -44,5 +44,4 @@ This error occurs when attempting to inspect or access a package that does not e
 ## Related Tools
 
 - `inspect_package` - Inspect a package
-- `list_packages` - List all packages
-- `who_exports` - Find exported symbols
+- `inspect_package` - Inspect a package

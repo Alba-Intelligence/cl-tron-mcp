@@ -11,7 +11,7 @@
 
 (defun trace-function (function-name &key condition hit-count)
   "Add trace to function. Uses standard CL:TRACE — works on all implementations."
-  (let ((symbol (read-from-string function-name)))
+  (let ((symbol (let ((*read-eval* nil)) (read-from-string function-name))))
     (handler-case
         (progn
           (eval `(trace ,symbol))
@@ -26,7 +26,7 @@
 
 (defun trace-remove (function-name)
   "Remove trace from function. Uses standard CL:UNTRACE."
-  (let ((symbol (read-from-string function-name)))
+  (let ((symbol (let ((*read-eval* nil)) (read-from-string function-name))))
     (handler-case
         (progn
           (eval `(untrace ,symbol))

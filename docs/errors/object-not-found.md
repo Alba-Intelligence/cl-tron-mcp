@@ -43,4 +43,4 @@ This error occurs when attempting to inspect or access an object that does not e
 
 - `inspect_object` - Inspect an object
 - `apropos` - Find symbols by prefix
-- `list_symbols` - List symbols
+- `repl_completions` - Complete symbols by prefix

@@ -2,6 +2,7 @@
 
 (defpackage :cl-tron-mcp/monitor
   (:use :cl)
+  (:import-from :cl-tron-mcp/util #:get-unix-time)
   (:export
    #:memory-stats
    #:gc-stats
