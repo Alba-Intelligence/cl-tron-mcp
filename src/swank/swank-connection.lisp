@@ -15,10 +15,6 @@
 ;;;;   swank-events      (event queue, reconnect)
 ;;;;   swank-api         (high-level RPC operations, MCP wrappers)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (ql:quickload :usocket :silent t)
-  (ql:quickload :bordeaux-threads :silent t))
-
 (in-package #:cl-tron-mcp/swank)
 
 ;;; ============================================================

@@ -117,3 +117,18 @@
             (push (doc-relative file) offenders))))
       (ok (null offenders)
           (format nil "remove hand-typed counts from: ~{~%  ~a~}" (sort offenders #'string<))))))
+
+;;; Source hygiene (D7): loading is ASDF's job, not the compiler's.
+
+(deftest no-quickload-at-load-time-test
+  (testing "No source file calls ql:quickload at load/compile time (dependencies belong in the .asd)"
+    (let ((offenders '())
+          (root (asdf:system-source-directory :cl-tron-mcp)))
+      (dolist (file (directory (merge-pathnames "src/**/*.lisp" root)))
+        (unless (search "/src/prompts/" (namestring file))   ; prompt text quotes example code
+          (with-open-file (in file)
+            (loop for line = (read-line in nil) while line
+                  when (cl-ppcre:scan "^\\s*(#\\+quicklisp\\s+)?\\(ql:quickload" line)
+                    do (push (format nil "~a: ~a" (enough-namestring file root) (string-trim " " line))
+                             offenders)))))
+      (ok (null offenders) (format nil "~{~a~^; ~}" offenders)))))

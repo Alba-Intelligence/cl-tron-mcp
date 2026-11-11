@@ -55,12 +55,6 @@
 (defvar *default-tool-timeout* 30
   "Default timeout for tool execution in seconds.")
 
-(defvar *pending-requests* (make-hash-table :test 'eql)
-  "Hash table tracking pending tool-call requests for cleanup.")
-
-(defvar *request-lock* (bordeaux-threads:make-lock "pending-tool-requests")
-  "Lock for synchronizing access to *pending-requests*.")
-
 ;;; ============================================================
 ;;; Timeout condition
 ;;; ============================================================
@@ -200,10 +194,8 @@ stays usable so the very next request succeeds."
                                                          (if error-condition
                                                              (princ-to-string error-condition)
                                                              "unknown")))
-                  ;; Clear stale request-correlation entries only.  Do NOT
-                  ;; disconnect: the connection must survive tool-level errors.
-                  (bordeaux-threads:with-lock-held (*request-lock*)
-                    (clrhash *pending-requests*))
+                  ;; Log only.  Do NOT disconnect (the connection must survive tool-level errors)
+                  ;; and do not touch other requests' state: requests now run concurrently.
                   (cl-tron-mcp/logging:log-info (format nil "Cleanup completed for error in ~a (connection preserved)"
                                                         error-context)))
     (error (e)

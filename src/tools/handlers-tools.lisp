@@ -177,9 +177,6 @@ Returns JSON-RPC response with result or error."
     (cl-tron-mcp/monitor:trace-log "executing tool ~a" tool-name)
     (unwind-protect
          (handler-case (progn
-                         ;; Track this request for cleanup
-                         (bordeaux-threads:with-lock-held (*request-lock*)
-                           (setf (gethash id *pending-requests*) t))
                          ;; Execute tool in a worker with a bounded wait
                          (setf result (call-tool-bounded tool-name arguments timeout-seconds))
                          ;; Return success response; error plists are flagged with isError
@@ -207,9 +204,6 @@ Returns JSON-RPC response with result or error."
              (make-error-response id
                                   -32000
                                   (princ-to-string e))))
-      ;; Cleanup: remove from pending requests
-      (bordeaux-threads:with-lock-held (*request-lock*)
-        (remhash id *pending-requests*))
       ;; Record metrics
       (let ((latency-ms (round (* 1000 (/ (- (get-internal-real-time) start-tick)
                                           internal-time-units-per-second)))))

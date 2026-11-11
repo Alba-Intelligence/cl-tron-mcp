@@ -11,7 +11,6 @@
    APPENDER: :console (default)"
   (handler-case
       (progn
-        #+quicklisp (ql:quickload :log4cl :silent t)
         (when level
           (setq *log-config* (list :level level :package package :appender appender))
           (if package
@@ -33,7 +32,6 @@
   "Log info message."
   (handler-case
       (progn
-        #+quicklisp (ql:quickload :log4cl :silent t)
         (if package
             (let ((pkg (find-package (string-upcase package))))
               (when pkg (log:info pkg message)))
@@ -46,7 +44,6 @@
   "Log debug message."
   (handler-case
       (progn
-        #+quicklisp (ql:quickload :log4cl :silent t)
         (if package
             (let ((pkg (find-package (string-upcase package))))
               (when pkg (log:debug pkg message)))
@@ -59,7 +56,6 @@
   "Log warning message."
   (handler-case
       (progn
-        #+quicklisp (ql:quickload :log4cl :silent t)
         (if package
             (let ((pkg (find-package (string-upcase package))))
               (when pkg (log:warn pkg message)))
@@ -72,7 +68,6 @@
   "Log error message."
   (handler-case
       (progn
-        #+quicklisp (ql:quickload :log4cl :silent t)
         (if package
             (let ((pkg (find-package (string-upcase package))))
               (when pkg (log:error pkg message)))
@@ -92,7 +87,6 @@
    activity (startup, notifications, errors) goes to stderr via log4cl."
   (handler-case
       (progn
-        #+quicklisp (ql:quickload :log4cl :silent t)
         (log4cl:clear-logging-configuration)
         (log:config :stream stream :info)
         (values))

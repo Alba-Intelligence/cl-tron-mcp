@@ -90,3 +90,7 @@
              (parsed (cl-tron-mcp/json-compat:parse response)))
         (ok (getf parsed :|error|))
         (ok (search "boom" (getf (getf parsed :|error|) :|message|)))))))
+
+(deftest no-global-pending-request-table-test
+  (testing "Tool errors cannot wipe other requests' state: the shared table is gone (D6)"
+    (ok (not (boundp 'cl-tron-mcp/tools::*pending-requests*)))))

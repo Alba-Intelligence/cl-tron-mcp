@@ -166,10 +166,8 @@
     :cl-tron-mcp/debugger)
   :components (
     (:file "src/tools/package")
-    (:file "src/tools/utils")
     (:file "src/tools/registry")
     (:file "src/tools/help")
-    (:file "src/tools/define-tool")
     (:file "src/tools/validation")
     (:file "src/tools/macros")
     (:file "src/tools/inspector-tools")
@@ -230,6 +228,8 @@
   :licence "Apache"
   :serial t
   :depends-on (
+    :usocket
+    :bordeaux-threads
     :cl-tron-mcp/util
     ; :jonathan :alexandria :local-time :bordeaux-threads :closer-mop :log4cl :usocket :hunchentoot :cl-ppcre :flexi-streams
     :cl-tron-mcp/logging

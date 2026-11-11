@@ -49,8 +49,6 @@
    #:timeout-error
    #:timeout-error-message
    #:*default-tool-timeout*
-   #:*pending-requests*
-   #:*request-lock*
 
    ;; Connection
    #:repl-connect
