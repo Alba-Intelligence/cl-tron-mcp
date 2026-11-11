@@ -107,6 +107,67 @@ Returns T if valid, otherwise returns an error response plist."
                            :min-length min-length))))
     (list :valid t)))
 
+(defun validate-integer-param (param-name value
+                               &key
+                                 required
+                                 (min 0))
+  "Validate an integer parameter.
+Returns T if valid, otherwise returns an error response plist."
+  (progn
+    (when (and required
+               (null value))
+      (return-from validate-integer-param
+        (list :valid nil
+              :error (list :code "MISSING_REQUIRED_PARAMETER"
+                           :message (format nil "Missing required parameter: ~a"
+                                            param-name)
+                           :param param-name))))
+    (when (and value
+               (not (integerp value)))
+      (return-from validate-integer-param
+        (list :valid nil
+              :error (list :code "INVALID_INTEGER_PARAMETER"
+                           :message (format nil "Parameter ~a must be an integer"
+                                            param-name)
+                           :param param-name))))
+    (when (and value
+               (integerp value)
+               (< value min))
+      (return-from validate-integer-param
+        (list :valid nil
+              :error (list :code "PARAMETER_TOO_SMALL"
+                           :message (format nil "Parameter ~a must be >= ~d" param-name
+                                            min)
+                           :param param-name
+                           :min min))))
+    (list :valid t)))
+
+(defun validate-boolean-param (param-name value &key required)
+  "Validate a boolean parameter.
+Returns T if valid, otherwise returns an error response plist."
+  (progn
+    (when (and required
+               (null value))
+      (return-from validate-boolean-param
+        (list :valid nil
+              :error (list :code "MISSING_REQUIRED_PARAMETER"
+                           :message (format nil "Missing required parameter: ~a"
+                                            param-name)
+                           :param param-name))))
+    (when (and value
+               (not (or (eq value t)
+                        (eq value nil)
+                        (and (stringp value)
+                             (or (string= value "true")
+                                 (string= value "false"))))))
+      (return-from validate-boolean-param
+        (list :valid nil
+              :error (list :code "INVALID_BOOLEAN_PARAMETER"
+                           :message (format nil "Parameter ~a must be a boolean or 'true'/'false' string"
+                                            param-name)
+                           :param param-name))))
+    (list :valid t)))
+
 (defun validate-list-param (param-name value &key required)
   "Validate a list parameter.
 Returns T if valid, otherwise returns an error response plist."

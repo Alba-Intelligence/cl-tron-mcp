@@ -4,6 +4,10 @@
   (:use :cl)
   (:import-from :cl-tron-mcp/util #:get-unix-time)
   (:import-from :cl-tron-mcp/tools
+                #:validate-string-param
+                #:validate-integer-param
+                #:validate-boolean-param
+                #:make-error-response
                 #:handle-tools-list
                 #:handle-tool-call
                 #:handle-approval-respond)

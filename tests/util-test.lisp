@@ -14,3 +14,11 @@
           (theirs (local-time:timestamp-to-unix (local-time:now))))
       (ok (integerp ours))
       (ok (<= (abs (- ours theirs)) 2)))))
+
+(deftest protocol-and-tools-share-validators-test
+  (testing "The protocol package imports the tools helpers instead of redefining them (D2)"
+    (dolist (name '("VALIDATE-STRING-PARAM" "VALIDATE-INTEGER-PARAM" "VALIDATE-BOOLEAN-PARAM"
+                    "MAKE-ERROR-RESPONSE"))
+      (ok (eq (find-symbol name "CL-TRON-MCP/PROTOCOL")
+              (find-symbol name "CL-TRON-MCP/TOOLS"))
+          name))))
