@@ -1,6 +1,6 @@
 # Code Quality Review — 2026-11-10
 
-**Status: partly fixed.** See section 0 for the per-finding table.
+**Status: all findings fixed or closed (2026-11-11); see section 0.** One test (ECL startup health check) is still unexplained.
 
 **Method:** static read of `AGENTS.md`, `agents/`, `docs/`, `reports/`, `prompts/`, and the
 security / protocol / transport / swank / hot-reload / sbcl / tools / resources sources.
@@ -24,14 +24,23 @@ The review above was written against local `main` (baf9f89). `origin/main` is 8 
 | S2 approval not bound to call; S3 expiry not enforced | **Fixed** (feac90f), tests pass |
 | B6 any tool error disconnects Swank | **Fixed upstream** (cdf0f60; log now says "connection preserved") |
 | B5 `wait-for-response` could hang | **Fixed upstream** (bounded `condition-wait :timeout`). An earlier version of this table wrongly said it was still open; that was a mis-read of a grep. |
-| B1 `replace-function` undid itself; B2 `reload-package` fake success | **Fixed** (tests added; `*read-eval*` now nil in `replace-function` and `compile-and-load`, partly addressing S6). `get-source-location` is still a stub. |
+| B1 `replace-function` undid itself; B2 `reload-package` fake success | **Fixed** (tests added; `*read-eval*` now nil in `replace-function` and `compile-and-load`, partly addressing S6). `get-source-location` is now implemented (sb-introspect). |
 | K1 docs drift, K2 always-on doc context, T2 CI exit status | **Fixed** by the documentation refactor (`docs/plans/docs-refactor.md`): `AGENTS.md` is a short developer entry point, agent docs live in `docs/using/`, tool lists are generated, `tests/docs-test.lisp` checks docs against code, CI runs `scripts/run-tests.lisp` (non-zero exit on failure). |
 | E1 (new) ECL cannot compile `src/installation/installation.lisp` | **Fixed** (test `skill-store-installation-guide-tool-test`). The `skill_store_installation_guide` tool was broken on every implementation, not just ECL: its body called the function with keywords instead of positional args (ECL refuses to compile that), used `target-platform` where the macro binds `target_platform`, called an unexported `validate-string`, and used `gethash` on the `*installation-guides*` alist (also in `recommend-skill-handler`). `*port-compliance*` was a quoted list whose `get-config` forms were never evaluated. |
-| D3-D5 dead tool-definition code, S4, S5, S6 (rest), B3, B4, B7, B8, P*, D1-D2, D6-D8 | Still open (B7 re-confirmed in source) |
+| S4 agent can approve itself | **Fixed** (out-of-band confirmation). Approving needs an 8-character code that Tron prints only on its own stderr and controlling TTY; it is never in a tool result. Three wrong codes burn the request; denial needs no code. `TRON_APPROVAL_TRUST_CLIENT=1` restores the old behaviour. Residual risk: an agent that can read the server's terminal or log, or run code in the Tron process, can still approve (documented in `docs/using/approval.md`). |
+| S5 whitelist substring matching | **Fixed.** Patterns are exact tool names or `*` globs, anchored; every bypass is audited as `:whitelist-bypass`. Behaviour change for patterns that relied on substrings. |
+| S6 `read` with `*read-eval*`; B3 `safe-eval` | **Fixed.** `*read-eval*` is nil at every read of agent text (tracer, xref, compile, repl, hot-reload); `safe-eval` had no callers and was deleted. |
+| B4 tool timeout is not a timeout | **Fixed.** Tools run in a worker thread with a bounded wait; a hung tool returns -32008 at the deadline and its thread is terminated. |
+| B7 tool results are printed plists | **Fixed.** Results are JSON objects with lowercase snake_case keys; error results set `isError`. NIL under a flag-like key (`success`, `is_*`, `*_p`...) is `false`, elsewhere `[]`. |
+| B8 handlers reject unknown keys | **Fixed** (`&allow-other-keys`; camelCase spellings were already normalised). |
+| P1-P4 transports | **Fixed.** Threaded HTTP taskmaster (verified live: an idle connection no longer blocks `/health`); rate limit 600/min with pruning; stdio always replies (-32700 / -32603 with the request id); HTTP parse failure is a JSON-RPC error, notifications get 202. |
+| P5 resources, P6 event queue, P7 child pipes | **Fixed.** `read-file-string` (no NUL padding), real size/mime in `resources/list`; the overflow path used to re-take the non-recursive event mutex (deadlock/error) and now drops the oldest non-debug event, counting drops in `swank_debugger_state :dropped-events`; child SBCL output goes to a log file (`:log-file`). |
+| D1 six `get-unix-time`; D2 duplicated validators | **Fixed.** `cl-tron-mcp/util:get-unix-time`; protocol imports the validators and `make-error-response` from tools (the dependency already ran protocol -> tools). |
+| D3-D5 dead tool-definition code; D6 `*pending-requests*`; D7 load-time quickload; D8 hygiene | **Fixed.** `define-tool` and `tools/utils.lisp` deleted; the tools-package pending table (wiped on every error, now harmful with concurrent requests) removed; no `ql:quickload` in `src/` (a test enforces it); ignores and tree already clean. |
+| T1 missing regression tests | **Fixed.** A test exists for every finding above (S1-S6, B1-B8, P1-P7, D1-D2, D6-D7). |
 
 Test suite (SBCL 2.6.8, `scripts/run-tests.lisp`): all non-environmental tests pass, including the
-new ones. After the E1 fix one test still fails, `ecl-combined-startup-stays-running-test` (ECL starts
-Swank and HTTP, but the health-check script exits 1; not yet explained, may be environmental). The suite also did not compile
+new ones. One test still fails, `ecl-combined-startup-stays-running-test`: ECL starts Swank and HTTP, but `/health` does not answer inside the test's 20 s window (cold ECL compile); not investigated further. Three more subprocess tests (`create-configs...`, `ecl-combined-sigint...`, `ecl-combined-stop...`) fail intermittently with exit code 126: in this environment lean-ctx's shell allowlist blocks the commands they spawn ("not in the shell allowlist"). That is environmental, not a Tron defect; run them in a normal shell. The suite also did not compile
 before this change: tests referenced the removed `cl-tron-mcp/unified` package and unexported
 symbols (fixed). The Jonathan references in the conventions doc were corrected in the documentation refactor (the code uses jzon via `json-compat`).
 

@@ -148,3 +148,22 @@
                (ok (search "chatty line 19999"
                            (uiop:read-file-string (getf result :log-file))))))
         (cl-tron-mcp/swank:kill-managed-process :port 4057)))))
+
+;;; B5: an unanswered request must time out instead of blocking forever.
+
+(deftest wait-for-response-times-out-test
+  (testing "A request that is never answered returns a timeout error at the deadline"
+    (let* ((id 987654)
+           (req (cl-tron-mcp/swank::make-swank-request
+                 :id id :condition (bordeaux-threads:make-condition-variable)
+                 :response nil :completed-p nil))
+           (start (get-internal-real-time)))
+      (bordeaux-threads:with-lock-held (cl-tron-mcp/swank::*request-lock*)
+        (setf (gethash id cl-tron-mcp/swank::*pending-requests*) req))
+      (let ((result (cl-tron-mcp/swank::wait-for-response id :timeout 1))
+            (elapsed (/ (- (get-internal-real-time) start) internal-time-units-per-second)))
+        (ok (getf result :timeout))
+        (ok (getf result :error))
+        (ok (< elapsed 4) "gave up promptly")
+        (ok (null (gethash id cl-tron-mcp/swank::*pending-requests*))
+            "the abandoned request is no longer tracked")))))

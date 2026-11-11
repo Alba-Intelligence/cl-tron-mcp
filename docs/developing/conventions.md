@@ -36,6 +36,16 @@ Follow the Google Common Lisp Style Guide with project-specific additions:
 (bt:list-all-threads)
 ```
 
+### Tool results
+
+A tool handler returns a Lisp plist; `tool-result->json` (`src/tools/handlers-tools.lisp`) turns it
+into the MCP `text` content: keys become lowercase `snake_case` (`:in-debugger` -> `in_debugger`), `T`
+is `true`, `NIL` is `false` under flag-like keys (`success`, `connected`, `is_*`, `*_p`...) and `[]`
+elsewhere. Return `(list :error t :message "...")` for failures: the response is then marked `isError`.
+Handlers must be thread-safe and must not rely on dynamic bindings from the caller: every call runs in
+a worker thread with a bounded wait (`*default-tool-timeout*`). Do not use `ql:quickload` in `src/`;
+declare dependencies in the `.asd`. Use `cl-tron-mcp/util:get-unix-time`; do not redefine it.
+
 ### JSON-RPC Response Format
 
 All JSON-RPC encoding and decoding goes through `cl-tron-mcp/json-compat` (`to-json`, `parse`), a

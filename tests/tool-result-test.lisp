@@ -94,3 +94,15 @@
 (deftest no-global-pending-request-table-test
   (testing "Tool errors cannot wipe other requests' state: the shared table is gone (D6)"
     (ok (not (boundp 'cl-tron-mcp/tools::*pending-requests*)))))
+
+;;; B6: a failing tool must not tear down the Swank connection.
+
+(deftest tool-error-keeps-swank-connection-test
+  (testing "After a tool raises an error the connection flags are untouched"
+    (with-temporary-tool ("zz_test_boom2" (lambda (&key &allow-other-keys) (error "kaboom")))
+      (let ((cl-tron-mcp/swank::*swank-connected* t))
+        (let ((response (cl-tron-mcp/protocol::handle-tool-call
+                         9 (list :|name| "zz_test_boom2" :|arguments| nil))))
+          (ok (getf (cl-tron-mcp/json-compat:parse response) :|error|))
+          (ok cl-tron-mcp/swank::*swank-connected*
+              "the connection is still marked connected"))))))

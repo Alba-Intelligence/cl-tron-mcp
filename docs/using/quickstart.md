@@ -44,6 +44,13 @@ or you launch one: `swank_launch` (needs approval; `port` defaults to the config
 Full list with approval levels: [tools.md](tools.md). Parameters: call `tools/list`. Failures carry a
 `code`; see [errors.md](errors.md) and [troubleshooting.md](troubleshooting.md).
 
+**Results.** A tool result is a JSON object in the `text` content, with lowercase `snake_case` keys
+(`in_debugger`, `dropped_events`). Flags that are false are `false`; empty lists are `[]`. When a tool
+reports an error the response also has `isError: true`. Unknown extra arguments are ignored. A tool that
+runs longer than the tool timeout (30 s) fails with JSON-RPC error `-32008`; the work may already have
+had side effects, so inspect the image before retrying. `swank_debugger_state` includes
+`dropped_events` (how many Swank events were discarded because the queue overflowed).
+
 ## 3. Approval
 
 Tools that change the running image (eval, compile, reload, breakpoints, tracing, profiling, launch,
