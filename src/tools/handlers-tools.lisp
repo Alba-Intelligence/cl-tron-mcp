@@ -83,11 +83,94 @@ Returns nil if no approval params present."
              (make-error-response id -32001 "Approval expired or already used. Invoke the tool again to request a new approval."))))))
   nil)
 
+;;; ------------------------------------------------------------
+;;; Tool results as JSON (B7)
+;;; ------------------------------------------------------------
+
+(defun json-key-name (key)
+  "Lowercase snake_case JSON key for the Lisp keyword KEY (:in-debugger -> \"in_debugger\")."
+  (substitute #\_ #\- (string-downcase (symbol-name key))))
+
+(defun boolean-key-name-p (name)
+  "True when the JSON key NAME conventionally holds a flag, so NIL under it means false, not []."
+  (or (member name '("success" "connected" "enabled" "running" "found" "valid" "available"
+                     "ok" "error" "approved" "recorded" "changed" "removed" "cleared"
+                     "requires_approval" "approval_required")
+              :test #'string=)
+      (let ((n (length name)))
+        (or (and (> n 2) (string= "_p" name :start2 (- n 2)))
+            (some (lambda (prefix) (and (> n (length prefix)) (string= prefix name :end2 (length prefix))))
+                  '("is_" "has_" "in_" "can_" "was_"))))))
+
+(defun result-plist-p (x)
+  (and (consp x)
+       (null (cdr (last x)))
+       (evenp (length x))
+       (loop for (k) on x by #'cddr always (keywordp k))))
+
+(defun tool-result->json (obj &optional key-name)
+  "Convert a Lisp tool result to a tree that CL-TRON-MCP/JSON-COMPAT:TO-JSON encodes as JSON with
+lowercase snake_case keys. NIL under a flag-like key (see BOOLEAN-KEY-NAME-P) becomes false,
+elsewhere an empty array. Values with no JSON form are printed."
+  (cond
+    ((eq obj t) t)
+    ((null obj) (if (and key-name (boolean-key-name-p key-name)) :false nil))
+    ((stringp obj) obj)
+    ((numberp obj) (if (rationalp obj) (if (integerp obj) obj (float obj 1d0)) obj))
+    ((keywordp obj) (string-downcase (symbol-name obj)))
+    ((symbolp obj) (string-downcase (symbol-name obj)))
+    ((characterp obj) (string obj))
+    ((hash-table-p obj) obj)
+    ((result-plist-p obj)
+     (loop for (k v) on obj by #'cddr
+           for name = (json-key-name k)
+           append (list (intern name :keyword) (tool-result->json v name))))
+    ((and (consp obj) (null (cdr (last obj))))
+     (mapcar (lambda (x) (tool-result->json x nil)) obj))
+    ((and (vectorp obj) (not (stringp obj)))
+     (map 'list (lambda (x) (tool-result->json x nil)) obj))
+    (t (let ((*print-pretty* nil)) (princ-to-string obj)))))
+
+(defun tool-result-error-p (result)
+  "True when RESULT is a plist carrying a true :error entry."
+  (and (result-plist-p result) (getf result :error) t))
+
+;;; ------------------------------------------------------------
+;;; Bounded tool execution (B4)
+;;; ------------------------------------------------------------
+
+(defun call-tool-bounded (tool-name arguments seconds)
+  "Run CALL-TOOL in a worker thread and wait at most SECONDS. Returns the tool's value; re-signals
+an error raised by the tool in the calling thread; signals TIMEOUT-ERROR and terminates the worker
+if the deadline passes. The wait polls a flag (10 ms) instead of using CONDITION-WAIT :TIMEOUT,
+whose lock state after a timed-out wait differs between implementations."
+  (let* ((lock (bordeaux-threads:make-lock "tool-call"))
+         (done nil)
+         (outcome nil)
+         (thread (bordeaux-threads:make-thread
+                  (lambda ()
+                    (let ((result (handler-case (list :ok (call-tool tool-name arguments))
+                                    (error (e) (list :error e)))))
+                      (bordeaux-threads:with-lock-held (lock)
+                        (setf outcome result done t))))
+                  :name (format nil "tool ~a" tool-name)))
+         (deadline (+ (get-internal-real-time)
+                      (* seconds internal-time-units-per-second))))
+    (loop
+      (when (bordeaux-threads:with-lock-held (lock) done) (return))
+      (when (>= (get-internal-real-time) deadline)
+        (ignore-errors (bordeaux-threads:destroy-thread thread))
+        (error 'timeout-error
+               :message (format nil "Tool execution timeout after ~d seconds" seconds)))
+      (sleep 0.01))
+    (ecase (first outcome)
+      (:ok (second outcome))
+      (:error (error (second outcome))))))
+
 (defun execute-tool-with-timeout (tool-name arguments id)
   "Execute tool with timeout, metrics recording, and request tracing.
 Returns JSON-RPC response with result or error."
-  (let ((start-time (get-universal-time))
-        (start-tick (get-internal-real-time))
+  (let ((start-tick (get-internal-real-time))
         (timeout-seconds *default-tool-timeout*)
         (result nil)
         (error-occurred nil))
@@ -97,27 +180,19 @@ Returns JSON-RPC response with result or error."
                          ;; Track this request for cleanup
                          (bordeaux-threads:with-lock-held (*request-lock*)
                            (setf (gethash id *pending-requests*) t))
-                         ;; Check timeout before executing
-                         (let ((elapsed (- (get-universal-time)
-                                           start-time)))
-                           (when (>= elapsed timeout-seconds)
-                             (error 'timeout-error
-                                    :message (format nil "Tool execution timeout after ~d seconds"
-                                                     timeout-seconds))))
-                         ;; Execute tool
-                         (setf result (call-tool tool-name arguments))
-                         ;; Check timeout after execution
-                         (let ((elapsed (- (get-universal-time)
-                                           start-time)))
-                           (when (>= elapsed timeout-seconds)
-                             (error 'timeout-error
-                                    :message (format nil "Tool execution timeout after ~d seconds"
-                                                     timeout-seconds))))
-                         ;; Return success response
-                         (cl-tron-mcp/json-compat:to-json (list :|jsonrpc| "2.0"
-                                                 :|id| id
-                                                 :|result| (list :|content| (list (list :|type| "text"
-                                                                                        :|text| (format nil "~a" result)))))))
+                         ;; Execute tool in a worker with a bounded wait
+                         (setf result (call-tool-bounded tool-name arguments timeout-seconds))
+                         ;; Return success response; error plists are flagged with isError
+                         (cl-tron-mcp/json-compat:to-json
+                          (list :|jsonrpc| "2.0"
+                                :|id| id
+                                :|result| (nconc
+                                           (list :|content|
+                                                 (list (list :|type| "text"
+                                                             :|text| (cl-tron-mcp/json-compat:to-json
+                                                                      (tool-result->json result)))))
+                                           (when (tool-result-error-p result)
+                                             (list :|isError| t))))))
            (timeout-error (e)
              (setf error-occurred t)
              (cl-tron-mcp/logging:log-warn (format nil "Tool ~a timed out after ~d seconds"
