@@ -102,7 +102,11 @@ Example: (swank-sym \"EVAL-AND-GRAB-OUTPUT\") => SWANK:EVAL-AND-GRAB-OUTPUT"
 (defvar *event-processor-thread* nil
   "Thread that processes async events.")
 (defvar *max-event-queue-size* 1000
-  "Maximum number of events to keep in the queue before dropping oldest.")
+  "Maximum number of events to keep in the queue. When full, the oldest non-debugger event is
+dropped first; debugger events are only dropped if the queue holds nothing else.")
+(defvar *dropped-event-count* 0
+  "Number of events dropped to overflow since the connection was made (reported by
+swank_debugger_state so the agent knows when output was lost).")
 
 ;;; Pending input requests (for :read-string Swank messages)
 (defvar *pending-input-requests* nil

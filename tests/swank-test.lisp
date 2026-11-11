@@ -86,3 +86,65 @@
                        (ok (zerop cl-tron-mcp/swank::*debugger-level*))
                        (ok (getf (cl-tron-mcp/swank:swank-get-restarts) :error))))
                 (setf (symbol-function 'cl-tron-mcp/swank::send-request) original)))))
+
+;;; Event queue overflow (P6): never deadlock, never lose debugger events, report what was dropped.
+
+(defmacro with-clean-event-queue (&body body)
+  `(let ((cl-tron-mcp/swank::*max-event-queue-size* 10))
+     (bordeaux-threads:with-lock-held (cl-tron-mcp/swank::*event-mutex*)
+       (setf (fill-pointer cl-tron-mcp/swank::*event-queue*) 0))
+     (setf cl-tron-mcp/swank::*dropped-event-count* 0)
+     (unwind-protect (progn ,@body)
+       (bordeaux-threads:with-lock-held (cl-tron-mcp/swank::*event-mutex*)
+         (setf (fill-pointer cl-tron-mcp/swank::*event-queue*) 0))
+       (setf cl-tron-mcp/swank::*dropped-event-count* 0))))
+
+(deftest event-queue-overflow-keeps-debug-events-test
+  (with-clean-event-queue
+    (testing "overflowing with output events does not deadlock and keeps the queue bounded"
+      (cl-tron-mcp/swank::enqueue-debugger-event "boom" '(("ABORT" "abort")) '())
+      (dotimes (i 25)
+        (cl-tron-mcp/swank::enqueue-output-event (format nil "line ~d" i) :repl))
+      (ok (<= (length cl-tron-mcp/swank::*event-queue*) 10)))
+    (testing "the debugger event survived and the oldest output was what got dropped"
+      (ok (find :debug cl-tron-mcp/swank::*event-queue*
+                :key #'cl-tron-mcp/swank::swank-event-type))
+      (ok (= 16 cl-tron-mcp/swank::*dropped-event-count*))
+      (let ((outputs (loop for e across cl-tron-mcp/swank::*event-queue*
+                           when (eq :output (cl-tron-mcp/swank::swank-event-type e))
+                             collect (getf (cl-tron-mcp/swank::swank-event-data e) :string))))
+        (ok (equal "line 24" (car (last outputs))))
+        (ok (not (member "line 0" outputs :test #'equal)))))))
+
+(deftest event-queue-all-debug-still-bounded-test
+  (with-clean-event-queue
+    (testing "even a queue full of debugger events stays bounded (oldest is dropped last-resort)"
+      (dotimes (i 15)
+        (cl-tron-mcp/swank::enqueue-debugger-event (format nil "c~d" i) '() '()))
+      (ok (<= (length cl-tron-mcp/swank::*event-queue*) 10))
+      (ok (= 5 cl-tron-mcp/swank::*dropped-event-count*)))))
+
+(deftest debugger-state-tool-reports-dropped-events-test
+  (with-clean-event-queue
+    (testing "swank_debugger_state tells the agent how many events were dropped"
+      (setf cl-tron-mcp/swank::*dropped-event-count* 7)
+      (let ((result (cl-tron-mcp/tools::call-tool "swank_debugger_state" nil)))
+        (ok (= 7 (getf result :dropped-events)))))))
+
+;;; Managed process output (P7): a chatty child must not fill an undrained pipe and stall.
+
+(deftest managed-process-output-goes-to-a-log-file-test
+  (testing "A child that prints far more than a pipe buffer still starts, and its output is in the log"
+    (let ((result (cl-tron-mcp/swank:launch-sbcl-with-swank
+                   :port 4057 :timeout 60
+                   :extra-eval "(dotimes (i 20000) (format t \"chatty line ~d~%\" i))")))
+      (unwind-protect
+           (progn
+             (ok (getf result :success))
+             (ok (stringp (getf result :log-file)))
+             (when (getf result :log-file)
+               (sleep 1)
+               (ok (probe-file (getf result :log-file)))
+               (ok (search "chatty line 19999"
+                           (uiop:read-file-string (getf result :log-file))))))
+        (cl-tron-mcp/swank:kill-managed-process :port 4057)))))

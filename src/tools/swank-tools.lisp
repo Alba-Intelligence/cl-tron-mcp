@@ -180,7 +180,8 @@
              (cl-tron-mcp/swank:swank-debugger-state)
            (list :thread thread
                  :level level
-                 :in-debugger in-debugger)))
+                 :in-debugger in-debugger
+                 :dropped-events cl-tron-mcp/swank:*dropped-event-count*)))
                  
 (define-validated-tool "swank_send_input"
   "Send input string to a pending Swank :read-string request"

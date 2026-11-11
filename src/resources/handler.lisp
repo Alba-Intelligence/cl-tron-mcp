@@ -183,15 +183,16 @@ Format: file://relative/path/to/file.md"
 (defun list-resources ()
   "Return a list of resource descriptors for all whitelisted files.
  This implements the MCP resources/list operation.
-Lazy loading: files are not read or probed until resources/read is called."
+Contents are not read, but each file is stat'ed for its real size and mime type."
   (loop for relative-path in *resource-whitelist*
+        for resolved = (resolve-resource-path (make-resource-uri relative-path))
         collect (make-resource-descriptor
                  :uri (make-resource-uri relative-path)
                  :name (get-resource-name relative-path)
                  :title (format nil "Documentation: ~a" (get-resource-name relative-path))
                  :description (format nil "MCP documentation file: ~a" relative-path)
-                 :mime-type "text/markdown"  ; Default, will be updated on read
-                 :size 0)))  ; Placeholder, will be updated on read
+                 :mime-type (if resolved (guess-mime-type resolved) "text/markdown")
+                 :size (if resolved (file-size resolved) 0))))
 
 
 (defun handle-resources-list (id)
@@ -246,12 +247,10 @@ Signals RESOURCE-ACCESS-DENIED-ERROR if the resource is not whitelisted."
                :uri uri
                :message "File not found or outside project directory"))
 
-      (with-open-file (stream resolved-path :direction :input :external-format :utf-8)
-        (let ((contents (make-string (file-length stream))))
-          (read-sequence contents stream)
-          (values contents
-                  (guess-mime-type resolved-path)
-                  (file-size resolved-path)))))))
+      ;; READ-FILE-STRING sizes the string by characters read, so multibyte UTF-8 is not NUL-padded.
+      (values (uiop:read-file-string resolved-path :external-format :utf-8)
+              (guess-mime-type resolved-path)
+              (file-size resolved-path)))))
 
 (defun handle-resources-read (id params)
   "Handle MCP resources/read request.

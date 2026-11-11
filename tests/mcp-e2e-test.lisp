@@ -291,3 +291,19 @@
                                                  (getf parsed :|result|))
                                          :test #'char-equal)))
                         "Should return error for invalid tool"))))
+
+;;; Resource reading (P5)
+
+(deftest resources-read-has-no-padding-test
+  (testing "Every whitelisted resource reads without NUL padding (multibyte UTF-8 safe)"
+    (dolist (rel cl-tron-mcp/resources::*resource-whitelist*)
+      (let ((text (cl-tron-mcp/resources::read-resource rel)))
+        (ok (not (find (code-char 0) text)) rel)))))
+
+(deftest resources-list-reports-real-size-test
+  (testing "resources/list gives each resource its real size and a mime type"
+    (let ((descs (cl-tron-mcp/resources::list-resources)))
+      (ok (plusp (length descs)))
+      (dolist (d descs)
+        (ok (plusp (cl-tron-mcp/resources::resource-descriptor-size d))
+            (cl-tron-mcp/resources::resource-descriptor-uri d))))))

@@ -75,6 +75,7 @@
    #:*reconnect-max-attempts*
    #:*reconnect-delay*
    #:*max-event-queue-size*
+   #:*dropped-event-count*
    #:*output-callback*
    ;; Input handling
    #:swank-provide-input

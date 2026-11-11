@@ -23,11 +23,22 @@
   data
   timestamp)
 
+(defun make-room-in-event-queue ()
+  "Called with *EVENT-MUTEX* held, before adding an event. While the queue is full, drop the
+oldest non-debugger event (output is expendable, a pending debugger event is not); if only
+debugger events remain, drop the oldest of those. Counts every drop in *DROPPED-EVENT-COUNT*.
+The mutex is not recursive, so this must not take it."
+  (loop while (>= (length *event-queue*) *max-event-queue-size*)
+        do (let ((victim (or (position :debug *event-queue* :key #'swank-event-type :test-not #'eq)
+                             0)))
+             (replace *event-queue* *event-queue* :start1 victim :start2 (1+ victim))
+             (decf (fill-pointer *event-queue*))
+             (incf *dropped-event-count*))))
+
 (defun enqueue-debugger-event (condition restarts frames)
   "Enqueue a :debug event from Swank."
   (bordeaux-threads:with-lock-held (*event-mutex*)
-    (when (>= (length *event-queue*) *max-event-queue-size*)
-      (cleanup-old-events))
+    (make-room-in-event-queue)
     (vector-push-extend
      (make-swank-event :type :debug
                        :data (list :condition condition
@@ -40,8 +51,7 @@
 (defun enqueue-output-event (string target)
   "Enqueue an :output event."
   (bordeaux-threads:with-lock-held (*event-mutex*)
-    (when (>= (length *event-queue*) *max-event-queue-size*)
-      (cleanup-old-events))
+    (make-room-in-event-queue)
     (vector-push-extend
      (make-swank-event :type :output
                        :data (list :string string :target target)
