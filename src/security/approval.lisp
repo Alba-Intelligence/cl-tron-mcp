@@ -117,14 +117,14 @@ JSON-RPC in stdio mode) and on the controlling terminal when there is one."
 (defun glob-match-p (pattern string)
   "True if STRING matches PATTERN, case-insensitively and anchored at both ends.
 * in PATTERN matches any run of characters (including none); everything else is literal."
-  (labels ((match (pi si)
-             (cond ((= pi (length pattern)) (= si (length string)))
-                   ((char= (char pattern pi) #\*)
+  (labels ((match (pj si)
+             (cond ((= pj (length pattern)) (= si (length string)))
+                   ((char= (char pattern pj) #\*)
                     (loop for k from si to (length string)
-                          thereis (match (1+ pi) k)))
+                          thereis (match (1+ pj) k)))
                    ((and (< si (length string))
-                         (char-equal (char pattern pi) (char string si)))
-                    (match (1+ pi) (1+ si)))
+                         (char-equal (char pattern pj) (char string si)))
+                    (match (1+ pj) (1+ si)))
                    (t nil))))
     (match 0 0)))
 

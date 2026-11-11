@@ -11,3 +11,16 @@
       (ok (not (getf result :error)))
       (ok (stringp (getf result :documentation)))
       (ok (search "Claude" (getf result :documentation))))))
+
+(deftest tool-ignores-unknown-arguments-test
+  (testing "An unknown or extra argument does not make a validated tool fail (B8)"
+    (let ((result (cl-tron-mcp/tools::call-tool
+                   "skill_store_installation_guide"
+                   (list :|target_platform| "claude" :|format| "json" :|bogus| 1))))
+      (ok (not (getf result :error)))
+      (ok (stringp (getf result :documentation)))))
+  (testing "camelCase spellings of declared parameters are accepted"
+    (let ((result (cl-tron-mcp/tools::call-tool
+                   "skill_store_installation_guide"
+                   (list :|targetPlatform| "claude" :|format| "json"))))
+      (ok (not (getf result :error))))))

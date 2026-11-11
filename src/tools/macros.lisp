@@ -24,7 +24,7 @@
                       :requires-approval ,requires-approval
                       :documentation-uri ,documentation-uri)
        (register-tool-handler ,name
-                              (lambda (&key ,@params)
+                              (lambda (&key ,@params &allow-other-keys)
                                 (handler-case
                                     (progn
                                       ,@(loop for (func param . args) in validation

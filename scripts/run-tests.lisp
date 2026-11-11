@@ -22,6 +22,15 @@
 (push *root* asdf:*central-registry*)
 (format t "~&;; Testing checkout: ~a~%" *root*)
 
+;; Remove logs from an earlier run first: if loading fails below, a stale "all clear" log
+;; must not be mistaken for this run's result.
+(let ((dir (let ((d (uiop:getenv "TRON_TEST_LOG_DIR")))
+             (if (and d (plusp (length d)))
+                 (uiop:ensure-directory-pathname d)
+                 (merge-pathnames "reports/" *root*)))))
+  (dolist (name '("test-run.log" "test-problems.log"))
+    (uiop:delete-file-if-exists (merge-pathnames name dir))))
+
 (ql:quickload :rove :silent t)
 (ql:quickload :cl-ppcre :silent t)
 (ql:quickload :cl-tron-mcp/tests :silent t)
