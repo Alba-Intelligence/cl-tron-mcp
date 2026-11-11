@@ -24,9 +24,7 @@ sbcl --noinform --non-interactive --load scripts/gen-docs.lisp    # regenerate g
 
 `scripts/run-tests.lisp` tests the checkout it lives in, not a same-named copy under Quicklisp. Tests
 that start ECL or `start-mcp.sh` subprocesses need ECL/devenv on `PATH` and may fail elsewhere; report
-them separately from real failures. Known real failure: ECL cannot compile `src/installation/installation.lisp`
-(finding E1 in `reports/2026-11-10-code-quality-review.md`).
-
+them separately from real failures.
 Bug fixes are **test-first**: write the failing regression test, then fix. A task is done only when its
 tests have actually run and passed. Otherwise say UNVERIFIED in the commit message and the report.
 

@@ -26,12 +26,12 @@ The review above was written against local `main` (baf9f89). `origin/main` is 8 
 | B5 `wait-for-response` could hang | **Fixed upstream** (bounded `condition-wait :timeout`). An earlier version of this table wrongly said it was still open; that was a mis-read of a grep. |
 | B1 `replace-function` undid itself; B2 `reload-package` fake success | **Fixed** (tests added; `*read-eval*` now nil in `replace-function` and `compile-and-load`, partly addressing S6). `get-source-location` is still a stub. |
 | K1 docs drift, K2 always-on doc context, T2 CI exit status | **Fixed** by the documentation refactor (`docs/plans/docs-refactor.md`): `AGENTS.md` is a short developer entry point, agent docs live in `docs/using/`, tool lists are generated, `tests/docs-test.lisp` checks docs against code, CI runs `scripts/run-tests.lisp` (non-zero exit on failure). |
-| E1 (new) ECL cannot compile `src/installation/installation.lisp` | **Open.** Found by running `ecl` on the tree; the file is identical to `origin/main`, so this predates the work above. `ecl-can-quickload-cl-tron-mcp` fails for this reason, not because of the environment. Cause not yet investigated. |
+| E1 (new) ECL cannot compile `src/installation/installation.lisp` | **Fixed** (test `skill-store-installation-guide-tool-test`). The `skill_store_installation_guide` tool was broken on every implementation, not just ECL: its body called the function with keywords instead of positional args (ECL refuses to compile that), used `target-platform` where the macro binds `target_platform`, called an unexported `validate-string`, and used `gethash` on the `*installation-guides*` alist (also in `recommend-skill-handler`). `*port-compliance*` was a quoted list whose `get-config` forms were never evaluated. |
 | D3-D5 dead tool-definition code, S4, S5, S6 (rest), B3, B4, B7, B8, P*, D1-D2, D6-D8 | Still open (B7 re-confirmed in source) |
 
 Test suite (SBCL 2.6.8, `scripts/run-tests.lisp`): all non-environmental tests pass, including the
-new ones. Five tests fail: three launch `start-mcp.sh`/ECL subprocesses and one needs `devenv`/`run-mcp.sh`
-(environmental, not investigated), and `ecl-can-quickload-cl-tron-mcp` fails on a real ECL compile error (E1). The suite also did not compile
+new ones. After the E1 fix one test still fails, `ecl-combined-startup-stays-running-test` (ECL starts
+Swank and HTTP, but the health-check script exits 1; not yet explained, may be environmental). The suite also did not compile
 before this change: tests referenced the removed `cl-tron-mcp/unified` package and unexported
 symbols (fixed). The Jonathan references in the conventions doc were corrected in the documentation refactor (the code uses jzon via `json-compat`).
 

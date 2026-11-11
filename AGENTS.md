@@ -44,8 +44,7 @@ sbcl --noinform --non-interactive --load scripts/gen-docs.lisp
 ```
 
 REPL equivalents: `(ql:quickload :cl-tron-mcp)`, `(cl-tron-mcp/core:start-server :transport :stdio-only)`.
-ECL/devenv subprocess tests need those tools on `PATH`; report them separately. Known: ECL fails to compile
-`src/installation/installation.lisp` (review finding E1).
+ECL/devenv subprocess tests need those tools on `PATH`; report them separately.
 
 ## Source map
 

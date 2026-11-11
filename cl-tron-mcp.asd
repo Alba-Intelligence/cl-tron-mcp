@@ -442,6 +442,7 @@
     (:file "tests/transport-test")
     (:file "tests/validation-test")
     (:file "tests/swank-test")
+    (:file "tests/installation-test")
     (:file "tests/swank-integration-test")
     (:file "tests/mcp-e2e-test")
     (:file "tests/token-tracker-test")
